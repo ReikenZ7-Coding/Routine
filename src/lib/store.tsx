@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { EMPTY_GYM, type GymState } from './gym';
 import { type GroceryItem, dateKey, markBought, unmarkBought } from './schedule';
 
 const STORAGE_KEY = 'routine.groceries.v1';
+const GYM_KEY = 'routine.gym.v1';
 
 export type NewGroceryItem = Omit<GroceryItem, 'id' | 'createdAt' | 'lastBought' | 'prevBought'>;
 
@@ -24,24 +26,29 @@ interface Store {
   updateGrocery: (id: string, changes: NewGroceryItem) => void;
   removeGrocery: (id: string) => void;
   toggleBought: (id: string) => void;
+  gym: GymState;
+  /** Apply a pure update (see gym.ts) to the gym state. */
+  updateGym: (fn: (g: GymState) => GymState) => void;
 }
 
 const StoreContext = createContext<Store | null>(null);
 
-function newId(): string {
+export function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [groceries, setGroceries] = useState<GroceryItem[]>([]);
+  const [gym, setGym] = useState<GymState>(EMPTY_GYM);
   const [today, setToday] = useState(dateKey());
   const loaded = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((raw) => {
-        if (raw) setGroceries(JSON.parse(raw));
+    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY])
+      .then(([[, groceriesRaw], [, gymRaw]]) => {
+        if (groceriesRaw) setGroceries(JSON.parse(groceriesRaw));
+        if (gymRaw) setGym(JSON.parse(gymRaw));
       })
       .catch(() => {})
       .finally(() => {
@@ -54,6 +61,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!loaded.current) return;
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(groceries)).catch(() => {});
   }, [groceries]);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    AsyncStorage.setItem(GYM_KEY, JSON.stringify(gym)).catch(() => {});
+  }, [gym]);
+
+  const updateGym = useCallback((fn: (g: GymState) => GymState) => setGym(fn), []);
 
   // Roll the list over when the app comes back after midnight.
   useEffect(() => {
@@ -91,8 +105,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought }),
-    [ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought],
+    () => ({ ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought, gym, updateGym }),
+    [ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought, gym, updateGym],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

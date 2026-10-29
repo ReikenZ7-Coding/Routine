@@ -1,10 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckRow } from '../components/CheckRow';
 import { Divider, Section } from '../components/Section';
+import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { useStore } from '../lib/store';
-import { boughtOn, isOnList, parseKey } from '../lib/schedule';
+import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
 import { colors, radius } from '../theme';
 
 function greeting(): string {
@@ -15,13 +17,19 @@ function greeting(): string {
 }
 
 export default function TodayScreen() {
-  const { ready, today, groceries, toggleBought } = useStore();
+  const { ready, today, groceries, toggleBought, gym } = useStore();
   const insets = useSafeAreaInsets();
   const list = groceries
     .filter((g) => isOnList(g, today))
     .sort((a, b) => Number(boughtOn(a, today)) - Number(boughtOn(b, today)) || a.name.localeCompare(b.name));
-  const done = list.filter((g) => boughtOn(g, today)).length;
-  const total = list.length;
+  const session = sessionFor(gym, today);
+  const gymProgress = session ? sessionProgress(gym, today, session) : undefined;
+  const gymDone = !!gymProgress && gymProgress.done === gymProgress.total;
+  const upcoming = session ? undefined : nextSession(gym, today);
+
+  // Each grocery item counts once; today's workout counts as one item.
+  const done = list.filter((g) => boughtOn(g, today)).length + (gymDone ? 1 : 0);
+  const total = list.length + (session ? 1 : 0);
   const pct = total ? done / total : 0;
 
   const dateLabel = parseKey(today).toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -39,6 +47,46 @@ export default function TodayScreen() {
           <View style={[styles.fill, { width: `${pct * 100}%` }]} />
         </View>
       </View>
+
+      {ready && (
+        <Section title="Gym">
+          <Pressable
+            style={({ pressed }) => [styles.gymRow, pressed && styles.pressed]}
+            onPress={() => router.navigate('/gym')}
+          >
+            <Ionicons
+              name={gymDone ? 'checkmark-circle' : 'barbell-outline'}
+              size={26}
+              color={gymDone ? colors.primary : colors.muted}
+            />
+            <View style={styles.flex}>
+              {session && gymProgress ? (
+                <>
+                  <Text style={[styles.gymTitle, gymDone && styles.doneTitle]}>{session.name}</Text>
+                  <Text style={styles.gymSub}>
+                    {gymDone
+                      ? 'Done for today'
+                      : `${session.exercises.map((e) => e.name).slice(0, 3).join(', ')}${session.exercises.length > 3 ? '…' : ''} · ${gymProgress.done}/${gymProgress.total} sets`}
+                  </Text>
+                </>
+              ) : gym.sessions.length === 0 ? (
+                <>
+                  <Text style={styles.gymTitle}>Set up your training plan</Text>
+                  <Text style={styles.gymSub}>Pick a starter plan or build your own</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.gymTitle}>Rest day</Text>
+                  <Text style={styles.gymSub}>
+                    {upcoming ? `Next: ${upcoming.session.name}, ${friendlyDate(upcoming.date, today).toLowerCase()}` : 'Enjoy it'}
+                  </Text>
+                </>
+              )}
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+          </Pressable>
+        </Section>
+      )}
 
       {ready && (
         <Section
@@ -87,5 +135,11 @@ const styles = StyleSheet.create({
   fill: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
   link: { color: colors.primary, fontWeight: '600', fontSize: 14 },
   empty: { padding: 16, gap: 8 },
+  flex: { flex: 1 },
+  pressed: { backgroundColor: colors.primarySoft },
+  gymRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14 },
+  gymTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  doneTitle: { color: colors.muted, textDecorationLine: 'line-through' },
+  gymSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
   emptyText: { color: colors.muted, fontSize: 15, lineHeight: 21 },
 });

@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import type { NewGroceryItem } from '../lib/store';
+import { Chip } from './Chip';
 import { type GroceryItem, type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
 import { colors, radius } from '../theme';
 
@@ -165,14 +166,6 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
   );
 }
 
-function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
   sheet: {
@@ -197,16 +190,6 @@ const styles = StyleSheet.create({
   twoCol: { flexDirection: 'row', gap: 12 },
   col: { flex: 1 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { color: colors.text, fontSize: 14 },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
   inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   inlineText: { fontSize: 16, color: colors.text },
   smallInput: { width: 64, textAlign: 'center' },

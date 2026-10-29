@@ -33,6 +33,13 @@ export default function RootLayout() {
             tabBarIcon: ({ color, size }) => <Ionicons name="cart-outline" color={color as string} size={size} />,
           }}
         />
+        <Tabs.Screen
+          name="gym"
+          options={{
+            title: 'Gym',
+            tabBarIcon: ({ color, size }) => <Ionicons name="barbell-outline" color={color as string} size={size} />,
+          }}
+        />
       </Tabs>
     </StoreProvider>
   );
