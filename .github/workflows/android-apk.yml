@@ -1,0 +1,68 @@
+name: Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck and test
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Generate Android project
+        run: npx expo prebuild --platform android --no-install
+        env:
+          EXPO_OFFLINE: 1
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Name the APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk routine-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: routine-apk
+          path: routine-${{ github.run_number }}.apk
+
+      - name: Publish a downloadable build
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Routine build ${{ github.run_number }} (${{ github.ref_name }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: routine-${{ github.run_number }}.apk
+          body: |
+            Android test build from `${{ github.ref_name }}` at ${{ github.sha }}.
+            Download the APK on your phone and open it to install (allow "Install unknown apps" if asked).
