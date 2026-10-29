@@ -40,6 +40,13 @@ export default function RootLayout() {
             tabBarIcon: ({ color, size }) => <Ionicons name="barbell-outline" color={color as string} size={size} />,
           }}
         />
+        <Tabs.Screen
+          name="chinese"
+          options={{
+            title: 'Chinese',
+            tabBarIcon: ({ color, size }) => <Ionicons name="language-outline" color={color as string} size={size} />,
+          }}
+        />
       </Tabs>
     </StoreProvider>
   );

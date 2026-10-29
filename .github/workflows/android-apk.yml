@@ -45,7 +45,7 @@ jobs:
 
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
 
       - name: Name the APK
         run: cp android/app/build/outputs/apk/release/app-release.apk routine-${{ github.run_number }}.apk

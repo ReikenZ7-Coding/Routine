@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckRow } from '../components/CheckRow';
 import { Divider, Section } from '../components/Section';
+import { dueWords, todaysLog } from '../lib/chinese';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { useStore } from '../lib/store';
 import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
@@ -17,7 +18,7 @@ function greeting(): string {
 }
 
 export default function TodayScreen() {
-  const { ready, today, groceries, toggleBought, gym } = useStore();
+  const { ready, today, groceries, toggleBought, gym, chinese } = useStore();
   const insets = useSafeAreaInsets();
   const list = groceries
     .filter((g) => isOnList(g, today))
@@ -27,9 +28,13 @@ export default function TodayScreen() {
   const gymDone = !!gymProgress && gymProgress.done === gymProgress.total;
   const upcoming = session ? undefined : nextSession(gym, today);
 
-  // Each grocery item counts once; today's workout counts as one item.
-  const done = list.filter((g) => boughtOn(g, today)).length + (gymDone ? 1 : 0);
-  const total = list.length + (session ? 1 : 0);
+  const practice = todaysLog(chinese, today);
+  const chineseDone = practice.minutes >= chinese.target;
+  const toReview = dueWords(chinese, today).length;
+
+  // Each grocery item counts once; today's workout and Chinese practice count as one item each.
+  const done = list.filter((g) => boughtOn(g, today)).length + (gymDone ? 1 : 0) + (chineseDone ? 1 : 0);
+  const total = list.length + (session ? 1 : 0) + 1;
   const pct = total ? done / total : 0;
 
   const dateLabel = parseKey(today).toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -82,6 +87,34 @@ export default function TodayScreen() {
                   </Text>
                 </>
               )}
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+          </Pressable>
+        </Section>
+      )}
+
+      {ready && (
+        <Section title="Chinese">
+          <Pressable
+            style={({ pressed }) => [styles.gymRow, pressed && styles.pressed]}
+            onPress={() => router.navigate('/chinese')}
+          >
+            <Ionicons
+              name={chineseDone ? 'checkmark-circle' : 'language-outline'}
+              size={26}
+              color={chineseDone ? colors.primary : colors.muted}
+            />
+            <View style={styles.flex}>
+              <Text style={[styles.gymTitle, chineseDone && styles.doneTitle]}>
+                {practice.minutes} / {chinese.target} min practice
+              </Text>
+              <Text style={styles.gymSub}>
+                {chinese.words.length === 0
+                  ? 'Add words to start flashcard reviews'
+                  : toReview
+                    ? `${toReview} words to review`
+                    : 'Flashcards all caught up'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.muted} />
           </Pressable>
