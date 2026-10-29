@@ -4,9 +4,9 @@ A simple Android app for tracking everyday routines: groceries, gym sessions, la
 
 ## Status
 
-Phase 1 is in: a **Today** screen and a **Groceries** list where items repeat every day, every few days, on certain weekdays, or just once.
+In so far: a **Today** screen that pulls everything together and a **Groceries** list where items repeat every day, every few days, on certain weekdays, or just once.
 
-Coming next: Gym (weekly split, set logging), Chinese practice (daily target, flashcards), custom routines and streaks.
+Also in: **Gym** (weekly plan, set logging, last-time weights, rest timer), **Chinese** (daily practice minutes, streak, spaced-review flashcards) and **Routines** (anything on a schedule, with streaks).
 
 ## Get the APK
 

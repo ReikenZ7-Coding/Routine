@@ -6,6 +6,7 @@ import { CheckRow } from '../components/CheckRow';
 import { Divider, Section } from '../components/Section';
 import { dueWords, todaysLog } from '../lib/chinese';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
+import { isDoneOn, isScheduled, routineSubtitle, sortByTime, toggleDone } from '../lib/routines';
 import { useStore } from '../lib/store';
 import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
 import { colors, radius } from '../theme';
@@ -18,7 +19,7 @@ function greeting(): string {
 }
 
 export default function TodayScreen() {
-  const { ready, today, groceries, toggleBought, gym, chinese } = useStore();
+  const { ready, today, groceries, toggleBought, gym, chinese, routines, updateRoutines } = useStore();
   const insets = useSafeAreaInsets();
   const list = groceries
     .filter((g) => isOnList(g, today))
@@ -32,9 +33,13 @@ export default function TodayScreen() {
   const chineseDone = practice.minutes >= chinese.target;
   const toReview = dueWords(chinese, today).length;
 
-  // Each grocery item counts once; today's workout and Chinese practice count as one item each.
-  const done = list.filter((g) => boughtOn(g, today)).length + (gymDone ? 1 : 0) + (chineseDone ? 1 : 0);
-  const total = list.length + (session ? 1 : 0) + 1;
+  const todaysRoutines = sortByTime(routines.filter((r) => isScheduled(r, today)));
+  const routinesDone = todaysRoutines.filter((r) => isDoneOn(r, today)).length;
+
+  // Each grocery item and routine counts once; today's workout and Chinese practice count as one item each.
+  const done =
+    list.filter((g) => boughtOn(g, today)).length + routinesDone + (gymDone ? 1 : 0) + (chineseDone ? 1 : 0);
+  const total = list.length + todaysRoutines.length + (session ? 1 : 0) + 1;
   const pct = total ? done / total : 0;
 
   const dateLabel = parseKey(today).toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -52,6 +57,29 @@ export default function TodayScreen() {
           <View style={[styles.fill, { width: `${pct * 100}%` }]} />
         </View>
       </View>
+
+      {ready && todaysRoutines.length > 0 && (
+        <Section
+          title="Routines"
+          right={
+            <Pressable onPress={() => router.navigate('/routines')} hitSlop={8}>
+              <Text style={styles.link}>See all</Text>
+            </Pressable>
+          }
+        >
+          {todaysRoutines.map((r, i) => (
+            <View key={r.id}>
+              {i > 0 && <Divider />}
+              <CheckRow
+                title={r.name}
+                subtitle={routineSubtitle(r, today)}
+                done={isDoneOn(r, today)}
+                onToggle={() => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? toggleDone(x, today) : x)))}
+              />
+            </View>
+          ))}
+        </Section>
+      )}
 
       {ready && (
         <Section title="Gym">

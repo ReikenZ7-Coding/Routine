@@ -47,6 +47,13 @@ export default function RootLayout() {
             tabBarIcon: ({ color, size }) => <Ionicons name="language-outline" color={color as string} size={size} />,
           }}
         />
+        <Tabs.Screen
+          name="routines"
+          options={{
+            title: 'Routines',
+            tabBarIcon: ({ color, size }) => <Ionicons name="repeat-outline" color={color as string} size={size} />,
+          }}
+        />
       </Tabs>
     </StoreProvider>
   );
