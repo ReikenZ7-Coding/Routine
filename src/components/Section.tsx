@@ -1,12 +1,23 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius } from '../theme';
+import { colors, radius, type } from '../theme';
 
-export function Section({ title, right, children }: { title: string; right?: ReactNode; children: ReactNode }) {
+interface Props {
+  title: string;
+  /** Small colour marker before the title, for the kind of thing in this section. */
+  dot?: string;
+  right?: ReactNode;
+  children: ReactNode;
+}
+
+export function Section({ title, dot, right, children }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.titleRow}>
+          {dot && <View style={[styles.dot, { backgroundColor: dot }]} />}
+          <Text style={type.label}>{title}</Text>
+        </View>
         {right}
       </View>
       <View style={styles.card}>{children}</View>
@@ -14,20 +25,27 @@ export function Section({ title, right, children }: { title: string; right?: Rea
   );
 }
 
-export function Divider() {
-  return <View style={styles.divider} />;
+export function Divider({ inset = 52 }: { inset?: number }) {
+  return <View style={[styles.divider, { marginLeft: inset }]} />;
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 20 },
+  wrap: { marginTop: 24 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
   },
-  title: { fontSize: 13, fontWeight: '700', color: colors.muted, textTransform: 'uppercase', letterSpacing: 0.6 },
-  card: { backgroundColor: colors.card, borderRadius: radius, overflow: 'hidden' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: 52 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radius,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
 });

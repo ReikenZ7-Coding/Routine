@@ -15,7 +15,7 @@ import {
 import type { Session } from '../lib/gym';
 import { WEEKDAY_SHORT } from '../lib/schedule';
 import { newId } from '../lib/store';
-import { colors, radius } from '../theme';
+import { colors, fonts, radius } from '../theme';
 import { Chip } from './Chip';
 
 interface Props {
@@ -192,35 +192,35 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     maxHeight: '92%',
   },
-  heading: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  label: { fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-  note: { fontSize: 13, color: colors.muted, marginTop: 8 },
+  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
+  label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
+  note: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 8 },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 9,
-    fontSize: 15,
+    fontFamily: fonts.body, fontSize: 15,
     color: colors.text,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  colHead: { width: 48, fontSize: 12, color: colors.muted, textAlign: 'center' },
+  colHead: { width: 48, fontFamily: fonts.body, fontSize: 12, color: colors.muted, textAlign: 'center' },
   nameCol: { flex: 1, width: undefined, minWidth: 0, textAlign: 'left' },
   removeSpace: { width: 22 },
   exRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   num: { width: 48, textAlign: 'center', paddingHorizontal: 4 },
   addRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10 },
-  addRowText: { color: colors.primary, fontWeight: '600', fontSize: 15 },
+  addRowText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 15 },
   saveButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius,
+    borderRadius: 999,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 16,
   },
-  saveText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  saveText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
   deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: colors.danger, fontSize: 15, fontWeight: '600' },
+  deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
 });

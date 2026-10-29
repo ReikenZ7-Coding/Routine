@@ -6,7 +6,7 @@ import { GroceryForm } from '../components/GroceryForm';
 import { Divider, Section } from '../components/Section';
 import { STARTER_STAPLES, useStore } from '../lib/store';
 import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, needsBuying, nextDue } from '../lib/schedule';
-import { colors, radius } from '../theme';
+import { colors, fonts, kinds, radius } from '../theme';
 
 const NO_AISLE = 'Other';
 
@@ -53,7 +53,7 @@ export default function GroceriesScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {groceries.length === 0 ? (
           <View style={styles.welcome}>
-            <Ionicons name="cart-outline" size={40} color={colors.primary} />
+            <Ionicons name="cart-outline" size={40} color={kinds.groceries.color} />
             <Text style={styles.welcomeTitle}>Your grocery routine</Text>
             <Text style={styles.welcomeText}>
               Add the things you buy regularly and how often. They come back on your list when it's time to buy them
@@ -79,6 +79,7 @@ export default function GroceriesScreen() {
                       <View key={g.id}>
                         {i > 0 && <Divider />}
                         <CheckRow
+                          tint={kinds.groceries.color}
                           title={g.name}
                           subtitle={subtitle(g)}
                           done={false}
@@ -98,6 +99,7 @@ export default function GroceriesScreen() {
                   <View key={g.id}>
                     {i > 0 && <Divider />}
                     <CheckRow
+                      tint={kinds.groceries.color}
                       title={g.name}
                       subtitle={g.quantity}
                       done
@@ -165,42 +167,44 @@ export default function GroceriesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: 16, paddingBottom: 110 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, padding: 24, alignItems: 'center', marginTop: 12 },
-  welcomeTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 12 },
-  welcomeText: { fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
+  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
+  welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
+  welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius,
+    borderRadius: 999,
     paddingVertical: 14,
     alignSelf: 'stretch',
     alignItems: 'center',
     marginTop: 20,
   },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
   secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
-  secondaryText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
-  emptyText: { padding: 16, color: colors.muted, fontSize: 15 },
+  secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+  emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
   aisle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary,
-    paddingHorizontal: 14,
-    paddingTop: 12,
+    fontFamily: fonts.monoMedium,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: kinds.groceries.color,
+    paddingHorizontal: 16,
+    paddingTop: 14,
   },
   laterRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
   pressed: { backgroundColor: colors.primarySoft },
   laterText: { flex: 1 },
-  laterName: { fontSize: 16, color: colors.text },
-  laterSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  laterDue: { fontSize: 13, color: colors.muted, fontWeight: '600' },
-  hint: { textAlign: 'center', color: colors.muted, fontSize: 13, marginTop: 20 },
+  laterName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+  laterSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+  laterDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
+  hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 24,
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 18,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

@@ -11,7 +11,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E8F5EE",
+        "backgroundColor": "#F2F3F1",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -28,6 +28,14 @@
         "expo-router",
         {
           "asyncRoutes": false
+        }
+      ],
+      "expo-font",
+      "expo-splash-screen",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Routine shows your calendar events next to your routines so you can plan your day."
         }
       ]
     ],

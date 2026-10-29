@@ -17,7 +17,7 @@ import {
 } from '../lib/chinese';
 import { friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
-import { colors, radius } from '../theme';
+import { colors, fonts, kinds, radius } from '../theme';
 
 const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
@@ -51,7 +51,7 @@ export default function ChineseScreen() {
     if (!current) {
       return (
         <View style={styles.reviewScreen}>
-          <Ionicons name="checkmark-circle" size={56} color={colors.primary} />
+          <Ionicons name="checkmark-circle" size={56} color={kinds.chinese.color} />
           <Text style={styles.reviewDoneTitle}>Review done</Text>
           <Text style={styles.reviewDoneText}>{log.reviewed} cards reviewed today. 加油!</Text>
           <Pressable style={styles.primaryButton} onPress={finish}>
@@ -244,14 +244,14 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  todayCard: { backgroundColor: colors.card, borderRadius: radius, padding: 16 },
-  eyebrow: { fontSize: 12, fontWeight: '700', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
-  streak: { fontSize: 13, fontWeight: '600', color: colors.text },
-  minutes: { fontSize: 32, fontWeight: '700', color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },
-  minutesOf: { fontSize: 17, fontWeight: '500', color: colors.muted },
-  track: { height: 8, borderRadius: 4, backgroundColor: colors.primarySoft, marginTop: 10, overflow: 'hidden' },
-  fill: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
-  small: { fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 8 },
+  todayCard: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 16 },
+  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.chinese.color, textTransform: 'uppercase', letterSpacing: 1.2 },
+  streak: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
+  minutes: { fontFamily: fonts.display, fontSize: 32, color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },
+  minutesOf: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.muted },
+  track: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.soft, marginTop: 10, overflow: 'hidden' },
+  fill: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.color },
+  small: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   reviewCard: {
     backgroundColor: colors.card,
@@ -262,31 +262,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  reviewTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  startButton: { backgroundColor: colors.primary, borderRadius: radius, paddingVertical: 12, paddingHorizontal: 20 },
+  reviewTitle: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
+  startButton: { backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
   starter: { marginTop: 8 },
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius,
+    borderRadius: 999,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignSelf: 'stretch',
     alignItems: 'center',
     marginTop: 12,
   },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  primaryText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
   secondaryButton: { paddingVertical: 14, alignItems: 'center' },
-  secondaryText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
-  link: { color: colors.primary, fontWeight: '600', fontSize: 14 },
+  secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+  link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
   wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 14 },
   pressed: { backgroundColor: colors.primarySoft },
-  wordHanzi: { fontSize: 24, color: colors.text, minWidth: 52 },
-  wordPinyin: { fontSize: 14, color: colors.text },
-  wordMeaning: { fontSize: 13, color: colors.muted, marginTop: 1 },
-  wordDue: { fontSize: 13, color: colors.muted, fontWeight: '600' },
+  wordHanzi: { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
+  wordPinyin: { fontFamily: fonts.body, fontSize: 14, color: colors.text },
+  wordMeaning: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
+  wordDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
   reviewScreen: { flex: 1, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 12 },
   reviewTop: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
-  reviewCount: { fontSize: 14, color: colors.muted, fontWeight: '600' },
+  reviewCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
   card: {
     alignSelf: 'stretch',
     backgroundColor: colors.card,
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  cardHanzi: { fontSize: 64, color: colors.text },
-  cardPinyin: { fontSize: 22, color: colors.primary, fontWeight: '600' },
-  cardMeaning: { fontSize: 18, color: colors.text },
-  cardHint: { fontSize: 14, color: colors.muted, marginTop: 8 },
+  cardHanzi: { fontFamily: fonts.body, fontSize: 64, color: colors.text },
+  cardPinyin: { fontFamily: fonts.display, fontSize: 22, color: kinds.chinese.color },
+  cardMeaning: { fontFamily: fonts.body, fontSize: 18, color: colors.text },
+  cardHint: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 8 },
   grades: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
   gradeButton: {
     flex: 1,
@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
   },
-  gradeLabel: { fontSize: 16, fontWeight: '700' },
-  gradeSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
-  reviewDoneTitle: { fontSize: 22, fontWeight: '700', color: colors.text },
-  reviewDoneText: { fontSize: 15, color: colors.muted },
+  gradeLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
+  gradeSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 },
+  reviewDoneTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
+  reviewDoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted },
 });

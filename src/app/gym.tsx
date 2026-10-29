@@ -20,7 +20,7 @@ import {
 } from '../lib/gym';
 import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
-import { colors, radius } from '../theme';
+import { colors, fonts, kinds, radius } from '../theme';
 
 const REST_SECONDS = 90;
 const WEIGHT_STEP = 2.5;
@@ -91,7 +91,7 @@ export default function GymScreen() {
     return (
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.welcome}>
-          <Ionicons name="barbell-outline" size={40} color={colors.primary} />
+          <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
           <Text style={styles.welcomeTitle}>Your training plan</Text>
           <Text style={styles.welcomeText}>
             Pick a starter plan and adjust it, or build your own. Each day you'll see exactly what to train, and what
@@ -271,9 +271,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   contentWithTimer: { paddingBottom: 110 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, padding: 24, alignItems: 'center', marginTop: 12 },
-  welcomeTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 12 },
-  welcomeText: { fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 12 },
+  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
+  welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
+  welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 12 },
   planOption: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -284,20 +284,20 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 10,
   },
-  planTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  planSummary: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  planTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+  planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
   secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
-  secondaryText: { color: colors.primary, fontSize: 16, fontWeight: '600' },
-  todayCard: { backgroundColor: colors.card, borderRadius: radius, padding: 16 },
-  eyebrow: { fontSize: 12, fontWeight: '700', color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
-  sessionName: { fontSize: 26, fontWeight: '700', color: colors.text, marginTop: 4 },
-  progressText: { fontSize: 15, color: colors.muted, marginTop: 4 },
-  track: { height: 8, borderRadius: 4, backgroundColor: colors.primarySoft, marginTop: 10, overflow: 'hidden' },
-  fill: { height: 8, borderRadius: 4, backgroundColor: colors.primary },
-  exercise: { backgroundColor: colors.card, borderRadius: radius, padding: 14, marginTop: 10 },
+  secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+  todayCard: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 16 },
+  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.gym.color, textTransform: 'uppercase', letterSpacing: 1.2 },
+  sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
+  progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
+  track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },
+  fill: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.color },
+  exercise: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 14, marginTop: 10 },
   exHeader: { flexDirection: 'row', alignItems: 'center' },
-  exName: { fontSize: 17, fontWeight: '600', color: colors.text },
-  exPlan: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  exName: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
+  exPlan: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
   exControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 },
   stepper: {
     flexDirection: 'row',
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   stepBtn: { paddingHorizontal: 10, paddingVertical: 8 },
-  weight: { minWidth: 84, textAlign: 'center', fontSize: 15, fontWeight: '600', color: colors.text, fontVariant: ['tabular-nums'] },
+  weight: { minWidth: 84, textAlign: 'center', fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
   sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
   setBubble: {
     width: 38,
@@ -318,17 +318,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  setDone: { backgroundColor: colors.primary, borderColor: colors.primary },
-  setText: { fontSize: 14, fontWeight: '600', color: colors.muted },
+  setDone: { backgroundColor: kinds.gym.color, borderColor: kinds.gym.color },
+  setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted },
   setTextDone: { color: '#fff' },
-  hint: { textAlign: 'center', color: colors.muted, fontSize: 13, marginTop: 14 },
-  link: { color: colors.primary, fontWeight: '600', fontSize: 14 },
+  hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 14 },
+  link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
   planRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },
   pressed: { backgroundColor: colors.primarySoft },
-  planDay: { width: 52, fontSize: 14, fontWeight: '600', color: colors.muted },
-  planName: { flex: 1, fontSize: 16, color: colors.text },
+  planDay: { width: 52, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
+  planName: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
   rest: { color: colors.muted },
-  planCount: { fontSize: 13, color: colors.muted },
+  planCount: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   timer: {
     position: 'absolute',
     left: 16,
@@ -342,6 +342,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  timerText: { flex: 1, color: '#fff', fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  timerText: { flex: 1, color: '#fff', fontFamily: fonts.monoMedium, fontSize: 18 },
   timerSkip: { color: '#fff', opacity: 0.7, fontWeight: '600' },
 });

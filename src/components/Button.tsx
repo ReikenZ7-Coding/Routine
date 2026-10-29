@@ -1,0 +1,68 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
+import { colors, fonts, type } from '../theme';
+
+interface Props {
+  label: string;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+  style?: ViewStyle;
+}
+
+/** Ink pill for the main action, plain text for secondary ones. */
+export function Button({ label, onPress, variant = 'primary', style }: Props) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        variant === 'primary' ? styles.primary : styles.plain,
+        pressed && styles.pressed,
+        style,
+      ]}
+    >
+      <Text
+        style={
+          variant === 'primary' ? type.button : [styles.plainText, variant === 'danger' && { color: colors.danger }]
+        }
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function Fab({ onPress, label }: { onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
+      onPress={onPress}
+      accessibilityLabel={label}
+    >
+      <Ionicons name="add" size={28} color="#fff" />
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  primary: {
+    backgroundColor: colors.text,
+    borderRadius: 999,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  plain: { paddingVertical: 14, alignItems: 'center' },
+  plainText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
+  pressed: { opacity: 0.75 },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    backgroundColor: colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

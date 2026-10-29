@@ -1,33 +1,46 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme';
+import { colors, type } from '../theme';
 
 interface Props {
   title: string;
   subtitle?: string;
   done: boolean;
+  /** Colour of the tick box when done. */
+  tint?: string;
+  /** Right-aligned detail, e.g. a time. */
+  meta?: string;
+  disabled?: boolean;
   onToggle: () => void;
   onLongPress?: () => void;
 }
 
-export function CheckRow({ title, subtitle, done, onToggle, onLongPress }: Props) {
+export function CheckRow({ title, subtitle, done, tint = colors.text, meta, disabled, onToggle, onLongPress }: Props) {
   return (
     <Pressable
       onPress={onToggle}
       onLongPress={onLongPress}
+      disabled={disabled}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}
       accessibilityRole="checkbox"
-      accessibilityState={{ checked: done }}
+      accessibilityState={{ checked: done, disabled }}
     >
-      <Ionicons
-        name={done ? 'checkmark-circle' : 'ellipse-outline'}
-        size={26}
-        color={done ? colors.primary : colors.muted}
-      />
-      <View style={styles.text}>
-        <Text style={[styles.title, done && styles.doneTitle]}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <View
+        style={[
+          styles.box,
+          done && { backgroundColor: tint, borderColor: tint },
+          disabled && !done && styles.boxDisabled,
+        ]}
+      >
+        {done && <Ionicons name="checkmark" size={16} color="#fff" />}
       </View>
+      <View style={styles.text}>
+        <Text style={[type.bodyMedium, done && styles.doneTitle]} numberOfLines={2}>
+          {title}
+        </Text>
+        {subtitle ? <Text style={type.small}>{subtitle}</Text> : null}
+      </View>
+      {meta ? <Text style={styles.meta}>{meta}</Text> : null}
     </Pressable>
   );
 }
@@ -36,13 +49,22 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    gap: 14,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
   },
   pressed: { backgroundColor: colors.primarySoft },
-  text: { flex: 1 },
-  title: { fontSize: 16, color: colors.text, fontWeight: '500' },
-  doneTitle: { color: colors.muted, textDecorationLine: 'line-through' },
-  subtitle: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  box: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: colors.faint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boxDisabled: { borderStyle: 'dashed' },
+  text: { flex: 1, gap: 1 },
+  doneTitle: { color: colors.faint, textDecorationLine: 'line-through' },
+  meta: { ...type.small, fontFamily: type.num.fontFamily },
 });

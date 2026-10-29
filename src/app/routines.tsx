@@ -16,7 +16,7 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
-import { colors, radius } from '../theme';
+import { colors, fonts, kinds, radius } from '../theme';
 
 export default function RoutinesScreen() {
   const { ready, today, routines, updateRoutines } = useStore();
@@ -41,7 +41,7 @@ export default function RoutinesScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {routines.length === 0 ? (
           <View style={styles.welcome}>
-            <Ionicons name="repeat-outline" size={40} color={colors.primary} />
+            <Ionicons name="repeat-outline" size={40} color={kinds.routines.color} />
             <Text style={styles.welcomeTitle}>Your own routines</Text>
             <Text style={styles.welcomeText}>
               Anything you want to do regularly: stretching, reading, cleaning, taking vitamins. Tap an idea to add it, or
@@ -76,6 +76,7 @@ export default function RoutinesScreen() {
                   <View key={r.id}>
                     {i > 0 && <Divider />}
                     <CheckRow
+                      tint={kinds.routines.color}
                       title={r.name}
                       subtitle={routineSubtitle(r, today)}
                       done={isDoneOn(r, today)}
@@ -158,9 +159,9 @@ export default function RoutinesScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 110 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, padding: 24, alignItems: 'center', marginTop: 12 },
-  welcomeTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 12 },
-  welcomeText: { fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 8 },
+  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
+  welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
+  welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 8 },
   idea: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -172,31 +173,31 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 8,
   },
-  ideaName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  ideaSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
+  ideaName: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.text },
+  ideaSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius,
+    borderRadius: 999,
     paddingVertical: 14,
     alignSelf: 'stretch',
     alignItems: 'center',
     marginTop: 16,
   },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  emptyText: { padding: 16, color: colors.muted, fontSize: 15 },
+  primaryText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
+  emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
   ideaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   otherRow: { paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
   pressed: { backgroundColor: colors.primarySoft },
-  otherName: { fontSize: 16, color: colors.text },
-  otherSub: { fontSize: 13, color: colors.muted, marginTop: 2 },
-  hint: { textAlign: 'center', color: colors.muted, fontSize: 13, marginTop: 20 },
+  otherName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+  otherSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+  hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 24,
     width: 60,
     height: 60,
-    borderRadius: 30,
+    borderRadius: 18,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

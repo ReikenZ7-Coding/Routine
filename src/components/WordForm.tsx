@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import type { Word } from '../lib/chinese';
-import { colors, radius } from '../theme';
+import { colors, fonts, radius } from '../theme';
 
 export interface WordFields {
   hanzi: string;
@@ -108,26 +108,26 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     maxHeight: '90%',
   },
-  heading: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  label: { fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
+  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
+  label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 16,
+    fontFamily: fonts.body, fontSize: 16,
     color: colors.text,
   },
-  hanzi: { fontSize: 24 },
+  hanzi: { fontFamily: fonts.body, fontSize: 24 },
   saveButton: {
     backgroundColor: colors.primary,
-    borderRadius: radius,
+    borderRadius: 999,
     paddingVertical: 14,
     alignItems: 'center',
     marginTop: 24,
   },
-  saveText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  saveText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
   deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: colors.danger, fontSize: 15, fontWeight: '600' },
+  deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
 });
