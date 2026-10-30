@@ -1,5 +1,5 @@
 // Artwork for the glass looks: the rendered light behind every screen, and scenes for cards and focus sounds.
-import { Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useTheme } from '../theme';
 
@@ -8,6 +8,8 @@ const BACKDROPS = {
   lavender: require('../../assets/art/lavender-bg.jpg'),
   stone: require('../../assets/art/stone-bg.jpg'),
 };
+// A light veil over each backdrop so white text keeps its contrast where the light is brightest.
+const SCRIMS = { lavender: 'rgba(52,30,140,0.16)', stone: 'rgba(16,16,10,0.3)' };
 const PORTALS: Record<string, number> = {
   dusk: require('../../assets/art/portal-dusk.jpg'),
   rain: require('../../assets/art/portal-rain.jpg'),
@@ -19,7 +21,12 @@ const PORTALS: Record<string, number> = {
 export function Ambience() {
   const { name } = useTheme();
   if (name === 'paper') return null;
-  return <Image source={BACKDROPS[name]} style={StyleSheet.absoluteFill} resizeMode="cover" />;
+  return (
+    <>
+      <Image source={BACKDROPS[name]} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: SCRIMS[name] }]} />
+    </>
+  );
 }
 
 /** A soft white magnolia with leaves (Stone look decoration). */

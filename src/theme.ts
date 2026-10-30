@@ -35,6 +35,10 @@ export interface Palette {
   blurTint: 'light' | 'dark';
   /** Coloured glow under the main buttons. */
   glow: string;
+  /** Liquid glass light: the bright top rim, the specular shine, and the colour caught along the bottom edge. */
+  rim: string;
+  shine: string;
+  edgeGlow: string;
 }
 
 interface KindStyle {
@@ -56,7 +60,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       input: 'rgba(255,255,255,0.18)',
       text: '#FFFFFF',
       muted: 'rgba(255,255,255,0.78)',
-      faint: 'rgba(255,255,255,0.5)',
+      faint: 'rgba(255,255,255,0.62)',
       border: 'rgba(255,255,255,0.28)',
       primary: '#FFFFFF',
       onPrimary: '#5B43D6',
@@ -68,6 +72,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       glassFill: ['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.08)'],
       blurTint: 'light',
       glow: '#E9A8FF',
+      rim: 'rgba(255,255,255,0.85)',
+      shine: 'rgba(255,255,255,0.28)',
+      edgeGlow: 'rgba(255,170,236,0.22)',
     },
     kinds: {
       routines: { color: '#5B43D6', soft: 'rgba(91,67,214,0.25)', label: 'Routines' },
@@ -88,7 +95,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       input: 'rgba(255,255,255,0.08)',
       text: '#F2EEE3',
       muted: 'rgba(242,238,227,0.66)',
-      faint: 'rgba(242,238,227,0.38)',
+      faint: 'rgba(242,238,227,0.48)',
       border: 'rgba(242,238,227,0.14)',
       primary: '#E4D6B4',
       onPrimary: '#2E2D24',
@@ -100,6 +107,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       glassFill: ['rgba(255,250,235,0.16)', 'rgba(255,250,235,0.03)'],
       blurTint: 'dark',
       glow: '#E8D3A0',
+      rim: 'rgba(255,246,222,0.38)',
+      shine: 'rgba(255,248,230,0.12)',
+      edgeGlow: 'rgba(232,211,160,0.10)',
     },
     kinds: {
       routines: { color: '#A9B9D3', soft: 'rgba(169,185,211,0.18)', label: 'Routines' },
@@ -132,6 +142,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       glassFill: ['#FFFFFF', '#FFFFFF'],
       blurTint: 'light',
       glow: 'transparent',
+      rim: '#E1E4E0',
+      shine: 'transparent',
+      edgeGlow: 'transparent',
     },
     kinds: {
       routines: { color: '#2F54EB', soft: '#E5EAFD', label: 'Routines' },

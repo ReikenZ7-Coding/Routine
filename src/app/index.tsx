@@ -201,16 +201,12 @@ export default function TodayScreen() {
             </View>
           )}
           <View style={styles.topButtons}>
-            <Pressable onPress={() => setPanel('stats')} accessibilityLabel="Your week">
-              <Glass radius={21} style={styles.roundButton}>
-                <Ionicons name="stats-chart" size={16} color={colors.text} />
-              </Glass>
-            </Pressable>
-            <Pressable onPress={() => setPanel('settings')} accessibilityLabel="Settings">
-              <Glass radius={21} style={styles.roundButton}>
-                <Ionicons name="settings-outline" size={18} color={colors.text} />
-              </Glass>
-            </Pressable>
+            <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('stats')} accessibilityLabel="Your week">
+              <Ionicons name="stats-chart" size={16} color={colors.text} />
+            </Glass>
+            <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('settings')} accessibilityLabel="Settings">
+              <Ionicons name="settings-outline" size={18} color={colors.text} />
+            </Glass>
           </View>
         </View>
 
@@ -708,21 +704,30 @@ function Shortcut({
   // Lavender: white icons on a tinted glass bubble. Stone: muted glass with a gold icon. Paper: solid colour.
   const iconColor = name === 'stone' ? (filled ? colors.onPrimary : colors.primary) : '#FFFFFF';
   const tint = filled ? (name === 'stone' ? colors.primary : color) : name === 'lavender' ? `${color}66` : undefined;
-  return (
-    <Pressable style={styles.shortcut} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
-      {glass ? (
-        <Glass radius={28} tint={tint} style={styles.shortcutCircle}>
-          <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color={iconColor} />
-        </Glass>
-      ) : (
-        <View style={[styles.shortcutCircle, { backgroundColor: color }, filled && styles.shortcutFilled]}>
-          <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color="#FFFFFF" />
-        </View>
-      )}
+  const icons = <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color={glass ? iconColor : '#FFFFFF'} />;
+  const caption = (
+    <>
       {badge ? <Text style={styles.shortcutBadge}>{badge}</Text> : null}
       <Text style={styles.shortcutLabel} numberOfLines={2}>
         {label}
       </Text>
+    </>
+  );
+  // Glass drops sit inside the Shortcuts glass panel, so they share its blur and read as one sheet.
+  if (glass) {
+    return (
+      <View style={styles.shortcut}>
+        <Glass radius={28} tint={tint} style={styles.shortcutCircle} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
+          {icons}
+        </Glass>
+        {caption}
+      </View>
+    );
+  }
+  return (
+    <Pressable style={styles.shortcut} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
+      <View style={[styles.shortcutCircle, { backgroundColor: color }, filled && styles.shortcutFilled]}>{icons}</View>
+      {caption}
     </Pressable>
   );
 }
