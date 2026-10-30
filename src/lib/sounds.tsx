@@ -32,7 +32,14 @@ interface SoundState {
   started: boolean;
   sheetOpen: boolean;
   setSheetOpen: (open: boolean) => void;
+  /** Play a different sound picked at random. */
+  shuffle: () => void;
+  /** Sleep timer in minutes (0 = off); cycling steps through off, 15, 30 and 60. */
+  timer: number;
+  cycleTimer: () => void;
 }
+
+export const TIMER_STEPS = [0, 15, 30, 60];
 
 const SoundContext = createContext<SoundState | null>(null);
 
@@ -40,6 +47,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const [index, setIndex] = useState(0);
   const [started, setStarted] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [timer, setTimer] = useState(0);
   const player = useAudioPlayer(SOUNDS[0].source);
   const status = useAudioPlayerStatus(player);
 
@@ -64,6 +72,16 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     [index, player],
   );
 
+  // The sleep timer pauses the sound when it runs out, then switches itself off.
+  useEffect(() => {
+    if (!timer) return;
+    const id = setTimeout(() => {
+      player.pause();
+      setTimer(0);
+    }, timer * 60_000);
+    return () => clearTimeout(id);
+  }, [timer, player]);
+
   const value = useMemo<SoundState>(
     () => ({
       current: SOUNDS[index],
@@ -77,8 +95,11 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       started,
       sheetOpen,
       setSheetOpen,
+      shuffle: () => select(index + 1 + Math.floor(Math.random() * (SOUNDS.length - 1)), true),
+      timer,
+      cycleTimer: () => setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]),
     }),
-    [index, status.playing, status.currentTime, status.duration, select, player, started, sheetOpen],
+    [index, status.playing, status.currentTime, status.duration, select, player, started, sheetOpen, timer],
   );
 
   return <SoundContext.Provider value={value}>{children}</SoundContext.Provider>;

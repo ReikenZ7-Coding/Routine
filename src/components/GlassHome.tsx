@@ -82,7 +82,7 @@ function LavenderHome(p: Props) {
       </Text>
 
       <View style={styles.searchRow}>
-        <Glass radius={18} style={styles.search} onPress={p.onAdd} accessibilityLabel="Quick add">
+        <Glass radius={18} style={styles.search} onPress={p.onAdd} accessibilityLabel="Add a routine, to-do or word">
           <Ionicons name="add-circle-outline" size={18} color={colors.muted} />
           <Text style={styles.searchText}>Add a routine, to-do, word…</Text>
         </Glass>

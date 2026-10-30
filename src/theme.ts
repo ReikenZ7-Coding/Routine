@@ -81,7 +81,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       glow: '#CD94E6',
       rim: 'rgba(255,255,255,0.4)',
       accent: '#F270C8',
-      selected: '#938DEE',
+      selected: '#6E5FD3',
       onSelected: '#FFFFFF',
       shadow: '0px 10px 30px rgba(35,58,140,0.35)',
       shine: 'rgba(255,255,255,0.12)',

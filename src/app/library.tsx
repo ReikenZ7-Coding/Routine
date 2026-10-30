@@ -40,10 +40,11 @@ export default function LibraryScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder={shelf === 'routines' ? 'Search routines' : 'Search groceries'}
-            placeholderTextColor={colors.faint}
+            placeholderTextColor={colors.muted}
+            accessibilityLabel={shelf === 'routines' ? 'Search routines' : 'Search groceries'}
           />
           {query ? (
-            <Pressable accessibilityRole="button" onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+            <Pressable accessibilityRole="button" onPress={() => setQuery('')} style={styles.clear} accessibilityLabel="Clear search">
               <Ionicons name="close-circle" size={17} color={colors.muted} />
             </Pressable>
           ) : null}
@@ -78,6 +79,7 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     top: { paddingHorizontal: 16, gap: 14 },
     search: {
       flexDirection: 'row',
+      minHeight: 48,
       alignItems: 'center',
       gap: 8,
       backgroundColor: colors.input,
@@ -85,20 +87,21 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       borderColor: colors.cardBorder,
       borderRadius: 999,
       paddingHorizontal: 14,
-      height: 44,
     },
-    searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 15, color: colors.text, height: 44 },
+    searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text, height: 48 },
     pills: { flexDirection: 'row', gap: 8 },
+    clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -12 },
     pill: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
+      paddingHorizontal: 18,
+      minHeight: 44,
+      justifyContent: 'center',
       borderRadius: 999,
       borderWidth: 1,
       borderColor: colors.cardBorder,
       backgroundColor: colors.card,
     },
     pillActive: { backgroundColor: colors.selected, borderColor: colors.selected },
-    pillText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
+    pillText: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.text },
     pillTextActive: { color: colors.onSelected },
-    pillCount: { fontFamily: fonts.mono, fontSize: 12, opacity: 0.7 },
+    pillCount: { fontFamily: fonts.mono, fontSize: 13, opacity: 0.7 },
   });
