@@ -97,8 +97,8 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       borderColor: colors.cardBorder,
       backgroundColor: colors.card,
     },
-    pillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    pillActive: { backgroundColor: colors.selected, borderColor: colors.selected },
     pillText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
-    pillTextActive: { color: colors.onPrimary },
+    pillTextActive: { color: colors.onSelected },
     pillCount: { fontFamily: fonts.mono, fontSize: 12, opacity: 0.7 },
   });

@@ -145,8 +145,8 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       borderColor: colors.border,
       justifyContent: 'center',
     },
-    actionActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+    actionActive: { backgroundColor: colors.selected, borderColor: colors.selected },
     actionText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-    actionTextActive: { color: colors.onPrimary },
+    actionTextActive: { color: colors.onSelected },
     hint: { textAlign: 'center', marginTop: 20 },
   });

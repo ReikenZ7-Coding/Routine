@@ -37,6 +37,11 @@ export interface Palette {
   glow: string;
   /** Liquid glass light: the bright top rim, the specular shine, and the colour caught along the bottom edge. */
   rim: string;
+  /** Progress bars, sliders and other small bright accents. */
+  accent: string;
+  /** Selected pills and chips, and their label colour. */
+  selected: string;
+  onSelected: string;
   /** Deep, soft drop shadow that lifts glass off the backdrop (CSS box-shadow syntax). */
   shadow: string;
   shine: string;
@@ -54,30 +59,33 @@ export type Kind = 'routines' | 'gym' | 'chinese' | 'groceries' | 'calendar' | '
 const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindStyle> }> = {
   lavender: {
     colors: {
-      gradient: ['#8E7CEB', '#6A52DB', '#7A5CE3'],
-      bg: '#7A62E0',
-      card: 'rgba(70,40,180,0.24)',
-      cardBorder: 'rgba(255,255,255,0.3)',
-      sheet: '#6E57D8',
-      input: 'rgba(70,40,180,0.24)',
+      gradient: ['#B4A8EE', '#8494E3', '#3D5FB9'],
+      bg: '#8494E3',
+      card: 'rgba(40,70,160,0.32)',
+      cardBorder: 'rgba(255,255,255,0.24)',
+      sheet: '#5B6BBC',
+      input: 'rgba(40,70,160,0.32)',
       text: '#FFFFFF',
-      muted: 'rgba(255,255,255,0.86)',
-      faint: 'rgba(255,255,255,0.72)',
+      muted: 'rgba(255,255,255,0.88)',
+      faint: 'rgba(255,255,255,0.74)',
       border: 'rgba(255,255,255,0.28)',
       primary: '#FFFFFF',
-      onPrimary: '#5B43D6',
-      primarySoft: 'rgba(255,255,255,0.22)',
+      onPrimary: '#4A55B8',
+      primarySoft: 'rgba(147,141,238,0.6)',
       danger: '#FFD1DC',
-      backdrop: 'rgba(40,24,110,0.35)',
+      backdrop: 'rgba(20,30,80,0.4)',
       tabBar: 'rgba(255,255,255,0.18)',
       statusBar: 'light',
-      glassFill: ['rgba(72,40,190,0.55)', 'rgba(40,18,140,0.6)'],
+      glassFill: ['rgba(60,82,184,0.6)', 'rgba(32,52,112,0.64)'],
       blurTint: 'default',
-      glow: '#E9A8FF',
-      rim: 'rgba(255,255,255,0.7)',
-      shadow: '0px 10px 30px rgba(40,16,130,0.32)',
-      shine: 'rgba(255,255,255,0.14)',
-      edgeGlow: 'rgba(255,170,236,0.22)',
+      glow: '#CD94E6',
+      rim: 'rgba(255,255,255,0.4)',
+      accent: '#F270C8',
+      selected: '#938DEE',
+      onSelected: '#FFFFFF',
+      shadow: '0px 10px 30px rgba(35,58,140,0.35)',
+      shine: 'rgba(255,255,255,0.12)',
+      edgeGlow: 'rgba(205,148,230,0.22)',
     },
     kinds: {
       routines: { color: '#5B43D6', soft: 'rgba(91,67,214,0.25)', label: 'Routines' },
@@ -90,30 +98,33 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
   },
   stone: {
     colors: {
-      gradient: ['#55553F', '#3E3E30', '#2A2A22'],
-      bg: '#3E3E30',
-      card: 'rgba(255,255,255,0.08)',
-      cardBorder: 'rgba(255,255,255,0.2)',
-      sheet: '#393A2D',
-      input: 'rgba(255,255,255,0.08)',
-      text: '#F2EEE3',
-      muted: 'rgba(242,238,227,0.66)',
-      faint: 'rgba(242,238,227,0.6)',
+      gradient: ['#676755', '#4B4B44', '#31332B'],
+      bg: '#4B4B44',
+      card: 'rgba(255,250,235,0.08)',
+      cardBorder: 'rgba(255,250,235,0.14)',
+      sheet: '#3F403A',
+      input: 'rgba(255,250,235,0.08)',
+      text: '#FFFBE9',
+      muted: '#C9C2B1',
+      faint: 'rgba(255,251,233,0.6)',
       border: 'rgba(242,238,227,0.14)',
-      primary: '#E4D6B4',
+      primary: '#E6D6B3',
       onPrimary: '#2E2D24',
-      primarySoft: 'rgba(242,238,227,0.12)',
+      primarySoft: 'rgba(255,251,233,0.12)',
       danger: '#E7A08F',
       backdrop: 'rgba(0,0,0,0.45)',
       tabBar: 'rgba(30,30,24,0.6)',
       statusBar: 'light',
-      glassFill: ['rgba(255,250,235,0.16)', 'rgba(255,250,235,0.03)'],
+      glassFill: ['rgba(255,250,235,0.10)', 'rgba(255,250,235,0.04)'],
       blurTint: 'dark',
-      glow: '#E8D3A0',
-      rim: 'rgba(255,246,222,0.5)',
-      shadow: '0px 12px 34px rgba(0,0,0,0.4)',
-      shine: 'rgba(255,248,230,0.12)',
-      edgeGlow: 'rgba(232,211,160,0.10)',
+      glow: '#E6D6B3',
+      rim: '#93917C',
+      accent: '#E6D6B3',
+      selected: '#E6D6B3',
+      onSelected: '#2E2D24',
+      shadow: '0px 6px 18px rgba(0,0,0,0.18)',
+      shine: 'rgba(255,248,230,0.08)',
+      edgeGlow: 'rgba(230,214,179,0.06)',
     },
     kinds: {
       routines: { color: '#A9B9D3', soft: 'rgba(169,185,211,0.18)', label: 'Routines' },
@@ -147,6 +158,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       blurTint: 'light',
       glow: 'transparent',
       rim: '#E1E4E0',
+      accent: '#141716',
+      selected: '#141716',
+      onSelected: '#FFFFFF',
       shadow: '0px 1px 2px rgba(0,0,0,0.04)',
       shine: 'transparent',
       edgeGlow: 'transparent',
@@ -178,7 +192,7 @@ const FONTS = {
 
 const DISPLAY: Record<ThemeName, { display: string; displayMedium: string }> = {
   lavender: { display: 'DMSans_700Bold', displayMedium: 'DMSans_700Bold' },
-  stone: { display: 'DMSans_400Regular', displayMedium: 'DMSans_500Medium' },
+  stone: { display: 'DMSans_300Light', displayMedium: 'DMSans_400Regular' },
   paper: { display: 'BricolageGrotesque_700Bold', displayMedium: 'BricolageGrotesque_500Medium' },
 };
 

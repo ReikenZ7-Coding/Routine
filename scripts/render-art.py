@@ -70,32 +70,31 @@ def save(img, name, quality=88):
 
 
 def lavender_backdrop():
-    """A multi-point mesh: hot pink, sky blue, peach and deep indigo light pooling over violet."""
-    img = gradient([(0, hexc('#8E7CEB')), (0.5, hexc('#6A52DB')), (1, hexc('#7A5CE3'))])
-    glow(img, W * 0.98, H * 0.06, W * 0.7, hexc('#FF8FE0'), 0.9)
-    glow(img, W * 0.0, H * 0.32, W * 0.62, hexc('#6FB4FF'), 0.8)
-    glow(img, W * 0.55, H * 0.5, W * 0.45, hexc('#B86BFF'), 0.55)
-    glow(img, W * 0.95, H * 0.72, W * 0.7, hexc('#3B20A8'), 0.75)
-    glow(img, W * 0.05, H * 0.9, W * 0.6, hexc('#FFAE9A'), 0.55)
-    glow(img, W * 0.2, H * 0.02, W * 0.35, hexc('#FFE6FB'), 0.5)
-    img = 1 - (1 - img) * (1 - beams([(-200, 260, 0.18), (140, 90, 0.14), (330, 40, 0.12)], 28, 40))
-    img = bokeh(img, 26, 18, 70, (255, 235, 255), 0.2, 6)
-    img = bokeh(img, 60, 3, 8, (255, 255, 255), 0.5, 1.2)
-    save(grain(img, 0.018), 'lavender-bg')
+    """Measured from the reference: a light lavender sky that deepens through periwinkle into cobalt,
+    with orchid and a touch of hot pink in the light."""
+    img = gradient([(0, hexc('#B4A8EE')), (0.3, hexc('#8494E3')), (0.62, hexc('#5B6BBC')), (1, hexc('#2C4790'))], tilt=0.08)
+    glow(img, W * 0.1, H * 0.02, W * 0.6, hexc('#DBDCFD'), 0.6)
+    glow(img, W * 1.0, H * 0.12, W * 0.55, hexc('#CD94E6'), 0.65)
+    glow(img, W * 0.95, H * 0.45, W * 0.4, hexc('#F270C8'), 0.22)
+    glow(img, W * 0.0, H * 0.55, W * 0.5, hexc('#8494E3'), 0.35)
+    glow(img, W * 0.5, H * 1.05, W * 0.8, hexc('#233A73'), 0.6)
+    img = 1 - (1 - img) * (1 - beams([(-200, 260, 0.12), (140, 90, 0.09)], 24, 50))
+    img = bokeh(img, 22, 18, 64, (235, 235, 255), 0.16, 6)
+    img = bokeh(img, 50, 3, 7, (255, 255, 255), 0.45, 1.2)
+    save(grain(img, 0.016), 'lavender-bg')
 
 
 def stone_backdrop():
-    """Olive mesh: warm sunlight top left, cool sage on the left, amber low right, deep moss shadow."""
-    img = gradient([(0, hexc('#5E5C46')), (0.4, hexc('#3F3E31')), (1, hexc('#1B1B16'))], tilt=0.2)
-    glow(img, -W * 0.1, -H * 0.05, W * 1.0, hexc('#F7EAC6'), 0.5)
-    glow(img, W * 0.0, H * 0.45, W * 0.55, hexc('#8FA27A'), 0.4)
-    glow(img, W * 1.0, H * 0.62, W * 0.6, hexc('#B48A4C'), 0.38)
-    glow(img, W * 0.5, H * 1.1, W * 0.9, hexc('#0A0A07'), 0.55)
+    """Measured from the reference: warm olive-grey, sunlit at the top left, falling into shadow.
+    All warm; no cool colours."""
+    img = gradient([(0, hexc('#676755')), (0.45, hexc('#4B4B44')), (1, hexc('#31332B'))], tilt=0.2)
+    glow(img, -W * 0.1, -H * 0.05, W * 1.0, hexc('#F3E6C4'), 0.45)
+    glow(img, W * 0.5, H * 1.1, W * 0.9, hexc('#1B1A16'), 0.5)
     fade = np.clip(1.15 - np.linspace(0, 1, H) * 1.1, 0, 1)[:, None, None]  # sunlight fades lower down
-    light = beams([(-300, 300, 0.30), (150, 120, 0.24), (380, 60, 0.18), (560, 26, 0.14)], 32, 50) * fade
+    light = beams([(-300, 300, 0.28), (150, 120, 0.22), (380, 60, 0.16), (560, 26, 0.12)], 32, 50) * fade
     img = 1 - (1 - img) * (1 - light * hexc('#FFF1CF'))
-    img = bokeh(img, 10, 8, 26, (255, 240, 205), 0.12, 4, ymax=0.5)
-    save(grain(img, 0.022), 'stone-bg')
+    img = bokeh(img, 8, 8, 24, (255, 240, 205), 0.1, 4, ymax=0.5)
+    save(grain(img, 0.02), 'stone-bg')
 
 
 def portal(name, top, mid, horizon, glow_color, figure, size=1000):

@@ -24,8 +24,8 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     borderColor: colors.cardBorder,
     backgroundColor: colors.card,
   },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  chipActive: { backgroundColor: colors.selected, borderColor: colors.selected },
   pressed: { backgroundColor: colors.primarySoft },
   chipText: { color: colors.text, fontSize: 14, fontFamily: fonts.bodyMedium },
-  chipTextActive: { color: colors.onPrimary },
+  chipTextActive: { color: colors.onSelected },
 });

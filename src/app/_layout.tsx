@@ -3,6 +3,7 @@ import { BricolageGrotesque_500Medium } from '@expo-google-fonts/bricolage-grote
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
 import { DMMono_400Regular } from '@expo-google-fonts/dm-mono/400Regular';
 import { DMMono_500Medium } from '@expo-google-fonts/dm-mono/500Medium';
+import { DMSans_300Light } from '@expo-google-fonts/dm-sans/300Light';
 import { DMSans_400Regular } from '@expo-google-fonts/dm-sans/400Regular';
 import { DMSans_500Medium } from '@expo-google-fonts/dm-sans/500Medium';
 import { DMSans_700Bold } from '@expo-google-fonts/dm-sans/700Bold';
@@ -41,6 +42,7 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     BricolageGrotesque_500Medium,
     BricolageGrotesque_700Bold,
+    DMSans_300Light,
     DMSans_400Regular,
     DMSans_500Medium,
     DMSans_700Bold,

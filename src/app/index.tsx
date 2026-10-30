@@ -820,7 +820,7 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
     },
     heroActionText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
     heroTrack: { flex: 1, flexDirection: 'row', height: 6, borderRadius: 3, backgroundColor: colors.primarySoft, overflow: 'hidden' },
-    heroFill: { backgroundColor: colors.text, borderRadius: 3 },
+    heroFill: { backgroundColor: colors.accent, borderRadius: 3 },
     shortcuts: { gap: 12, paddingVertical: 14, paddingHorizontal: 14 },
     shortcut: { width: 64, alignItems: 'center', gap: 6 },
     shortcutCircle: {
@@ -845,7 +845,7 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
     shortcutLabel: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 15, color: colors.text, textAlign: 'center' },
     status: { gap: 8, marginTop: 20 },
     track: { flexDirection: 'row', height: 3, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
-    fill: { backgroundColor: colors.text },
+    fill: { backgroundColor: colors.accent },
     timeline: { paddingVertical: 6 },
     rail: { position: 'absolute', left: 88, top: 24, bottom: 24, width: 2, backgroundColor: colors.border },
     tRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingLeft: 12, paddingRight: 16 },
