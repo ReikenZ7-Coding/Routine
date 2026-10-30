@@ -18,6 +18,8 @@ for (const [tag, src] of scripts) {
   });
   // And the focus sounds.
   js = js.replace(/"\/(assets\/[^"]*\.wav)"/g, (_, p) => `"data:audio/wav;base64,${readFileSync(join(dir, p)).toString('base64')}"`);
+  // And the rendered artwork.
+  js = js.replace(/"\/(assets\/[^"]*\.jpg)"/g, (_, p) => `"data:image/jpeg;base64,${readFileSync(join(dir, p)).toString('base64')}"`);
   inlined += `<script>${js.replace(/<\/script/gi, '<\\/script')}</script>`;
 }
 
