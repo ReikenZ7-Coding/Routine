@@ -10,7 +10,7 @@ const BACKDROPS = {
   stone: require('../../assets/art/stone-bg.jpg'),
 };
 // A light veil over each backdrop so white text keeps its contrast where the light is brightest.
-const SCRIMS = { lavender: 'rgba(30,40,110,0.06)', stone: 'rgba(16,16,10,0.1)' };
+const SCRIMS = { lavender: 'rgba(30,40,110,0.4)', stone: 'rgba(16,16,10,0.28)' };
 // Headers sit straight on the backdrop, where its light is brightest; a deeper veil up top keeps them readable.
 const TOP_VEILS: Record<'lavender' | 'stone', [string, string]> = {
   lavender: ['rgba(44,56,150,0.66)', 'rgba(44,56,150,0)'],

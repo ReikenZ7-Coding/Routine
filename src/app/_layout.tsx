@@ -15,7 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { BlurTargetView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type ComponentRef, type ReactNode, useEffect, useRef } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ambience } from '../components/Art';
 import { BlurTargetContext } from '../components/Glass';
@@ -37,6 +37,15 @@ const TABS: { name: string; title: string; icon: IconName; iconActive: IconName 
   { name: 'chinese', title: 'Chinese', icon: 'language-outline', iconActive: 'language' },
   { name: 'library', title: 'Library', icon: 'library-outline', iconActive: 'library' },
 ];
+
+// Keyboard focus on web: a white ring with a dark halo reads on every look's background.
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const focus = document.createElement('style');
+  focus.textContent =
+    '[role="button"]:focus-visible,[role="checkbox"]:focus-visible,[role="tab"]:focus-visible,[role="link"]:focus-visible,input:focus-visible,textarea:focus-visible' +
+    '{outline:2px solid #FFFFFF !important;outline-offset:2px;box-shadow:0 0 0 5px rgba(20,22,48,0.85) !important}';
+  document.head.appendChild(focus);
+}
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -158,7 +167,9 @@ function ScreenFrame({ gradient, fade, children }: { gradient: [string, string, 
 /** Keeps scheduled notifications in step with the routines' reminder times. */
 function ReminderSync() {
   const { ready, routines } = useStore();
-  const key = JSON.stringify(routines.map((r) => [r.name, r.repeat, r.reminder, r.target, r.repeat.kind === 'once' && r.doneDates.length > 0]));
+  const key = JSON.stringify(
+    routines.map((r) => [r.name, r.repeat, r.reminder, r.target, r.repeat.kind === 'once' && r.doneDates.length > 0]),
+  );
   useEffect(() => {
     if (ready) syncReminders(routines).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps

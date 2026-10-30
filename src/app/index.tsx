@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient as ExpoGradient } from 'expo-linear-gradient';
 import { Bloom, SceneArt } from '../components/Art';
@@ -25,17 +25,7 @@ import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/devic
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { itemsFor, toggleItem } from '../lib/inbox';
 import { moodFace } from '../lib/journal';
-import {
-  type Routine,
-  countOn,
-  iconFor,
-  isDoneOn,
-  isScheduled,
-  isSkipped,
-  sortByTime,
-  tapRoutine,
-  toggleSkip,
-} from '../lib/routines';
+import { type Routine, countOn, iconFor, isDoneOn, isScheduled, isSkipped, sortByTime, tapRoutine, toggleSkip } from '../lib/routines';
 import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
 import { useSounds } from '../lib/sounds';
 import { newId, useStore } from '../lib/store';
@@ -122,7 +112,13 @@ export default function TodayScreen() {
   const busy = useMemo(() => new Set(Object.keys(events)), [events]);
   const moodFor = useCallback((d: string) => moodFace(journal[d]?.mood), [journal]);
 
-  if (!ready) return null;
+  if (!ready) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.text} accessibilityLabel="Loading your day" />
+      </View>
+    );
+  }
 
   const isToday = selected === today;
   const isPast = selected < today;
@@ -154,8 +150,9 @@ export default function TodayScreen() {
   const chineseDone = practice.minutes >= chinese.target;
   const showChinese = !isPast || practice.minutes > 0;
   const toReview = dueWords(chinese, today).length;
-  const dayGroceries = (isPast ? groceries.filter((g) => g.lastBought === selected) : groceries.filter((g) => isOnList(g, selected)))
-    .sort((a, b) => Number(boughtOn(a, selected)) - Number(boughtOn(b, selected)) || a.name.localeCompare(b.name));
+  const dayGroceries = (isPast ? groceries.filter((g) => g.lastBought === selected) : groceries.filter((g) => isOnList(g, selected))).sort(
+    (a, b) => Number(boughtOn(a, selected)) - Number(boughtOn(b, selected)) || a.name.localeCompare(b.name),
+  );
 
   // Progress: every routine, to-do and grocery item counts once, the workout and practice once each.
   const planned = dayRoutines.filter((r) => !isSkipped(r, selected));
@@ -193,13 +190,16 @@ export default function TodayScreen() {
             name={settings.name || 'friend'}
             greeting={greeting(Math.floor(now / 60))}
             tagline={theme.name === 'stone' ? 'Breathe in calm. One thing at a time.' : 'Small steps, bright days.'}
-            dateLabel={isToday ? `Today, ${date.getDate()} ${date.toLocaleDateString('en', { month: 'long' })}` : friendlyDate(selected, today)}
+            dateLabel={
+              isToday ? `Today, ${date.getDate()} ${date.toLocaleDateString('en', { month: 'long' })}` : friendlyDate(selected, today)
+            }
             calendarOpen={calendarOpen}
             onToggleCalendar={() => setCalendarOpen((o) => !o)}
             calendar={
               <View>
                 <View style={styles.dateRow}>
-                  <Pressable accessibilityRole="button"
+                  <Pressable
+                    accessibilityRole="button"
                     style={styles.dateTitle}
                     onPress={() => setExpanded((e) => !e)}
                     accessibilityLabel={expanded ? 'Show week' : 'Show month'}
@@ -242,7 +242,12 @@ export default function TodayScreen() {
                 : {
                     eyebrow: isToday ? "Today's progress" : friendlyDate(selected, today),
                     title: total === 0 ? 'A clear day' : done === total ? 'All done. Nice work!' : `${done} of ${total} done`,
-                    meta: total === 0 ? 'Add a routine or a to-do to plan it' : done === total ? 'Enjoy the rest of your day' : 'Keep going, one thing at a time',
+                    meta:
+                      total === 0
+                        ? 'Add a routine or a to-do to plan it'
+                        : done === total
+                          ? 'Enjoy the rest of your day'
+                          : 'Keep going, one thing at a time',
                     action: 'Add a routine',
                     icon: 'add',
                     onAction: () => edit(),
@@ -250,11 +255,24 @@ export default function TodayScreen() {
             }
             categories={[
               pinned[0]
-                ? { label: pinned[0].name, icon: iconFor(pinned[0]) as 'repeat', active: isDoneOn(pinned[0], selected), onPress: () => tap(pinned[0]) }
-                : { label: 'Routines', icon: 'repeat', onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'routines' } }) },
+                ? {
+                    label: pinned[0].name,
+                    icon: iconFor(pinned[0]) as 'repeat',
+                    active: isDoneOn(pinned[0], selected),
+                    onPress: () => tap(pinned[0]),
+                  }
+                : {
+                    label: 'Routines',
+                    icon: 'repeat',
+                    onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'routines' } }),
+                  },
               { label: 'Gym', icon: 'barbell', active: gymDone, onPress: () => router.navigate('/gym') },
               { label: 'Chinese', icon: 'language', active: chineseDone, onPress: () => router.navigate('/chinese') },
-              { label: 'Groceries', icon: 'basket', onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }) },
+              {
+                label: 'Groceries',
+                icon: 'basket',
+                onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
+              },
               { label: 'Sounds', icon: sounds.playing ? 'pause' : 'musical-notes', onPress: () => sounds.setSheetOpen(true) },
             ]}
             items={[
@@ -287,171 +305,177 @@ export default function TodayScreen() {
           />
         ) : (
           <>
-          <View style={styles.top}>
-            <View style={styles.flex}>
-              <Text style={styles.greet}>{greeting(Math.floor(now / 60))},</Text>
-              <Text style={styles.name} numberOfLines={1}>
-                {settings.name || 'friend'}
-                {theme.name === 'lavender' ? ' 👋' : ''}
-              </Text>
-              {theme.glass && (
-                <Text style={styles.tagline}>
-                  {theme.name === 'stone' ? 'Breathe in calm. One thing at a time.' : 'Small steps, bright days. ✨'}
+            <View style={styles.top}>
+              <View style={styles.flex}>
+                <Text style={styles.greet}>{greeting(Math.floor(now / 60))},</Text>
+                <Text style={styles.name} numberOfLines={1}>
+                  {settings.name || 'friend'}
+                  {theme.name === 'lavender' ? ' 👋' : ''}
                 </Text>
+                {theme.glass && (
+                  <Text style={styles.tagline}>
+                    {theme.name === 'stone' ? 'Breathe in calm. One thing at a time.' : 'Small steps, bright days. ✨'}
+                  </Text>
+                )}
+              </View>
+              {theme.name === 'stone' && (
+                <View style={styles.bloom} pointerEvents="none">
+                  <Bloom size={80} />
+                </View>
+              )}
+              <View style={styles.topButtons}>
+                <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('stats')} accessibilityLabel="Your week">
+                  <Ionicons name="stats-chart" size={16} color={colors.text} />
+                </Glass>
+                <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('settings')} accessibilityLabel="Settings">
+                  <Ionicons name="settings-outline" size={18} color={colors.text} />
+                </Glass>
+              </View>
+            </View>
+
+            <View style={styles.dateRow}>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.dateTitle}
+                onPress={() => setExpanded((e) => !e)}
+                accessibilityLabel={expanded ? 'Show week' : 'Show month'}
+              >
+                <Text style={styles.dateText}>
+                  {date.getDate()}. {date.toLocaleDateString('en', { month: 'long' })}
+                  <Text style={styles.dateYear}> {date.getFullYear()}</Text>
+                </Text>
+                <Ionicons name={expanded ? 'chevron-up' : 'chevron-forward'} size={20} color={kinds.chinese.color} />
+              </Pressable>
+              {!isToday && (
+                <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
+                  <Text style={styles.todayButtonText}>Back to today</Text>
+                </Pressable>
               )}
             </View>
-            {theme.name === 'stone' && (
-              <View style={styles.bloom} pointerEvents="none">
-                <Bloom size={80} />
+
+            <CalendarStrip
+              selected={selected}
+              today={today}
+              expanded={expanded}
+              busy={busy}
+              marksFor={marks}
+              moodFor={moodFor}
+              onSelect={setSelected}
+            />
+
+            {isToday && <UpNextCard next={next} done={done} total={total} onTap={tap} onEdit={edit} />}
+
+            <Glass style={styles.shortcutPanel}>
+              <View style={styles.shortcutHead}>
+                <Text style={type.sectionTitle}>Shortcuts</Text>
+                {pinned.length === 0 && <Text style={type.small}>Pin a routine to add it here</Text>}
               </View>
-            )}
-            <View style={styles.topButtons}>
-              <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('stats')} accessibilityLabel="Your week">
-                <Ionicons name="stats-chart" size={16} color={colors.text} />
-              </Glass>
-              <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('settings')} accessibilityLabel="Settings">
-                <Ionicons name="settings-outline" size={18} color={colors.text} />
-              </Glass>
-            </View>
-          </View>
-
-          <View style={styles.dateRow}>
-            <Pressable accessibilityRole="button"
-              style={styles.dateTitle}
-              onPress={() => setExpanded((e) => !e)}
-              accessibilityLabel={expanded ? 'Show week' : 'Show month'}
-            >
-              <Text style={styles.dateText}>
-                {date.getDate()}. {date.toLocaleDateString('en', { month: 'long' })}
-                <Text style={styles.dateYear}> {date.getFullYear()}</Text>
-              </Text>
-              <Ionicons name={expanded ? 'chevron-up' : 'chevron-forward'} size={20} color={kinds.chinese.color} />
-            </Pressable>
-            {!isToday && (
-              <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
-                <Text style={styles.todayButtonText}>Back to today</Text>
-              </Pressable>
-            )}
-          </View>
-
-          <CalendarStrip
-            selected={selected}
-            today={today}
-            expanded={expanded}
-            busy={busy}
-            marksFor={marks}
-            moodFor={moodFor}
-            onSelect={setSelected}
-          />
-
-          {isToday && <UpNextCard next={next} done={done} total={total} onTap={tap} onEdit={edit} />}
-
-          <Glass style={styles.shortcutPanel}>
-          <View style={styles.shortcutHead}>
-            <Text style={type.sectionTitle}>Shortcuts</Text>
-            {pinned.length === 0 && <Text style={type.small}>Pin a routine to add it here</Text>}
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shortcuts}>
-            {pinned.map((r) => {
-              const isDone = isDoneOn(r, selected);
-              const count = r.target ? countOn(r, selected) : 0;
-              return (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shortcuts}>
+                {pinned.map((r) => {
+                  const isDone = isDoneOn(r, selected);
+                  const count = r.target ? countOn(r, selected) : 0;
+                  return (
+                    <Shortcut
+                      key={r.id}
+                      label={r.name}
+                      icon={iconFor(r)}
+                      color={kinds.routines.color}
+                      filled={isDone}
+                      badge={r.target && !isDone && count ? `${count}/${r.target}` : undefined}
+                      onPress={() => tap(r)}
+                      onLongPress={() => edit(r)}
+                    />
+                  );
+                })}
                 <Shortcut
-                  key={r.id}
-                  label={r.name}
-                  icon={iconFor(r)}
-                  color={kinds.routines.color}
-                  filled={isDone}
-                  badge={r.target && !isDone && count ? `${count}/${r.target}` : undefined}
-                  onPress={() => tap(r)}
-                  onLongPress={() => edit(r)}
+                  label="Sounds"
+                  icon={sounds.playing ? 'pause' : 'musical-notes'}
+                  color={kinds.inbox.color}
+                  onPress={() => sounds.setSheetOpen(true)}
                 />
-              );
-            })}
-            <Shortcut
-              label="Sounds"
-              icon={sounds.playing ? 'pause' : 'musical-notes'}
-              color={kinds.inbox.color}
-              onPress={() => sounds.setSheetOpen(true)}
-            />
-            <Shortcut label="Gym" icon="barbell" color={kinds.gym.color} filled={gymDone} onPress={() => router.navigate('/gym')} />
-            <Shortcut label="Chinese" icon="language" color={kinds.chinese.color} filled={chineseDone} onPress={() => router.navigate('/chinese')} />
-            <Shortcut
-              label="Groceries"
-              icon="basket"
-              color={kinds.groceries.color}
-              onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}
-            />
-          </ScrollView>
-          </Glass>
+                <Shortcut label="Gym" icon="barbell" color={kinds.gym.color} filled={gymDone} onPress={() => router.navigate('/gym')} />
+                <Shortcut
+                  label="Chinese"
+                  icon="language"
+                  color={kinds.chinese.color}
+                  filled={chineseDone}
+                  onPress={() => router.navigate('/chinese')}
+                />
+                <Shortcut
+                  label="Groceries"
+                  icon="basket"
+                  color={kinds.groceries.color}
+                  onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}
+                />
+              </ScrollView>
+            </Glass>
 
-          <View style={styles.status}>
-            <Text style={type.label}>
-              {isToday ? 'Today' : friendlyDate(selected, today)}
-              {total > 0 ? `  ·  ${done}/${total} done` : ''}
-            </Text>
-            <View style={styles.track}>
-              <View style={[styles.fill, { flex: total ? done / total : 0 }]} />
-              <View style={{ flex: total ? 1 - done / total : 1 }} />
-            </View>
-          </View>
-
-          {timeline.length > 0 && (
-            <Section title="Timeline">
-              <View style={styles.timeline}>
-                <View style={styles.rail} />
-                {timeline.map((e) => (
-                  <TimelineRow
-                    key={e.id}
-                    entry={e}
-                    date={selected}
-                    current={isToday && e.start <= now && now < e.end}
-                    now={now}
-                    disabled={isFuture}
-                    onTap={tap}
-                    onEdit={edit}
-                  />
-                ))}
+            <View style={styles.status}>
+              <Text style={type.label}>
+                {isToday ? 'Today' : friendlyDate(selected, today)}
+                {total > 0 ? `  ·  ${done}/${total} done` : ''}
+              </Text>
+              <View style={styles.track}>
+                <View style={[styles.fill, { flex: total ? done / total : 0 }]} />
+                <View style={{ flex: total ? 1 - done / total : 1 }} />
               </View>
-            </Section>
-          )}
+            </View>
 
-          {(anytime.length > 0 || dayTodos.length > 0 || allDayEvents.length > 0) && (
-            <Section title="Anytime">
-              {allDayEvents.map((e, i) => (
-                <View key={e.id}>
-                  {i > 0 && <Divider />}
-                  <View style={styles.eventRow}>
-                    <View style={[styles.eventBar, { backgroundColor: e.color ?? colors.muted }]} />
-                    <Text style={[type.bodyMedium, styles.flex]} numberOfLines={1}>
-                      {e.title}
-                    </Text>
-                    <Text style={styles.mono}>{formatEventTime(e)}</Text>
+            {timeline.length > 0 && (
+              <Section title="Timeline">
+                <View style={styles.timeline}>
+                  <View style={styles.rail} />
+                  {timeline.map((e) => (
+                    <TimelineRow
+                      key={e.id}
+                      entry={e}
+                      date={selected}
+                      current={isToday && e.start <= now && now < e.end}
+                      now={now}
+                      disabled={isFuture}
+                      onTap={tap}
+                      onEdit={edit}
+                    />
+                  ))}
+                </View>
+              </Section>
+            )}
+
+            {(anytime.length > 0 || dayTodos.length > 0 || allDayEvents.length > 0) && (
+              <Section title="Anytime">
+                {allDayEvents.map((e, i) => (
+                  <View key={e.id}>
+                    {i > 0 && <Divider />}
+                    <View style={styles.eventRow}>
+                      <View style={[styles.eventBar, { backgroundColor: e.color ?? colors.muted }]} />
+                      <Text style={[type.bodyMedium, styles.flex]} numberOfLines={1}>
+                        {e.title}
+                      </Text>
+                      <Text style={styles.mono}>{formatEventTime(e)}</Text>
+                    </View>
                   </View>
-                </View>
-              ))}
-              {anytime.map((r, i) => (
-                <View key={r.id}>
-                  {(i > 0 || allDayEvents.length > 0) && <Divider />}
-                  <RoutineRow routine={r} date={selected} disabled={isFuture} onChange={replace} onLongPress={() => edit(r)} />
-                </View>
-              ))}
-              {dayTodos.map((t, i) => (
-                <View key={t.id}>
-                  {(i > 0 || anytime.length > 0 || allDayEvents.length > 0) && <Divider />}
-                  <CheckRow
-                    tint={kinds.inbox.color}
-                    title={t.title}
-                    subtitle="To-do"
-                    done={!!t.doneOn}
-                    disabled={isFuture}
-                    onToggle={() => updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x)))}
-                  />
-                </View>
-              ))}
-            </Section>
-          )}
-
+                ))}
+                {anytime.map((r, i) => (
+                  <View key={r.id}>
+                    {(i > 0 || allDayEvents.length > 0) && <Divider />}
+                    <RoutineRow routine={r} date={selected} disabled={isFuture} onChange={replace} onLongPress={() => edit(r)} />
+                  </View>
+                ))}
+                {dayTodos.map((t, i) => (
+                  <View key={t.id}>
+                    {(i > 0 || anytime.length > 0 || allDayEvents.length > 0) && <Divider />}
+                    <CheckRow
+                      tint={kinds.inbox.color}
+                      title={t.title}
+                      subtitle="To-do"
+                      done={!!t.doneOn}
+                      disabled={isFuture}
+                      onToggle={() => updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x)))}
+                    />
+                  </View>
+                ))}
+              </Section>
+            )}
           </>
         )}
 
@@ -509,7 +533,11 @@ export default function TodayScreen() {
             right={<Link label="Edit" onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })} />}
           >
             {dayGroceries.length === 0 ? (
-              <Pressable accessibilityRole="button" style={styles.empty} onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.empty}
+                onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}
+              >
                 <Text style={type.small}>
                   {groceries.length === 0
                     ? 'Add the things you buy often. They show up here on the days you need them.'
@@ -535,7 +563,11 @@ export default function TodayScreen() {
         )}
 
         {!theme.glass && routines.length === 0 && (
-          <Pressable accessibilityRole="button" style={styles.hintCard} onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'routines' } })}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.hintCard}
+            onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'routines' } })}
+          >
             <Ionicons name="sparkles-outline" size={20} color={colors.text} />
             <View style={styles.flex}>
               <Text style={type.bodyMedium}>Build your day</Text>
@@ -547,7 +579,12 @@ export default function TodayScreen() {
         {!isFuture && <DayNote date={selected} isToday={isToday} />}
       </ScrollView>
 
-      <Pressable accessibilityRole="button" style={[styles.fab, { bottom: fabBottom }]} onPress={() => setPanel('add')} accessibilityLabel="Quick add">
+      <Pressable
+        accessibilityRole="button"
+        style={[styles.fab, { bottom: fabBottom }]}
+        onPress={() => setPanel('add')}
+        accessibilityLabel="Quick add"
+      >
         <Ionicons name="add" size={30} color={colors.onPrimary} />
       </Pressable>
 
@@ -555,12 +592,19 @@ export default function TodayScreen() {
         {(
           [
             ['routine', 'repeat', 'Routine', 'Something you do regularly, with a time', kinds.routines.color],
-            ['todo', 'checkbox', 'To-do', `A one-off task for ${isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}`, kinds.inbox.color],
+            [
+              'todo',
+              'checkbox',
+              'To-do',
+              `A one-off task for ${isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}`,
+              kinds.inbox.color,
+            ],
             ['grocery', 'basket', 'Grocery item', 'Goes on your shopping list', kinds.groceries.color],
             ['word', 'language', 'Chinese word', 'A new flashcard to practise', kinds.chinese.color],
           ] as const
         ).map(([key, icon, title, sub, color]) => (
-          <Pressable accessibilityRole="button"
+          <Pressable
+            accessibilityRole="button"
             key={key}
             style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
             onPress={() => (key === 'routine' ? edit() : setPanel(key))}
@@ -669,15 +713,18 @@ function UpNextCard({
           <Text style={styles.heroTitle} numberOfLines={2}>
             {r.name}
           </Text>
-          <Text style={type.small}>
-            {next.state === 'now' ? `${left} remaining` : `At ${clock(next.entry.start)} · in ${left}`}
-          </Text>
+          <Text style={type.small}>{next.state === 'now' ? `${left} remaining` : `At ${clock(next.entry.start)} · in ${left}`}</Text>
           <View style={styles.heroBottom}>
             <View style={[styles.heroIcon, { backgroundColor: kinds.routines.color }]}>
               <Ionicons name={iconFor(r) as 'sunny'} size={22} color="#FFFFFF" />
             </View>
             <View style={styles.flex} />
-            <Pressable accessibilityRole="button" style={styles.heroAction} onPress={() => onTap(r)} accessibilityLabel={`Mark ${r.name} done`}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.heroAction}
+              onPress={() => onTap(r)}
+              accessibilityLabel={`Mark ${r.name} done`}
+            >
               <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
               <Text style={styles.heroActionText}>{r.target ? '+1' : 'Done'}</Text>
             </Pressable>
@@ -685,9 +732,15 @@ function UpNextCard({
         </>
       ) : (
         <>
-          <Text style={styles.heroTitle}>{total === 0 ? 'A clear day' : done === total ? 'All done. Nice work!' : `${done} of ${total} done`}</Text>
+          <Text style={styles.heroTitle}>
+            {total === 0 ? 'A clear day' : done === total ? 'All done. Nice work!' : `${done} of ${total} done`}
+          </Text>
           <Text style={type.small}>
-            {total === 0 ? 'Add a routine or a to-do to plan it.' : done === total ? 'Enjoy the rest of your day.' : 'Keep going, one thing at a time.'}
+            {total === 0
+              ? 'Add a routine or a to-do to plan it.'
+              : done === total
+                ? 'Enjoy the rest of your day.'
+                : 'Keep going, one thing at a time.'}
           </Text>
           <View style={styles.heroBottom}>
             <View style={styles.heroTrack}>
@@ -743,15 +796,11 @@ function TimelineRow({
   const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const r = entry.routine;
-  const color = entry.event ? entry.event.color ?? kinds.calendar.color : kinds.routines.color;
+  const color = entry.event ? (entry.event.color ?? kinds.calendar.color) : kinds.routines.color;
   const done = !!r && isDoneOn(r, date);
   const skipped = !!r && isSkipped(r, date);
   const count = r?.target ? countOn(r, date) : 0;
-  const subtitle = current
-    ? `${entry.end - now} min remaining`
-    : skipped
-      ? 'Skipped · streak kept'
-      : formatSpan(entry.start, entry.end);
+  const subtitle = current ? `${entry.end - now} min remaining` : skipped ? 'Skipped · streak kept' : formatSpan(entry.start, entry.end);
 
   return (
     <Pressable
@@ -762,14 +811,7 @@ function TimelineRow({
       accessibilityState={r ? { checked: done } : undefined}
     >
       <Text style={styles.tTime}>{clock(entry.start)}</Text>
-      <View
-        style={[
-          styles.tIcon,
-          { backgroundColor: color },
-          current && styles.tIconCurrent,
-          (done || skipped) && styles.tIconDone,
-        ]}
-      >
+      <View style={[styles.tIcon, { backgroundColor: color }, current && styles.tIconCurrent, (done || skipped) && styles.tIconDone]}>
         <Ionicons name={(entry.event ? 'calendar' : iconFor(r!)) as 'sunny'} size={20} color="#FFFFFF" />
       </View>
       <View style={styles.flex}>
@@ -884,6 +926,7 @@ function NavRow({
 const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
   StyleSheet.create({
     content: { paddingHorizontal: 16, paddingBottom: 170 },
+    loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
     top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     name: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.text, letterSpacing: -0.3 },
@@ -892,7 +935,16 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
     greet: { ...type.small, fontSize: 15 },
     tagline: { ...type.small, marginTop: 6, maxWidth: 220 },
     bloom: { position: 'absolute', right: 100, top: -14, opacity: 0.9 },
-    heroArt: { marginTop: 18, height: 230, borderRadius: radius + 4, overflow: 'hidden', padding: 20, gap: 4, borderWidth: 1, borderColor: colors.cardBorder },
+    heroArt: {
+      marginTop: 18,
+      height: 230,
+      borderRadius: radius + 4,
+      overflow: 'hidden',
+      padding: 20,
+      gap: 4,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
     shortcutPanel: { marginTop: 18, paddingTop: 14 },
     shortcutHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
     dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 },
