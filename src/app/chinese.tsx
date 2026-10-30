@@ -4,18 +4,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Chip } from '../components/Chip';
 import { FocusTimer } from '../components/FocusTimer';
 import { Divider, Section } from '../components/Section';
+import { PageTitle } from '../components/PageTitle';
 import { WordForm } from '../components/WordForm';
-import {
-  type Grade,
-  type Word,
-  STARTER_WORDS,
-  addMinutes,
-  dueWords,
-  newWord,
-  review,
-  streakDays,
-  todaysLog,
-} from '../lib/chinese';
+import { type Grade, type Word, STARTER_WORDS, addMinutes, dueWords, newWord, review, streakDays, todaysLog } from '../lib/chinese';
 import { friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
@@ -102,6 +93,7 @@ export default function ChineseScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
+      <PageTitle title="Chinese" />
       <Glass style={styles.todayCard}>
         <View style={styles.row}>
           <Text style={styles.eyebrow}>Today's practice</Text>
@@ -118,19 +110,12 @@ export default function ChineseScreen() {
           {QUICK_MINUTES.map((m) => (
             <Chip key={m} label={`+${m} min`} active={false} onPress={() => updateChinese((c) => addMinutes(c, today, m))} />
           ))}
-          {log.minutes > 0 && (
-            <Chip label="Undo 5" active={false} onPress={() => updateChinese((c) => addMinutes(c, today, -5))} />
-          )}
+          {log.minutes > 0 && <Chip label="Undo 5" active={false} onPress={() => updateChinese((c) => addMinutes(c, today, -5))} />}
         </View>
         <Text style={styles.small}>Daily target:</Text>
         <View style={styles.chips}>
           {TARGETS.map((t) => (
-            <Chip
-              key={t}
-              label={`${t} min`}
-              active={chinese.target === t}
-              onPress={() => updateChinese((c) => ({ ...c, target: t }))}
-            />
+            <Chip key={t} label={`${t} min`} active={chinese.target === t} onPress={() => updateChinese((c) => ({ ...c, target: t }))} />
           ))}
         </View>
       </Glass>
@@ -159,7 +144,8 @@ export default function ChineseScreen() {
 
       {chinese.words.length === 0 ? (
         <View style={styles.starter}>
-          <Pressable accessibilityRole="button"
+          <Pressable
+            accessibilityRole="button"
             style={styles.primaryButton}
             onPress={() =>
               updateChinese((c) => ({
@@ -188,7 +174,11 @@ export default function ChineseScreen() {
             .map((w, i) => (
               <View key={w.id}>
                 {i > 0 && <Divider />}
-                <Pressable accessibilityRole="button" style={({ pressed }) => [styles.wordRow, pressed && styles.pressed]} onPress={() => openWord(w)}>
+                <Pressable
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.wordRow, pressed && styles.pressed]}
+                  onPress={() => openWord(w)}
+                >
                   <Text style={styles.wordHanzi}>{w.hanzi}</Text>
                   <View style={styles.flex}>
                     <Text style={styles.wordPinyin}>{w.pinyin}</Text>
@@ -250,76 +240,82 @@ function GradeButton({
 
 const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
   StyleSheet.create({
-  flex: { flex: 1 },
-  content: { padding: 16, paddingBottom: 150 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  todayCard: { padding: 16 },
-  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 12, color: glass ? colors.muted : kinds.chinese.color, textTransform: 'uppercase', letterSpacing: 1.2 },
-  streak: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-  minutes: { fontFamily: fonts.display, fontSize: 32, color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },
-  minutesOf: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.muted },
-  track: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.soft, marginTop: 10, overflow: 'hidden' },
-  fill: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.color },
-  small: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 8 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  reviewCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius,
-    padding: 16,
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  reviewTitle: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
-  startButton: { backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
-  starter: { marginTop: 8 },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-  secondaryButton: { paddingVertical: 14, alignItems: 'center' },
-  secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
-  link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
-  wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 14 },
-  pressed: { backgroundColor: colors.primarySoft },
-  wordHanzi: { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
-  wordPinyin: { fontFamily: fonts.body, fontSize: 14, color: colors.text },
-  wordMeaning: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
-  wordDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
-  reviewScreen: { flex: 1, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  reviewTop: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
-  reviewCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
-  card: {
-    alignSelf: 'stretch',
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    paddingVertical: 48,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    gap: 10,
-  },
-  cardHanzi: { fontFamily: fonts.body, fontSize: 64, color: colors.text },
-  cardPinyin: { fontFamily: fonts.display, fontSize: 22, color: kinds.chinese.color },
-  cardMeaning: { fontFamily: fonts.body, fontSize: 18, color: colors.text },
-  cardHint: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 8 },
-  grades: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
-  gradeButton: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderRadius: radius,
-    paddingVertical: 12,
-    alignItems: 'center',
-    backgroundColor: colors.card,
-  },
-  gradeLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
-  gradeSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 },
-  reviewDoneTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
-  reviewDoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted },
-});
+    flex: { flex: 1 },
+    content: { padding: 16, paddingBottom: 150 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    todayCard: { padding: 16 },
+    eyebrow: {
+      fontFamily: fonts.monoMedium,
+      fontSize: 12,
+      color: glass ? colors.muted : kinds.chinese.color,
+      textTransform: 'uppercase',
+      letterSpacing: 1.2,
+    },
+    streak: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
+    minutes: { fontFamily: fonts.display, fontSize: 32, color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },
+    minutesOf: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.muted },
+    track: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.soft, marginTop: 10, overflow: 'hidden' },
+    fill: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.color },
+    small: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 8 },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    reviewCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius,
+      padding: 16,
+      marginTop: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    reviewTitle: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
+    startButton: { backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
+    starter: { marginTop: 8 },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+      paddingVertical: 14,
+      paddingHorizontal: 24,
+      alignSelf: 'stretch',
+      alignItems: 'center',
+      marginTop: 12,
+    },
+    primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    secondaryButton: { paddingVertical: 14, alignItems: 'center' },
+    secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
+    wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 14 },
+    pressed: { backgroundColor: colors.primarySoft },
+    wordHanzi: { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
+    wordPinyin: { fontFamily: fonts.body, fontSize: 14, color: colors.text },
+    wordMeaning: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
+    wordDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
+    reviewScreen: { flex: 1, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 12 },
+    reviewTop: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
+    reviewCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
+    card: {
+      alignSelf: 'stretch',
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      paddingVertical: 48,
+      paddingHorizontal: 20,
+      alignItems: 'center',
+      gap: 10,
+    },
+    cardHanzi: { fontFamily: fonts.body, fontSize: 64, color: colors.text },
+    cardPinyin: { fontFamily: fonts.display, fontSize: 22, color: kinds.chinese.color },
+    cardMeaning: { fontFamily: fonts.body, fontSize: 18, color: colors.text },
+    cardHint: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 8 },
+    grades: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
+    gradeButton: {
+      flex: 1,
+      borderWidth: 1.5,
+      borderRadius: radius,
+      paddingVertical: 12,
+      alignItems: 'center',
+      backgroundColor: colors.card,
+    },
+    gradeLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
+    gradeSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 },
+    reviewDoneTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
+    reviewDoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted },
+  });

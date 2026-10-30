@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,6 +9,7 @@ import {
   ROUTINE_IDEAS,
   type Routine,
   TIME_LABELS,
+  iconFor,
   countOn,
   tapRoutine,
   isDoneOn,
@@ -24,7 +26,16 @@ import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass } from '../components/Glass';
 import { SceneArt } from '../components/Art';
 
-const ART = ['dusk', 'rain', 'waves', 'brown'];
+const ART = ['calm', 'rain', 'waves', 'brown'];
+/** Vivid tile colours for Lavender rows, like album art. */
+const TILES: [string, string][] = [
+  ['#FF8AD8', '#7B5CFF'],
+  ['#5EE7FF', '#4F6BFF'],
+  ['#FFB38A', '#FF5FA2'],
+  ['#8CF5C8', '#2FA4D9'],
+  ['#C7A6FF', '#5B3FD9'],
+  ['#FFE08A', '#FF8A5B'],
+];
 
 export default function RoutinesScreen({ query = '' }: { query?: string }) {
   const { colors, kinds, glass } = useTheme();
@@ -235,7 +246,7 @@ function ArtRow({
   onChange?: (r: Routine) => void;
   onMore: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, name } = useTheme();
   const styles = useStyles(makeStyles);
   const done = isDoneOn(r, today);
   const skipped = isSkipped(r, today);
@@ -243,9 +254,20 @@ function ArtRow({
   const canTick = !!onChange && !skipped;
   return (
     <Glass radius={20} style={styles.artRow}>
-      <View style={styles.thumb}>
-        <SceneArt width={56} height={56} variant={ART[index % ART.length]} />
-      </View>
+      {name === 'stone' ? (
+        <View style={styles.thumb}>
+          <SceneArt width={56} height={56} variant={ART[index % ART.length]} />
+        </View>
+      ) : (
+        <LinearGradient
+          colors={TILES[index % TILES.length]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.thumb, styles.tile]}
+        >
+          <Ionicons name={iconFor(r) as 'sunny'} size={24} color="#FFFFFF" />
+        </LinearGradient>
+      )}
       <View style={styles.flex}>
         <Text style={[styles.rowTitle, done && styles.rowDone]} numberOfLines={1}>
           {r.name}
@@ -295,6 +317,7 @@ const makeStyles = ({ colors, fonts, radius }: Theme) =>
     shelfTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text, marginTop: 14, marginBottom: 2 },
     artRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10 },
     thumb: { width: 56, height: 56, borderRadius: 14, overflow: 'hidden' },
+    tile: { alignItems: 'center', justifyContent: 'center' },
     ideaIcon: {
       width: 56,
       height: 56,

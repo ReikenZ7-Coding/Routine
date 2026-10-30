@@ -44,7 +44,7 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
         onBlur={saveNote}
         onEndEditing={saveNote}
         placeholder="A line about your day (optional)"
-        placeholderTextColor={colors.faint}
+        placeholderTextColor={colors.muted}
         multiline
       />
     </Section>
@@ -58,7 +58,7 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
   moodActive: { backgroundColor: colors.primarySoft },
   face: { fontSize: 24 },
   faceDim: { opacity: 0.35 },
-  moodLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
+  moodLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
   moodLabelActive: { color: colors.text, fontFamily: fonts.bodyMedium },
   note: {
     ...type.body,

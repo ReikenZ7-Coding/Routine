@@ -92,7 +92,7 @@ function ThemedApp() {
           tabBar={glass ? (props) => <GlassTabBar {...props} bottom={barBottom} /> : undefined}
           // Each screen paints its own gradient, so screens kept alive in the background never show through.
           screenLayout={({ children, options }) => (
-            <ScreenFrame gradient={colors.gradient} fade={glass && options.headerShown === false}>
+            <ScreenFrame gradient={colors.gradient} fade={glass && options.headerShown === false} glass={glass}>
               {children}
             </ScreenFrame>
           )}
@@ -120,7 +120,7 @@ function ThemedApp() {
               name={t.name}
               options={{
                 title: t.title,
-                headerShown: t.name === 'gym' || t.name === 'chinese',
+                headerShown: !glass && (t.name === 'gym' || t.name === 'chinese'),
                 tabBarIcon: ({ color, size, focused }) => (
                   <Ionicons name={focused ? t.iconActive : t.icon} color={color as string} size={size - 2} />
                 ),
@@ -138,11 +138,22 @@ function ThemedApp() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   edge: { position: 'absolute', top: 0, left: 0, right: 0 },
+  bottomEdge: { position: 'absolute', bottom: 0, left: 0, right: 0 },
 });
 
 /** Each screen paints its own backdrop (gradient, light and glow), so screens kept alive in the
  *  background never show through, and glass on the screen has something to blur. */
-function ScreenFrame({ gradient, fade, children }: { gradient: [string, string, string]; fade: boolean; children: ReactNode }) {
+function ScreenFrame({
+  gradient,
+  fade,
+  glass,
+  children,
+}: {
+  gradient: [string, string, string];
+  fade: boolean;
+  glass: boolean;
+  children: ReactNode;
+}) {
   const target = useRef<ComponentRef<typeof View>>(null);
   const insets = useSafeAreaInsets();
   return (
@@ -157,6 +168,14 @@ function ScreenFrame({ gradient, fade, children }: { gradient: [string, string, 
         <LinearGradient
           colors={[gradient[0], `${gradient[0]}00`]}
           style={[styles.edge, { height: insets.top + 28 }]}
+          pointerEvents="none"
+        />
+      )}
+      {/* Bottom edge: content fades into the backdrop before it slides under the floating tab bar. */}
+      {glass && (
+        <LinearGradient
+          colors={[`${gradient[2]}00`, `${gradient[2]}E6`]}
+          style={[styles.bottomEdge, { height: insets.bottom + 120 }]}
           pointerEvents="none"
         />
       )}

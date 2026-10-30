@@ -282,6 +282,7 @@ export default function TodayScreen() {
                 return {
                   key: r.id,
                   title: r.name,
+                  icon: iconFor(r),
                   meta: isSkipped(r, selected) ? 'Skipped today' : r.target ? `${when} · ${count}/${r.target}` : when,
                   done: isDoneOn(r, selected),
                   onPress: () => tap(r),
@@ -292,9 +293,53 @@ export default function TodayScreen() {
                 key: t.id,
                 title: t.title,
                 meta: 'To-do',
+                icon: 'checkbox-outline',
                 done: !!t.doneOn,
                 onPress: () => !isFuture && updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
               })),
+              // The workout, practice and shopping show up as rows too, so the list matches the progress count.
+              ...(session && gymProgress
+                ? [
+                    {
+                      key: 'gym',
+                      title: session.name,
+                      icon: 'barbell',
+                      meta: `Workout · ${gymProgress.done}/${gymProgress.total} sets`,
+                      done: gymDone,
+                      onPress: () => router.navigate('/gym'),
+                      onLongPress: () => router.navigate('/gym'),
+                    },
+                  ]
+                : []),
+              ...(showChinese
+                ? [
+                    {
+                      key: 'chinese',
+                      title: 'Chinese practice',
+                      icon: 'language',
+                      meta: `${practice.minutes}/${chinese.target} min${toReview ? ` · ${toReview} words to review` : ''}`,
+                      done: chineseDone,
+                      onPress: () => router.navigate('/chinese'),
+                      onLongPress: () => router.navigate('/chinese'),
+                    },
+                  ]
+                : []),
+              ...(dayGroceries.length > 0
+                ? [
+                    {
+                      key: 'groceries',
+                      title: isPast ? 'Groceries bought' : 'Groceries',
+                      icon: 'basket',
+                      meta: `${dayGroceries.filter((g) => boughtOn(g, selected)).length} of ${dayGroceries.length} bought · ${dayGroceries
+                        .slice(0, 3)
+                        .map((g) => g.name)
+                        .join(', ')}${dayGroceries.length > 3 ? '…' : ''}`,
+                      done: dayGroceries.every((g) => boughtOn(g, selected)),
+                      onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
+                      onLongPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
+                    },
+                  ]
+                : []),
             ]}
             done={done}
             total={total}
@@ -526,7 +571,7 @@ export default function TodayScreen() {
           </Section>
         )}
 
-        {(dayGroceries.length > 0 || isToday) && (
+        {!theme.glass && (dayGroceries.length > 0 || isToday) && (
           <Section
             title={isPast ? 'Bought' : 'Groceries'}
             dot={kinds.groceries.color}
@@ -579,14 +624,17 @@ export default function TodayScreen() {
         {!isFuture && <DayNote date={selected} isToday={isToday} />}
       </ScrollView>
 
-      <Pressable
-        accessibilityRole="button"
-        style={[styles.fab, { bottom: fabBottom }]}
-        onPress={() => setPanel('add')}
-        accessibilityLabel="Quick add"
-      >
-        <Ionicons name="add" size={30} color={colors.onPrimary} />
-      </Pressable>
+      {/* The glass looks add from the quick-add bar and the hero card, so they skip the floating button. */}
+      {!theme.glass && (
+        <Pressable
+          accessibilityRole="button"
+          style={[styles.fab, { bottom: fabBottom }]}
+          onPress={() => setPanel('add')}
+          accessibilityLabel="Quick add"
+        >
+          <Ionicons name="add" size={30} color={colors.onPrimary} />
+        </Pressable>
+      )}
 
       <Sheet visible={panel === 'add'} title="Add" onClose={close}>
         {(

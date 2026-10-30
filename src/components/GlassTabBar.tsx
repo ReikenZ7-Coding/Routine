@@ -58,7 +58,7 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
 
   return (
     <View style={[styles.wrap, { bottom }]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      <Glass radius={28} intensity={50} style={StyleSheet.absoluteFill}>
+      <Glass radius={28} intensity={70} tint={colors.tabBar} style={StyleSheet.absoluteFill}>
         {slot > 0 && (
           <Animated.View style={[styles.dropSlot, { left, width: Animated.subtract(right, left) }]} pointerEvents="none">
             <Glass radius={22} tint={colors.primarySoft} style={styles.drop} />

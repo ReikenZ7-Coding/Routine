@@ -16,9 +16,21 @@ export interface HomeItem {
   title: string;
   meta: string;
   done: boolean;
+  /** Ionicons name shown on the row's colour tile. */
+  icon?: string;
   onPress: () => void;
   onLongPress?: () => void;
 }
+
+/** Vivid tile colours for Lavender rows, so each row reads at a glance like album art. */
+const TILES: [string, string][] = [
+  ['#FF8AD8', '#7B5CFF'],
+  ['#5EE7FF', '#4F6BFF'],
+  ['#FFB38A', '#FF5FA2'],
+  ['#8CF5C8', '#2FA4D9'],
+  ['#C7A6FF', '#5B3FD9'],
+  ['#FFE08A', '#FF8A5B'],
+];
 
 export interface HomeCategory {
   label: string;
@@ -46,8 +58,6 @@ interface Props {
   onStats: () => void;
   onSeeAll: () => void;
 }
-
-const ART = ['dusk', 'rain', 'waves', 'brown'];
 
 export function GlassHome(props: Props) {
   const { name } = useTheme();
@@ -155,9 +165,9 @@ function LavenderHome(p: Props) {
         ) : (
           p.items.map((it, i) => (
             <Glass key={it.key} radius={18} style={styles.row} onPress={it.onLongPress} accessibilityLabel={`Edit ${it.title}`}>
-              <View style={styles.thumb}>
-                <SceneArt width={46} height={46} variant={ART[i % ART.length]} />
-              </View>
+              <LinearGradient colors={TILES[i % TILES.length]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.thumb}>
+                <Ionicons name={(it.icon ?? 'sparkles') as 'sparkles'} size={22} color="#FFFFFF" />
+              </LinearGradient>
               <View style={styles.flex}>
                 <Text style={[styles.rowTitle, it.done && styles.rowDone]} numberOfLines={1}>
                   {it.title}
@@ -395,7 +405,7 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     rows: { gap: 10 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 12 },
     emptyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16 },
-    thumb: { width: 46, height: 46, borderRadius: 12, overflow: 'hidden' },
+    thumb: { width: 48, height: 48, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
     rowTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
     rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
     rowDone: { opacity: 0.6, textDecorationLine: 'line-through' },
@@ -405,12 +415,11 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.selected,
+      backgroundColor: 'rgba(255,255,255,0.22)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.45)',
-      boxShadow: `0px 0px 14px ${colors.glow}`,
+      borderColor: colors.rim,
     },
-    rowButtonDone: { backgroundColor: colors.accent },
+    rowButtonDone: { backgroundColor: colors.accent, borderColor: colors.accent },
     playNudge: { marginLeft: 2 },
 
     // Stone

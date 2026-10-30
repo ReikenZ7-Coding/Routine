@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Divider, Section } from '../components/Section';
+import { PageTitle } from '../components/PageTitle';
 import { SessionForm } from '../components/SessionForm';
 import {
   type PlanExercise,
@@ -75,9 +76,7 @@ export default function GymScreen() {
 
   const saveSession = (s: Session) => {
     updateGym((g) => {
-      const others = g.sessions
-        .filter((x) => x.id !== s.id)
-        .map((x) => ({ ...x, days: x.days.filter((d) => !s.days.includes(d)) }));
+      const others = g.sessions.filter((x) => x.id !== s.id).map((x) => ({ ...x, days: x.days.filter((d) => !s.days.includes(d)) }));
       const exists = g.sessions.some((x) => x.id === s.id);
       return {
         ...g,
@@ -95,15 +94,16 @@ export default function GymScreen() {
   if (gym.sessions.length === 0) {
     return (
       <ScrollView contentContainerStyle={styles.content}>
+        <PageTitle title="Gym" />
         <Glass style={styles.welcome}>
           <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
           <Text style={styles.welcomeTitle}>Your training plan</Text>
           <Text style={styles.welcomeText}>
-            Pick a starter plan and adjust it, or build your own. Each day you'll see exactly what to train, and what
-            you lifted last time.
+            Pick a starter plan and adjust it, or build your own. Each day you'll see exactly what to train, and what you lifted last time.
           </Text>
           {STARTER_PLANS.map((p) => (
-            <Pressable accessibilityRole="button"
+            <Pressable
+              accessibilityRole="button"
               key={p.id}
               style={styles.planOption}
               onPress={() => updateGym((g) => ({ ...g, sessions: buildSessions(p.sessions, newId) }))}
@@ -119,13 +119,7 @@ export default function GymScreen() {
             <Text style={styles.secondaryText}>Build my own</Text>
           </Pressable>
         </Glass>
-        <SessionForm
-          visible={formOpen}
-          session={editing}
-          takenDays={[]}
-          onClose={() => setFormOpen(false)}
-          onSave={saveSession}
-        />
+        <SessionForm visible={formOpen} session={editing} takenDays={[]} onClose={() => setFormOpen(false)} onSave={saveSession} />
       </ScrollView>
     );
   }
@@ -135,6 +129,7 @@ export default function GymScreen() {
   return (
     <View style={styles.flex}>
       <ScrollView contentContainerStyle={[styles.content, restEnd !== null && styles.contentWithTimer]}>
+        <PageTitle title="Gym" />
         {session && progress ? (
           <>
             <Glass style={styles.todayCard}>
@@ -171,7 +166,8 @@ export default function GymScreen() {
                   </View>
                   <View style={styles.exControls}>
                     <View style={styles.stepper}>
-                      <Pressable accessibilityRole="button"
+                      <Pressable
+                        accessibilityRole="button"
                         onPress={() => changeWeight(session, e, -WEIGHT_STEP)}
                         style={styles.stepBtn}
                         accessibilityLabel={`Lower ${e.name} weight`}
@@ -179,7 +175,8 @@ export default function GymScreen() {
                         <Ionicons name="remove" size={18} color={colors.text} />
                       </Pressable>
                       <Text style={styles.weight}>{formatWeight(weight)}</Text>
-                      <Pressable accessibilityRole="button"
+                      <Pressable
+                        accessibilityRole="button"
                         onPress={() => changeWeight(session, e, WEIGHT_STEP)}
                         style={styles.stepBtn}
                         accessibilityLabel={`Raise ${e.name} weight`}
@@ -235,7 +232,8 @@ export default function GymScreen() {
             return (
               <View key={d}>
                 {i > 0 && <Divider />}
-                <Pressable accessibilityRole="button"
+                <Pressable
+                  accessibilityRole="button"
                   style={({ pressed }) => [styles.planRow, pressed && s && styles.pressed]}
                   onPress={() => s && openSession(s)}
                   disabled={!s}
@@ -258,7 +256,8 @@ export default function GymScreen() {
                   <View style={styles.flex}>
                     <Text style={styles.planName}>{w.sessionName}</Text>
                     <Text style={styles.exPlan}>
-                      {friendlyDate(w.date, today)} · {w.sets} {w.sets === 1 ? 'set' : 'sets'} · {Math.round(w.volume).toLocaleString('en')} kg
+                      {friendlyDate(w.date, today)} · {w.sets} {w.sets === 1 ? 'set' : 'sets'} · {Math.round(w.volume).toLocaleString('en')}{' '}
+                      kg
                     </Text>
                   </View>
                   {w.records > 0 && <Text style={styles.historyPr}>🏆 {w.records}</Text>}
@@ -300,85 +299,99 @@ export default function GymScreen() {
 
 const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
   StyleSheet.create({
-  exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  prBadge: { backgroundColor: kinds.gym.soft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-  prText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: kinds.gym.color },
-  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
-  historyPr: { fontFamily: fonts.monoMedium, fontSize: 13, color: kinds.gym.color },
-  flex: { flex: 1 },
-  content: { padding: 16, paddingBottom: 150 },
-  contentWithTimer: { paddingBottom: 190 },
-  welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
-  welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
-  welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 12 },
-  planOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'stretch',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius,
-    padding: 14,
-    marginTop: 10,
-  },
-  planTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
-  planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-  secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
-  secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
-  todayCard: { padding: 16 },
-  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 12, color: glass ? colors.muted : kinds.gym.color, textTransform: 'uppercase', letterSpacing: 1.2 },
-  sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
-  progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
-  track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },
-  fill: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.color },
-  exercise: { padding: 14, marginTop: 10 },
-  exHeader: { flexDirection: 'row', alignItems: 'center' },
-  exName: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
-  exPlan: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-  exControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-  },
-  stepBtn: { paddingHorizontal: 10, paddingVertical: 8 },
-  weight: { minWidth: 84, textAlign: 'center', fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
-  sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
-  setBubble: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  setDone: { backgroundColor: kinds.gym.color, borderColor: kinds.gym.color },
-  setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted },
-  setTextDone: { color: '#fff' },
-  hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 14 },
-  link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
-  planRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },
-  pressed: { backgroundColor: colors.primarySoft },
-  planDay: { width: 52, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
-  planName: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
-  rest: { color: colors.muted },
-  planCount: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  timer: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.primary,
-    borderRadius: radius,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-  },
-  timerText: { flex: 1, color: colors.onPrimary, fontFamily: fonts.monoMedium, fontSize: 18 },
-  timerSkip: { color: colors.onPrimary, opacity: 0.7, fontWeight: '600' },
-});
+    exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+    prBadge: { backgroundColor: kinds.gym.soft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+    prText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: kinds.gym.color },
+    historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
+    historyPr: { fontFamily: fonts.monoMedium, fontSize: 13, color: kinds.gym.color },
+    flex: { flex: 1 },
+    content: { padding: 16, paddingBottom: 150 },
+    contentWithTimer: { paddingBottom: 190 },
+    welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
+    welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
+    welcomeText: {
+      fontFamily: fonts.body,
+      fontSize: 15,
+      color: colors.muted,
+      textAlign: 'center',
+      lineHeight: 21,
+      marginTop: 8,
+      marginBottom: 12,
+    },
+    planOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'stretch',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius,
+      padding: 14,
+      marginTop: 10,
+    },
+    planTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+    planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+    secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
+    secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    todayCard: { padding: 16 },
+    eyebrow: {
+      fontFamily: fonts.monoMedium,
+      fontSize: 12,
+      color: glass ? colors.muted : kinds.gym.color,
+      textTransform: 'uppercase',
+      letterSpacing: 1.2,
+    },
+    sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
+    progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
+    track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },
+    fill: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.color },
+    exercise: { padding: 14, marginTop: 10 },
+    exHeader: { flexDirection: 'row', alignItems: 'center' },
+    exName: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
+    exPlan: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+    exControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 },
+    stepper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+    },
+    stepBtn: { paddingHorizontal: 10, paddingVertical: 8 },
+    weight: { minWidth: 84, textAlign: 'center', fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
+    sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
+    setBubble: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    setDone: { backgroundColor: kinds.gym.color, borderColor: kinds.gym.color },
+    setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted },
+    setTextDone: { color: '#fff' },
+    hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 14 },
+    link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
+    planRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },
+    pressed: { backgroundColor: colors.primarySoft },
+    planDay: { width: 52, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
+    planName: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
+    rest: { color: colors.muted },
+    planCount: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    timer: {
+      position: 'absolute',
+      left: 16,
+      right: 16,
+      bottom: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      backgroundColor: colors.primary,
+      borderRadius: radius,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+    },
+    timerText: { flex: 1, color: colors.onPrimary, fontFamily: fonts.monoMedium, fontSize: 18 },
+    timerSkip: { color: colors.onPrimary, opacity: 0.7, fontWeight: '600' },
+  });
