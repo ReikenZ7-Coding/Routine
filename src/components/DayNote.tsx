@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MOODS, setEntry } from '../lib/journal';
 import { useStore } from '../lib/store';
-import { colors, fonts, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { Section } from './Section';
 
 /** A mood and a short note for a day. */
 export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const { journal, updateJournal } = useStore();
   const entry = journal[date] ?? {};
   const [note, setNote] = useState(entry.note ?? '');
@@ -49,7 +51,8 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts, type }: Theme) =>
+  StyleSheet.create({
   moods: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingTop: 12 },
   mood: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 12, gap: 2 },
   moodActive: { backgroundColor: colors.primarySoft },

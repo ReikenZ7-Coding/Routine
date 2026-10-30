@@ -21,7 +21,7 @@ import {
 import { isRecord, workoutHistory } from '../lib/records';
 import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
-import { colors, fonts, kinds, radius } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 const REST_SECONDS = 90;
 const WEIGHT_STEP = 2.5;
@@ -29,6 +29,8 @@ const WEIGHT_STEP = 2.5;
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 export default function GymScreen() {
+  const { colors, kinds } = useTheme();
+  const styles = useStyles(makeStyles);
   const { ready, today, gym, updateGym } = useStore();
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [restEnd, setRestEnd] = useState<number | null>(null);
@@ -268,7 +270,7 @@ export default function GymScreen() {
 
       {restEnd !== null && (
         <Pressable style={styles.timer} onPress={() => setRestEnd(null)} accessibilityLabel="Dismiss rest timer">
-          <Ionicons name="timer-outline" size={22} color="#fff" />
+          <Ionicons name="timer-outline" size={22} color={colors.onPrimary} />
           <Text style={styles.timerText}>
             Rest {Math.floor(restLeft / 60)}:{String(restLeft % 60).padStart(2, '0')}
           </Text>
@@ -295,16 +297,17 @@ export default function GymScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+  StyleSheet.create({
   exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   prBadge: { backgroundColor: kinds.gym.soft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
   prText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: kinds.gym.color },
   historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
   historyPr: { fontFamily: fonts.monoMedium, fontSize: 13, color: kinds.gym.color },
   flex: { flex: 1 },
-  content: { padding: 16, paddingBottom: 40 },
-  contentWithTimer: { paddingBottom: 110 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
+  content: { padding: 16, paddingBottom: 150 },
+  contentWithTimer: { paddingBottom: 190 },
+  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
   welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 12 },
   planOption: {
@@ -321,13 +324,13 @@ const styles = StyleSheet.create({
   planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
   secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
   secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
-  todayCard: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 16 },
+  todayCard: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 16 },
   eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.gym.color, textTransform: 'uppercase', letterSpacing: 1.2 },
   sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
   progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
   track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.color },
-  exercise: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 14, marginTop: 10 },
+  exercise: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 14, marginTop: 10 },
   exHeader: { flexDirection: 'row', alignItems: 'center' },
   exName: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
   exPlan: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
@@ -370,11 +373,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: colors.text,
+    backgroundColor: colors.primary,
     borderRadius: radius,
     paddingVertical: 14,
     paddingHorizontal: 16,
   },
-  timerText: { flex: 1, color: '#fff', fontFamily: fonts.monoMedium, fontSize: 18 },
-  timerSkip: { color: '#fff', opacity: 0.7, fontWeight: '600' },
+  timerText: { flex: 1, color: colors.onPrimary, fontFamily: fonts.monoMedium, fontSize: 18 },
+  timerSkip: { color: colors.onPrimary, opacity: 0.7, fontWeight: '600' },
 });

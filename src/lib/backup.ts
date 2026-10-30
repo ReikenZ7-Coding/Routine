@@ -1,6 +1,6 @@
 // Everything in one JSON string, so people can move to a new phone or keep a copy.
 
-export const BACKUP_KEYS = ['groceries', 'gym', 'chinese', 'routines', 'journal'] as const;
+export const BACKUP_KEYS = ['groceries', 'gym', 'chinese', 'routines', 'journal', 'inbox'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];
 export type BackupData = Record<BackupKey, unknown>;
 
@@ -31,5 +31,6 @@ export function parseBackup(text: string): BackupData {
     chinese: raw.chinese,
     routines: raw.routines,
     journal: raw.journal && typeof raw.journal === 'object' ? raw.journal : {},
+    inbox: Array.isArray(raw.inbox) ? raw.inbox : [],
   };
 }

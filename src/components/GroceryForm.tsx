@@ -14,7 +14,7 @@ import {
 import type { NewGroceryItem } from '../lib/store';
 import { Chip } from './Chip';
 import { type GroceryItem, type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
-import { colors, fonts, radius } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 type RepeatChoice = 'once' | 'daily' | 'everyN' | 'weekdays';
 
@@ -34,6 +34,8 @@ function choiceFor(r: Repeat): RepeatChoice {
 }
 
 export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [aisle, setAisle] = useState('');
@@ -100,18 +102,18 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Chicken"
+              placeholder="e.g. Chicken" placeholderTextColor={colors.faint}
               autoFocus={!item}
             />
 
             <View style={styles.twoCol}>
               <View style={styles.col}>
                 <Text style={styles.label}>Amount (optional)</Text>
-                <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="500 g" />
+                <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="500 g" placeholderTextColor={colors.faint} />
               </View>
               <View style={styles.col}>
                 <Text style={styles.label}>Aisle (optional)</Text>
-                <TextInput style={styles.input} value={aisle} onChangeText={setAisle} placeholder="Meat" />
+                <TextInput style={styles.input} value={aisle} onChangeText={setAisle} placeholder="Meat" placeholderTextColor={colors.faint} />
               </View>
             </View>
 
@@ -166,10 +168,11 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+const makeStyles = ({ colors, fonts }: Theme) =>
+  StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
   sheet: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.sheet,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 20,
@@ -179,6 +182,7 @@ const styles = StyleSheet.create({
   heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
   label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
   input: {
+    backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
@@ -200,7 +204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
-  saveText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
+  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
   deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
 });

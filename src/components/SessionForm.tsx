@@ -15,7 +15,7 @@ import {
 import type { Session } from '../lib/gym';
 import { WEEKDAY_SHORT } from '../lib/schedule';
 import { newId } from '../lib/store';
-import { colors, fonts, radius } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { Chip } from './Chip';
 
 interface Props {
@@ -40,6 +40,8 @@ interface Row {
 const blankRow = (): Row => ({ id: newId(), name: '', sets: '3', reps: '10', weight: '' });
 
 export function SessionForm({ visible, session, takenDays, onSave, onDelete, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
   const [days, setDays] = useState<number[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
@@ -103,7 +105,7 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
             <Text style={styles.heading}>{session ? 'Edit session' : 'New session'}</Text>
 
             <Text style={styles.label}>Name</Text>
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Push day" />
+            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Push day" placeholderTextColor={colors.faint} />
 
             <Text style={styles.label}>Which days?</Text>
             <View style={styles.chips}>
@@ -129,7 +131,7 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
                   style={[styles.input, styles.nameCol]}
                   value={r.name}
                   onChangeText={(v) => updateRow(r.id, { name: v })}
-                  placeholder="Exercise"
+                  placeholder="Exercise" placeholderTextColor={colors.faint}
                 />
                 <TextInput
                   style={[styles.input, styles.num]}
@@ -150,7 +152,7 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
                   value={r.weight}
                   onChangeText={(v) => updateRow(r.id, { weight: v })}
                   keyboardType="decimal-pad"
-                  placeholder="0"
+                  placeholder="0" placeholderTextColor={colors.faint}
                   maxLength={5}
                 />
                 <Pressable
@@ -182,10 +184,11 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+const makeStyles = ({ colors, fonts }: Theme) =>
+  StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
   sheet: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.sheet,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 20,
@@ -196,6 +199,7 @@ const styles = StyleSheet.create({
   label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
   note: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 8 },
   input: {
+    backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
@@ -220,7 +224,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
-  saveText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
+  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
   deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
 });

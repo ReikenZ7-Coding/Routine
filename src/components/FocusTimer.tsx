@@ -2,13 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, kinds, radius, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { Chip } from './Chip';
 
 const LENGTHS = [15, 25];
 
 /** A focus countdown that logs the minutes practised when it ends or is stopped. */
 export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
+  const { colors, type } = useTheme();
+  const styles = useStyles(makeStyles);
   const [length, setLength] = useState(15);
   const [run, setRun] = useState<{ start: number; end: number } | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -95,12 +97,13 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+  StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     padding: 16,
     marginTop: 12,
     gap: 10,

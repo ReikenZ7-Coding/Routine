@@ -17,10 +17,16 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
-import { colors, fonts, kinds, radius } from '../theme';
+import { useFabBottom } from '../components/NowPlaying';
+import { type Theme, useStyles, useTheme } from '../theme';
 
-export default function RoutinesScreen() {
-  const { ready, today, routines, updateRoutines } = useStore();
+export default function RoutinesScreen({ query = '' }: { query?: string }) {
+  const { colors, kinds } = useTheme();
+  const styles = useStyles(makeStyles);
+  const fabBottom = useFabBottom();
+  const { ready, today, routines: all, updateRoutines } = useStore();
+  const q = query.trim().toLowerCase();
+  const routines = q ? all.filter((r) => r.name.toLowerCase().includes(q)) : all;
   const [editing, setEditing] = useState<Routine | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
@@ -28,7 +34,7 @@ export default function RoutinesScreen() {
 
   const todays = sortByTime(routines.filter((r) => isScheduled(r, today)));
   const others = sortByTime(routines.filter((r) => !isScheduled(r, today) && r.repeat.kind !== 'once'));
-  const ideasLeft = ROUTINE_IDEAS.filter((idea) => !routines.some((r) => r.name === idea.name));
+  const ideasLeft = ROUTINE_IDEAS.filter((idea) => !all.some((r) => r.name === idea.name));
   const addIdea = (idea: (typeof ROUTINE_IDEAS)[number]) =>
     updateRoutines((rs) => [...rs, { ...idea, id: newId(), doneDates: [] }]);
   const replace = (next: Routine) => updateRoutines((rs) => rs.map((r) => (r.id === next.id ? next : r)));
@@ -42,7 +48,7 @@ export default function RoutinesScreen() {
   return (
     <View style={styles.flex}>
       <ScrollView contentContainerStyle={styles.content}>
-        {routines.length === 0 ? (
+        {all.length === 0 ? (
           <View style={styles.welcome}>
             <Ionicons name="repeat-outline" size={40} color={kinds.routines.color} />
             <Text style={styles.welcomeTitle}>Your own routines</Text>
@@ -123,9 +129,9 @@ export default function RoutinesScreen() {
         )}
       </ScrollView>
 
-      {routines.length > 0 && (
-        <Pressable style={styles.fab} onPress={() => open()} accessibilityLabel="Add routine">
-          <Ionicons name="add" size={30} color="#fff" />
+      {all.length > 0 && (
+        <Pressable style={[styles.fab, { bottom: fabBottom }]} onPress={() => open()} accessibilityLabel="Add routine">
+          <Ionicons name="add" size={30} color={colors.onPrimary} />
         </Pressable>
       )}
 
@@ -161,10 +167,11 @@ export default function RoutinesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts, radius }: Theme) =>
+  StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: 16, paddingBottom: 110 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
+  content: { padding: 16, paddingBottom: 170 },
+  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
   welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 8 },
   idea: {
@@ -188,7 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
-  primaryText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
+  primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
   emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
   ideaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
   otherRow: { paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },

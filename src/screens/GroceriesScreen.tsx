@@ -6,7 +6,8 @@ import { GroceryForm } from '../components/GroceryForm';
 import { Divider, Section } from '../components/Section';
 import { STARTER_STAPLES, useStore } from '../lib/store';
 import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListText, needsBuying, nextDue } from '../lib/schedule';
-import { colors, fonts, kinds, radius, type } from '../theme';
+import { useFabBottom } from '../components/NowPlaying';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 const NO_AISLE = 'Other';
 
@@ -25,8 +26,13 @@ function subtitle(item: GroceryItem): string {
   return [item.quantity, describeRepeat(item.repeat)].filter(Boolean).join(' · ');
 }
 
-export default function GroceriesScreen() {
-  const { ready, today, groceries, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
+export default function GroceriesScreen({ query = '' }: { query?: string }) {
+  const { colors, kinds, type } = useTheme();
+  const styles = useStyles(makeStyles);
+  const fabBottom = useFabBottom();
+  const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
+  const q = query.trim().toLowerCase();
+  const groceries = q ? all.filter((g) => g.name.toLowerCase().includes(q)) : all;
   const [editing, setEditing] = useState<GroceryItem | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
@@ -61,7 +67,7 @@ export default function GroceriesScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        {groceries.length === 0 ? (
+        {all.length === 0 ? (
           <View style={styles.welcome}>
             <Ionicons name="cart-outline" size={40} color={kinds.groceries.color} />
             <Text style={styles.welcomeTitle}>Your grocery routine</Text>
@@ -156,9 +162,9 @@ export default function GroceriesScreen() {
         )}
       </ScrollView>
 
-      {groceries.length > 0 && (
-        <Pressable style={styles.fab} onPress={openNew} accessibilityLabel="Add grocery item">
-          <Ionicons name="add" size={30} color="#fff" />
+      {all.length > 0 && (
+        <Pressable style={[styles.fab, { bottom: fabBottom }]} onPress={openNew} accessibilityLabel="Add grocery item">
+          <Ionicons name="add" size={30} color={colors.onPrimary} />
         </Pressable>
       )}
 
@@ -184,11 +190,12 @@ export default function GroceriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+  StyleSheet.create({
   screen: { flex: 1 },
   shareLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  content: { padding: 16, paddingBottom: 110 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
+  content: { padding: 16, paddingBottom: 170 },
+  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
   welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
   primaryButton: {
@@ -199,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 20,
   },
-  primaryText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
+  primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
   secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
   secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
   emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },

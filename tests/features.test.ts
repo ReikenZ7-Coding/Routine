@@ -88,7 +88,7 @@ test('week stats count routines, gym and Chinese over the last 7 days', () => {
 });
 
 test('backups round-trip and reject other text', () => {
-  const data = { groceries: [], gym: { sessions: [], logs: [] }, chinese: { target: 15, words: [], logs: [] }, routines: [daily()], journal: {} };
+  const data = { groceries: [], gym: { sessions: [], logs: [] }, chinese: { target: 15, words: [], logs: [] }, routines: [daily()], journal: {}, inbox: [] };
   assert.deepEqual(parseBackup(makeBackup(data)), data);
   assert.throws(() => parseBackup('hello'), /doesn't look like/);
   assert.throws(() => parseBackup('{"app":"routine"}'), /missing/);

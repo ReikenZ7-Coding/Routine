@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radius, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 interface Props {
   title: string;
@@ -11,12 +11,14 @@ interface Props {
 }
 
 export function Section({ title, dot, right, children }: Props) {
+  const { type } = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           {dot && <View style={[styles.dot, { backgroundColor: dot }]} />}
-          <Text style={type.label}>{title}</Text>
+          <Text style={type.sectionTitle}>{title}</Text>
         </View>
         {right}
       </View>
@@ -26,10 +28,12 @@ export function Section({ title, dot, right, children }: Props) {
 }
 
 export function Divider({ inset = 52 }: { inset?: number }) {
+  const styles = useStyles(makeStyles);
   return <View style={[styles.divider, { marginLeft: inset }]} />;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, radius }: Theme) =>
+  StyleSheet.create({
   wrap: { marginTop: 24 },
   header: {
     flexDirection: 'row',
@@ -43,8 +47,8 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.card,
     borderRadius: radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     overflow: 'hidden',
   },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 interface Props {
   title: string;
@@ -20,7 +20,10 @@ interface Props {
   onLongPress?: () => void;
 }
 
-export function CheckRow({ title, subtitle, done, tint = colors.text, meta, disabled, count, skipped, onToggle, onLongPress }: Props) {
+export function CheckRow({ title, subtitle, done, tint: tintProp, meta, disabled, count, skipped, onToggle, onLongPress }: Props) {
+  const { colors, type } = useTheme();
+  const tint = tintProp ?? colors.text;
+  const styles = useStyles(makeStyles);
   const partial = !done && !!count && count.value > 0;
   const press = () => {
     if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
@@ -64,7 +67,8 @@ export function CheckRow({ title, subtitle, done, tint = colors.text, meta, disa
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts, type }: Theme) =>
+  StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',

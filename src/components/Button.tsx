@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, type ViewStyle } from 'react-native';
-import { colors, fonts, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 interface Props {
   label: string;
@@ -11,6 +11,8 @@ interface Props {
 
 /** Ink pill for the main action, plain text for secondary ones. */
 export function Button({ label, onPress, variant = 'primary', style }: Props) {
+  const { colors, type } = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       onPress={onPress}
@@ -32,20 +34,23 @@ export function Button({ label, onPress, variant = 'primary', style }: Props) {
 }
 
 export function Fab({ onPress, label }: { onPress: () => void; label: string }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <Pressable
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
       onPress={onPress}
       accessibilityLabel={label}
     >
-      <Ionicons name="add" size={28} color="#fff" />
+      <Ionicons name="add" size={28} color={colors.onPrimary} />
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts }: Theme) =>
+  StyleSheet.create({
   primary: {
-    backgroundColor: colors.text,
+    backgroundColor: colors.primary,
     borderRadius: 999,
     paddingVertical: 15,
     paddingHorizontal: 24,
@@ -61,7 +66,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 18,
-    backgroundColor: colors.text,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

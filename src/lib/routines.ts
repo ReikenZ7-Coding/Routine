@@ -26,6 +26,43 @@ export interface Routine {
   skipDates?: string[];
   /** Daily reminder time, local. */
   reminder?: { hour: number; minute: number };
+  /** Start time on the timeline, "HH:MM". Without it the routine is "anytime". */
+  start?: string;
+  /** Minutes it takes. */
+  duration?: number;
+  /** Ionicons name. */
+  icon?: string;
+  /** Shown as a one-tap shortcut at the top of Today. */
+  pinned?: boolean;
+}
+
+export const ROUTINE_ICONS = [
+  'sunny', 'water', 'barbell', 'body', 'walk', 'bicycle', 'book', 'cafe', 'restaurant', 'bed',
+  'medkit', 'leaf', 'brush', 'call', 'laptop', 'musical-notes', 'heart', 'sparkles',
+] as const;
+
+const ICON_WORDS: [RegExp, string][] = [
+  [/water|drink|hydrat/i, 'water'],
+  [/yoga|stretch|pilates/i, 'body'],
+  [/gym|lift|workout|push|weights/i, 'barbell'],
+  [/walk|steps|run/i, 'walk'],
+  [/bike|cycl/i, 'bicycle'],
+  [/read|book|study|learn/i, 'book'],
+  [/coffee|tea/i, 'cafe'],
+  [/eat|cook|meal|breakfast|lunch|dinner/i, 'restaurant'],
+  [/sleep|bed|nap/i, 'bed'],
+  [/vitamin|pill|med/i, 'medkit'],
+  [/plant|garden|meditat|breath/i, 'leaf'],
+  [/clean|tidy|teeth|shower/i, 'sparkles'],
+  [/call|mum|mom|dad|phone/i, 'call'],
+  [/wake|rise|morning|sun/i, 'sunny'],
+  [/music|piano|guitar|practi/i, 'musical-notes'],
+  [/work|email|code/i, 'laptop'],
+];
+
+export function iconFor(r: Pick<Routine, 'name' | 'icon'>): string {
+  if (r.icon) return r.icon;
+  return ICON_WORDS.find(([re]) => re.test(r.name))?.[1] ?? 'ellipse';
 }
 
 export function lastDone(r: Routine, before?: string): string | undefined {
@@ -123,16 +160,17 @@ export function streak(r: Routine, today: string): number {
 }
 
 export function sortByTime(routines: Routine[]): Routine[] {
-  return [...routines].sort(
-    (a, b) => TIME_ORDER.indexOf(a.time) - TIME_ORDER.indexOf(b.time) || a.name.localeCompare(b.name),
-  );
+  // Timed routines first, by start; then the rest by time of day.
+  const key = (r: Routine) => r.start ?? `~${TIME_ORDER.indexOf(r.time)}`;
+  return [...routines].sort((a, b) => key(a).localeCompare(key(b)) || a.name.localeCompare(b.name));
 }
 
 export const ROUTINE_IDEAS: Omit<Routine, 'id' | 'doneDates'>[] = [
-  { name: 'Drink water', repeat: { kind: 'everyNDays', n: 1 }, time: 'anytime', target: 8 },
-  { name: 'Stretch 10 minutes', repeat: { kind: 'everyNDays', n: 1 }, time: 'evening' },
-  { name: 'Read 20 pages', repeat: { kind: 'everyNDays', n: 1 }, time: 'evening' },
-  { name: 'Clean the room', repeat: { kind: 'weekdays', days: [6] }, time: 'morning' },
+  { name: 'Rise and shine', repeat: { kind: 'everyNDays', n: 1 }, time: 'morning', start: '07:00', duration: 15, icon: 'sunny' },
+  { name: 'Drink water', repeat: { kind: 'everyNDays', n: 1 }, time: 'anytime', target: 8, icon: 'water' },
+  { name: 'Stretch', repeat: { kind: 'everyNDays', n: 1 }, time: 'evening', start: '21:00', duration: 10, icon: 'body' },
+  { name: 'Read 20 pages', repeat: { kind: 'everyNDays', n: 1 }, time: 'evening', start: '21:30', duration: 30, icon: 'book' },
+  { name: 'Clean the room', repeat: { kind: 'weekdays', days: [6] }, time: 'morning', start: '10:00', duration: 45, icon: 'sparkles' },
 ];
 
 export function formatTime(hour: number, minute: number): string {
@@ -143,7 +181,7 @@ export function routineSubtitle(r: Routine, today: string): string {
   if (isSkipped(r, today)) return 'Skipped · streak kept';
   const s = streak(r, today);
   return [
-    r.reminder ? formatTime(r.reminder.hour, r.reminder.minute) : TIME_LABELS[r.time],
+    r.start ?? (r.reminder ? formatTime(r.reminder.hour, r.reminder.minute) : TIME_LABELS[r.time]),
     describeRepeat(r.repeat),
     s > 1 ? `${s} in a row` : '',
   ]

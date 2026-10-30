@@ -11,22 +11,26 @@ import { useFonts } from 'expo-font';
 import { Tabs } from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MiniPlayer, NowPlaying } from '../components/NowPlaying';
 import { syncReminders } from '../lib/reminders';
+import { SoundProvider } from '../lib/sounds';
 import { StoreProvider, useStore } from '../lib/store';
-import { colors, fonts } from '../theme';
+import { ThemeContext, themeFor } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
 const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
-  { name: 'index', title: 'Plan', icon: 'calendar-clear-outline', iconActive: 'calendar-clear' },
-  { name: 'routines', title: 'Routines', icon: 'repeat-outline', iconActive: 'repeat' },
+  { name: 'index', title: 'Today', icon: 'today-outline', iconActive: 'today' },
+  { name: 'inbox', title: 'Inbox', icon: 'file-tray-outline', iconActive: 'file-tray' },
   { name: 'gym', title: 'Gym', icon: 'barbell-outline', iconActive: 'barbell' },
   { name: 'chinese', title: 'Chinese', icon: 'language-outline', iconActive: 'language' },
-  { name: 'groceries', title: 'Groceries', icon: 'basket-outline', iconActive: 'basket' },
+  { name: 'library', title: 'Library', icon: 'library-outline', iconActive: 'library' },
 ];
 
 export default function RootLayout() {
@@ -48,43 +52,91 @@ export default function RootLayout() {
 
   return (
     <StoreProvider>
-      <StatusBar style="dark" />
-      <ReminderSync />
-      <Tabs
-        screenOptions={{
-          tabBarActiveTintColor: colors.text,
-          tabBarInactiveTintColor: colors.faint,
-          tabBarStyle: {
-            backgroundColor: colors.bg,
-            borderTopColor: colors.border,
-            borderTopWidth: StyleSheet.hairlineWidth,
-            elevation: 0,
-          },
-          tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
-          headerStyle: { backgroundColor: colors.bg },
-          headerShadowVisible: false,
-          headerTitleAlign: 'left',
-          headerTitleStyle: { fontFamily: fonts.display, fontSize: 24, color: colors.text },
-          sceneStyle: { backgroundColor: colors.bg },
-        }}
-      >
-        {TABS.map((t) => (
-          <Tabs.Screen
-            key={t.name}
-            name={t.name}
-            options={{
-              title: t.title,
-              headerShown: t.name !== 'index',
-              tabBarIcon: ({ color, size, focused }) => (
-                <Ionicons name={focused ? t.iconActive : t.icon} color={color as string} size={size - 2} />
-              ),
-            }}
-          />
-        ))}
-      </Tabs>
+      <SoundProvider>
+        <ThemedApp />
+      </SoundProvider>
     </StoreProvider>
   );
 }
+
+function ThemedApp() {
+  const { settings } = useStore();
+  const theme = themeFor(settings.theme);
+  const { colors, fonts, glass } = theme;
+  const insets = useSafeAreaInsets();
+  const barBottom = glass ? insets.bottom + 10 : 0;
+  const barHeight = glass ? 72 : 56 + insets.bottom;
+
+  return (
+    <ThemeContext.Provider value={theme}>
+      <View style={styles.root}>
+        <LinearGradient colors={colors.gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
+        <StatusBar style={colors.statusBar} />
+        <ReminderSync />
+        <Tabs
+          // Each screen paints its own gradient, so screens kept alive in the background never show through.
+          screenLayout={({ children }) => (
+            <View style={styles.root}>
+              <LinearGradient colors={colors.gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
+              {children}
+            </View>
+          )}
+          screenOptions={{
+            tabBarActiveTintColor: colors.text,
+            tabBarInactiveTintColor: colors.faint,
+            tabBarStyle: glass
+              ? {
+                  position: 'absolute',
+                  marginHorizontal: 16,
+                  bottom: barBottom,
+                  height: barHeight,
+                  paddingTop: 8,
+                  paddingBottom: 12,
+                  borderRadius: 28,
+                  borderTopWidth: 1,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                  borderTopColor: colors.cardBorder,
+                  backgroundColor: colors.tabBar,
+                  elevation: 0,
+                }
+              : {
+                  backgroundColor: colors.tabBar,
+                  borderTopColor: colors.border,
+                  borderTopWidth: StyleSheet.hairlineWidth,
+                  elevation: 0,
+                },
+            tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
+            headerStyle: { backgroundColor: colors.gradient[0] },
+            headerShadowVisible: false,
+            headerTitleAlign: 'left',
+            headerTintColor: colors.text,
+            headerTitleStyle: { fontFamily: fonts.display, fontSize: 26, color: colors.text },
+            sceneStyle: { backgroundColor: 'transparent' },
+          }}
+        >
+          {TABS.map((t) => (
+            <Tabs.Screen
+              key={t.name}
+              name={t.name}
+              options={{
+                title: t.title,
+                headerShown: t.name === 'gym' || t.name === 'chinese',
+                tabBarIcon: ({ color, size, focused }) => (
+                  <Ionicons name={focused ? t.iconActive : t.icon} color={color as string} size={size - 2} />
+                ),
+              }}
+            />
+          ))}
+        </Tabs>
+        <MiniPlayer bottom={barBottom + barHeight + 10} />
+        <NowPlaying />
+      </View>
+    </ThemeContext.Provider>
+  );
+}
+
+const styles = StyleSheet.create({ root: { flex: 1 } });
 
 /** Keeps scheduled notifications in step with the routines' reminder times. */
 function ReminderSync() {

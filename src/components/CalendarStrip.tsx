@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { type DayMarks, monthGrid, weekOf } from '../lib/agenda';
 import { addDays, parseKey } from '../lib/schedule';
-import { colors, fonts, kinds, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 const LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const DOT_ORDER = ['routines', 'gym', 'chinese', 'groceries'] as const;
@@ -21,6 +21,8 @@ interface Props {
 
 /** A week strip that opens into a month. Each day shows a dot per kind of thing planned. */
 export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodFor, onSelect }: Props) {
+  const { colors, kinds } = useTheme();
+  const styles = useStyles(makeStyles);
   const rows = expanded ? monthGrid(selected) : [weekOf(selected)];
 
   const shift = (dir: -1 | 1) => {
@@ -87,7 +89,8 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts, type }: Theme) =>
+  StyleSheet.create({
   wrap: { marginTop: 20, gap: 2 },
   nav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   letters: { flex: 1, flexDirection: 'row' },
@@ -95,10 +98,10 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row', marginHorizontal: 22 },
   day: { flex: 1, alignItems: 'center', paddingVertical: 4, gap: 4 },
   num: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  numSelected: { backgroundColor: colors.text },
+  numSelected: { backgroundColor: colors.primary },
   numToday: { borderWidth: 1.5, borderColor: colors.text },
   numText: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
-  numTextSelected: { color: '#fff' },
+  numTextSelected: { color: colors.onPrimary },
   past: { color: colors.faint },
   dots: { flexDirection: 'row', gap: 3, height: 5 },
   mood: { position: 'absolute', top: 0, right: 2, fontSize: 10 },

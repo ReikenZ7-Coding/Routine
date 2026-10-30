@@ -2,18 +2,20 @@ import { useState } from 'react';
 import { Alert, Platform, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { makeBackup, parseBackup } from '../lib/backup';
 import { useStore } from '../lib/store';
-import { colors, fonts, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { Button } from './Button';
 import { Sheet } from './Sheet';
 
 /** Export everything as text (to save in notes, email or a chat), or paste it back in. */
 export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { groceries, gym, chinese, routines, journal, restore } = useStore();
+  const { colors, type } = useTheme();
+  const styles = useStyles(makeStyles);
+  const { groceries, gym, chinese, routines, journal, inbox, restore } = useStore();
   const [pasted, setPasted] = useState('');
   const [shown, setShown] = useState<string | null>(null);
 
   const exportAll = async () => {
-    const text = makeBackup({ groceries, gym, chinese, routines, journal });
+    const text = makeBackup({ groceries, gym, chinese, routines, journal, inbox });
     if (Platform.OS === 'web') return setShown(text);
     try {
       await Share.share({ title: 'Routine backup', message: text });
@@ -66,11 +68,12 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts, type }: Theme) =>
+  StyleSheet.create({
   label: { ...type.label, marginTop: 22, marginBottom: 8 },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.cardBorder,
     borderRadius: 10,
     padding: 12,
     backgroundColor: colors.card,

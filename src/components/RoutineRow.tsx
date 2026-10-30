@@ -1,5 +1,5 @@
 import { type Routine, countOn, isDoneOn, isSkipped, routineSubtitle, tapRoutine } from '../lib/routines';
-import { kinds } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { CheckRow } from './CheckRow';
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 
 /** A routine on a given day: tick it off, or +1 if it's a counter. */
 export function RoutineRow({ routine: r, date, disabled, onChange, onLongPress }: Props) {
+  const { kinds } = useTheme();
   const counter = !!r.target && r.target > 1;
   return (
     <CheckRow

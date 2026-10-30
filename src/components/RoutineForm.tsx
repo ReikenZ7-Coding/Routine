@@ -13,14 +13,18 @@ import {
   View,
 } from 'react-native';
 import { allowReminders, remindersSupported } from '../lib/reminders';
-import { type Routine, type TimeOfDay, TIME_LABELS, formatTime } from '../lib/routines';
+import { Ionicons } from '@expo/vector-icons';
+import { ROUTINE_ICONS, type Routine, type TimeOfDay, TIME_LABELS, formatTime, iconFor } from '../lib/routines';
+import { clock, parseClock } from '../lib/timeline';
 import { type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
-import { colors, fonts, radius } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { Chip } from './Chip';
 
 type RepeatChoice = 'daily' | 'weekdays' | 'everyN' | 'once';
 
-export type RoutineFields = Pick<Routine, 'name' | 'repeat' | 'time' | 'target' | 'reminder'>;
+export type RoutineFields = Pick<Routine, 'name' | 'repeat' | 'time' | 'target' | 'reminder' | 'start' | 'duration' | 'icon' | 'pinned'>;
+
+const DURATIONS = [5, 10, 15, 30, 45, 60, 90];
 
 const DEFAULT_REMINDER: Record<TimeOfDay, string> = { morning: '08:00', afternoon: '13:00', evening: '20:00', anytime: '09:00' };
 
@@ -50,6 +54,8 @@ function choiceFor(r: Repeat): RepeatChoice {
 }
 
 export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose }: Props) {
+  const { colors, kinds } = useTheme();
+  const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
   const [choice, setChoice] = useState<RepeatChoice>('daily');
   const [everyN, setEveryN] = useState('2');
@@ -59,6 +65,10 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   const [target, setTarget] = useState('8');
   const [remind, setRemind] = useState(false);
   const [remindAt, setRemindAt] = useState('09:00');
+  const [start, setStart] = useState('');
+  const [duration, setDuration] = useState(15);
+  const [icon, setIcon] = useState<string | undefined>();
+  const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -71,7 +81,11 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
     setCounter(!!routine?.target);
     setTarget(String(routine?.target ?? 8));
     setRemind(!!routine?.reminder);
-    setRemindAt(routine?.reminder ? formatTime(routine.reminder.hour, routine.reminder.minute) : DEFAULT_REMINDER[routine?.time ?? 'anytime']);
+    setRemindAt(routine?.reminder ? formatTime(routine.reminder.hour, routine.reminder.minute) : routine?.start ?? DEFAULT_REMINDER[routine?.time ?? 'anytime']);
+    setStart(routine?.start ?? '');
+    setDuration(routine?.duration ?? 15);
+    setIcon(routine?.icon);
+    setPinned(!!routine?.pinned);
   }, [visible, routine]);
 
   async function save() {
@@ -101,8 +115,28 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
         Alert.alert('Notifications are off', 'Allow notifications for Routine in your phone settings to get reminders.');
       }
     }
+    let startAt: string | undefined;
+    if (start.trim()) {
+      const m = parseClock(start);
+      if (m === undefined) {
+        Alert.alert('Check the start time', 'Write it like 07:30 or 18:00, or leave it empty for anytime.');
+        return;
+      }
+      startAt = clock(m);
+    }
     const goal = counter ? Math.max(2, parseInt(target, 10) || 2) : undefined;
-    onSave({ name: name.trim(), repeat, time, target: goal, reminder });
+    const when: TimeOfDay = startAt ? (parseClock(startAt)! < 720 ? 'morning' : parseClock(startAt)! < 1020 ? 'afternoon' : 'evening') : time;
+    onSave({
+      name: name.trim(),
+      repeat,
+      time: when,
+      target: goal,
+      reminder,
+      start: startAt,
+      duration: startAt ? duration : undefined,
+      icon,
+      pinned: pinned || undefined,
+    });
   }
 
   function confirmDelete() {
@@ -128,7 +162,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Stretch 10 minutes"
+              placeholder="e.g. Stretch 10 minutes" placeholderTextColor={colors.faint}
               autoFocus={!routine}
             />
 
@@ -166,11 +200,60 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
               </View>
             )}
 
-            <Text style={styles.label}>When?</Text>
-            <View style={styles.chips}>
-              {(Object.keys(TIME_LABELS) as TimeOfDay[]).map((t) => (
-                <Chip key={t} label={TIME_LABELS[t]} active={time === t} onPress={() => setTime(t)} />
-              ))}
+            <Text style={styles.label}>Start time (leave empty for anytime)</Text>
+            <TextInput
+              style={[styles.input, styles.timeInput]}
+              value={start}
+              onChangeText={setStart}
+              keyboardType="numbers-and-punctuation"
+              maxLength={5}
+              placeholder="07:30"
+              placeholderTextColor={colors.faint}
+            />
+            {start.trim() ? (
+              <>
+                <Text style={styles.label}>Takes</Text>
+                <View style={styles.chips}>
+                  {DURATIONS.map((d) => (
+                    <Chip key={d} label={d >= 60 ? `${d / 60} h`.replace('1.5 h', '1½ h') : `${d} min`} active={duration === d} onPress={() => setDuration(d)} />
+                  ))}
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>Roughly when?</Text>
+                <View style={styles.chips}>
+                  {(Object.keys(TIME_LABELS) as TimeOfDay[]).map((t) => (
+                    <Chip key={t} label={TIME_LABELS[t]} active={time === t} onPress={() => setTime(t)} />
+                  ))}
+                </View>
+              </>
+            )}
+
+            <Text style={styles.label}>Icon</Text>
+            <View style={styles.icons}>
+              {ROUTINE_ICONS.map((ic) => {
+                const active = (icon ?? iconFor({ name, icon })) === ic;
+                return (
+                  <Pressable
+                    key={ic}
+                    style={[styles.iconChoice, active && { backgroundColor: kinds.routines.color, borderColor: kinds.routines.color }]}
+                    onPress={() => setIcon(ic)}
+                    accessibilityLabel={`Icon ${ic}`}
+                    accessibilityState={{ selected: active }}
+                  >
+                    <Ionicons name={ic} size={18} color={active ? '#FFFFFF' : colors.text} />
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.switchRow}>
+              <View style={styles.flex}>
+                <Text style={styles.switchTitle}>Shortcut on Today</Text>
+                <Text style={styles.switchSub}>A one-tap button at the top of your day</Text>
+              </View>
+              <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: kinds.routines.color }} />
             </View>
 
             <View style={styles.switchRow}>
@@ -178,7 +261,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
                 <Text style={styles.switchTitle}>Count it</Text>
                 <Text style={styles.switchSub}>Tap +1 each time, like glasses of water</Text>
               </View>
-              <Switch value={counter} onValueChange={setCounter} trackColor={{ true: colors.text }} />
+              <Switch value={counter} onValueChange={setCounter} trackColor={{ true: kinds.routines.color }} />
             </View>
             {counter && (
               <View style={styles.inline}>
@@ -201,7 +284,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
                   {remindersSupported ? 'A notification on the days it’s due' : 'Works in the Android app'}
                 </Text>
               </View>
-              <Switch value={remind} onValueChange={setRemind} trackColor={{ true: colors.text }} />
+              <Switch value={remind} onValueChange={setRemind} trackColor={{ true: kinds.routines.color }} />
             </View>
             {remind && (
               <View style={styles.inline}>
@@ -212,7 +295,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
                   onChangeText={setRemindAt}
                   keyboardType="numbers-and-punctuation"
                   maxLength={5}
-                  placeholder="08:00"
+                  placeholder="08:00" placeholderTextColor={colors.faint}
                 />
               </View>
             )}
@@ -237,10 +320,11 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+const makeStyles = ({ colors, fonts }: Theme) =>
+  StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
   sheet: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.sheet,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 20,
@@ -250,6 +334,7 @@ const styles = StyleSheet.create({
   heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
   label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
   input: {
+    backgroundColor: colors.input,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
@@ -263,6 +348,8 @@ const styles = StyleSheet.create({
   inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
   smallInput: { width: 64, textAlign: 'center' },
+  icons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  iconChoice: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   timeInput: { width: 84, textAlign: 'center', fontFamily: fonts.mono },
   flex: { flex: 1 },
   switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 },
@@ -277,7 +364,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
-  saveText: { color: '#fff', fontFamily: fonts.bodyBold, fontSize: 16 },
+  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
   deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
 });

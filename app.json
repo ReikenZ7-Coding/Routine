@@ -43,6 +43,12 @@
         {
           "color": "#141716"
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
       ]
     ],
     "scheme": "routine"

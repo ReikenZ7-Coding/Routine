@@ -16,6 +16,8 @@ for (const [tag, src] of scripts) {
     const b64 = readFileSync(join(dir, p)).toString('base64');
     return `"data:font/ttf;base64,${b64}"`;
   });
+  // And the focus sounds.
+  js = js.replace(/"\/(assets\/[^"]*\.wav)"/g, (_, p) => `"data:audio/wav;base64,${readFileSync(join(dir, p)).toString('base64')}"`);
   inlined += `<script>${js.replace(/<\/script/gi, '<\\/script')}</script>`;
 }
 
@@ -29,7 +31,7 @@ console.log(`Wrote ${out} (${(html.length / 1024 / 1024).toFixed(1)} MB)`);
 // Optional second output: the same page as a body fragment for hosts that supply their own <html>/<head>.
 const fragmentOut = process.argv[4];
 if (fragmentOut) {
-  const style = html.match(/<style id="expo-reset">[\s\S]*?<\/style>/)[0].replace('</style>', 'body{background:#F2F3F1}</style>');
+  const style = html.match(/<style id="expo-reset">[\s\S]*?<\/style>/)[0].replace('</style>', 'body{background:#A39BEE}</style>');
   const body = html.match(/<body>([\s\S]*)<\/body>/)[1];
   writeFileSync(fragmentOut, `<title>Routine</title>\n${style}\n${body}`);
   console.log(`Wrote ${fragmentOut}`);

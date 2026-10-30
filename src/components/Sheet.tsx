@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colors, fonts } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 
 /** Bottom sheet used by the smaller panels (stats, backup, quick add). */
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
+  const styles = useStyles(makeStyles);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -20,10 +21,11 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' },
+const makeStyles = ({ colors, fonts }: Theme) =>
+  StyleSheet.create({
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
   sheet: {
-    backgroundColor: colors.bg,
+    backgroundColor: colors.sheet,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     padding: 20,

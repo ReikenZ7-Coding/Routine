@@ -4,12 +4,14 @@ import { personalRecords } from '../lib/records';
 import { formatWeight } from '../lib/gym';
 import { WEEKDAY_SHORT, friendlyDate, parseKey } from '../lib/schedule';
 import { useStore } from '../lib/store';
-import { colors, fonts, kinds, radius, type } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
 import { Divider, Section } from './Section';
 import { Sheet } from './Sheet';
 
 /** "Your week": how the last seven days went, plus best streaks and lifts. */
 export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { kinds, type } = useTheme();
+  const styles = useStyles(makeStyles);
   const { today, routines, gym, chinese } = useStore();
   if (!visible) return null;
   const s = weekStats(routines, gym, chinese, today);
@@ -89,6 +91,8 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
 }
 
 function Tile({ value, label, color }: { value: string; label: string; color: string }) {
+  const { type } = useTheme();
+  const styles = useStyles(makeStyles);
   return (
     <View style={styles.tile}>
       <Text style={[styles.tileValue, { color }]}>{value}</Text>
@@ -97,7 +101,8 @@ function Tile({ value, label, color }: { value: string; label: string; color: st
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = ({ colors, fonts, radius }: Theme) =>
+  StyleSheet.create({
   flex: { flex: 1 },
   gap: { marginTop: 12 },
   tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
@@ -105,8 +110,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.card,
     borderRadius: radius,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
     padding: 12,
     gap: 2,
   },
