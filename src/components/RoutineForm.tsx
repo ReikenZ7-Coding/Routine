@@ -7,24 +7,39 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { type Routine, type TimeOfDay, TIME_LABELS } from '../lib/routines';
+import { allowReminders, remindersSupported } from '../lib/reminders';
+import { type Routine, type TimeOfDay, TIME_LABELS, formatTime } from '../lib/routines';
 import { type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
 import { colors, fonts, radius } from '../theme';
 import { Chip } from './Chip';
 
 type RepeatChoice = 'daily' | 'weekdays' | 'everyN' | 'once';
 
-export type RoutineFields = Pick<Routine, 'name' | 'repeat' | 'time'>;
+export type RoutineFields = Pick<Routine, 'name' | 'repeat' | 'time' | 'target' | 'reminder'>;
+
+const DEFAULT_REMINDER: Record<TimeOfDay, string> = { morning: '08:00', afternoon: '13:00', evening: '20:00', anytime: '09:00' };
+
+function parseTime(text: string): { hour: number; minute: number } | undefined {
+  const m = text.trim().match(/^(\d{1,2})[:.]?(\d{2})$/);
+  if (!m) return undefined;
+  const hour = Number(m[1]);
+  const minute = Number(m[2]);
+  return hour < 24 && minute < 60 ? { hour, minute } : undefined;
+}
 
 interface Props {
   visible: boolean;
   routine?: Routine;
   onSave: (fields: RoutineFields) => void;
   onDelete?: () => void;
+  /** Skip (or un-skip) today without breaking the streak. Only offered when it's on today. */
+  onSkip?: () => void;
+  skippedToday?: boolean;
   onClose: () => void;
 }
 
@@ -34,12 +49,16 @@ function choiceFor(r: Repeat): RepeatChoice {
   return r.n === 1 ? 'daily' : 'everyN';
 }
 
-export function RoutineForm({ visible, routine, onSave, onDelete, onClose }: Props) {
+export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose }: Props) {
   const [name, setName] = useState('');
   const [choice, setChoice] = useState<RepeatChoice>('daily');
   const [everyN, setEveryN] = useState('2');
   const [days, setDays] = useState<number[]>([]);
   const [time, setTime] = useState<TimeOfDay>('anytime');
+  const [counter, setCounter] = useState(false);
+  const [target, setTarget] = useState('8');
+  const [remind, setRemind] = useState(false);
+  const [remindAt, setRemindAt] = useState('09:00');
 
   useEffect(() => {
     if (!visible) return;
@@ -49,9 +68,13 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onClose }: Pro
     setEveryN(r.kind === 'everyNDays' && r.n > 1 ? String(r.n) : '2');
     setDays(r.kind === 'weekdays' ? r.days : []);
     setTime(routine?.time ?? 'anytime');
+    setCounter(!!routine?.target);
+    setTarget(String(routine?.target ?? 8));
+    setRemind(!!routine?.reminder);
+    setRemindAt(routine?.reminder ? formatTime(routine.reminder.hour, routine.reminder.minute) : DEFAULT_REMINDER[routine?.time ?? 'anytime']);
   }, [visible, routine]);
 
-  function save() {
+  async function save() {
     if (!name.trim()) {
       Alert.alert('Add a name', 'What do you want to do regularly?');
       return;
@@ -67,7 +90,19 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onClose }: Pro
       }
       repeat = { kind: 'weekdays', days: [...days].sort() };
     }
-    onSave({ name: name.trim(), repeat, time });
+    let reminder: RoutineFields['reminder'];
+    if (remind) {
+      reminder = parseTime(remindAt);
+      if (!reminder) {
+        Alert.alert('Check the time', 'Write the reminder time like 07:30 or 20:00.');
+        return;
+      }
+      if (remindersSupported && !(await allowReminders())) {
+        Alert.alert('Notifications are off', 'Allow notifications for Routine in your phone settings to get reminders.');
+      }
+    }
+    const goal = counter ? Math.max(2, parseInt(target, 10) || 2) : undefined;
+    onSave({ name: name.trim(), repeat, time, target: goal, reminder });
   }
 
   function confirmDelete() {
@@ -138,9 +173,58 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onClose }: Pro
               ))}
             </View>
 
+            <View style={styles.switchRow}>
+              <View style={styles.flex}>
+                <Text style={styles.switchTitle}>Count it</Text>
+                <Text style={styles.switchSub}>Tap +1 each time, like glasses of water</Text>
+              </View>
+              <Switch value={counter} onValueChange={setCounter} trackColor={{ true: colors.text }} />
+            </View>
+            {counter && (
+              <View style={styles.inline}>
+                <Text style={styles.inlineText}>Goal</Text>
+                <TextInput
+                  style={[styles.input, styles.smallInput]}
+                  value={target}
+                  onChangeText={setTarget}
+                  keyboardType="number-pad"
+                  maxLength={3}
+                />
+                <Text style={styles.inlineText}>times a day</Text>
+              </View>
+            )}
+
+            <View style={styles.switchRow}>
+              <View style={styles.flex}>
+                <Text style={styles.switchTitle}>Remind me</Text>
+                <Text style={styles.switchSub}>
+                  {remindersSupported ? 'A notification on the days it’s due' : 'Works in the Android app'}
+                </Text>
+              </View>
+              <Switch value={remind} onValueChange={setRemind} trackColor={{ true: colors.text }} />
+            </View>
+            {remind && (
+              <View style={styles.inline}>
+                <Text style={styles.inlineText}>At</Text>
+                <TextInput
+                  style={[styles.input, styles.timeInput]}
+                  value={remindAt}
+                  onChangeText={setRemindAt}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={5}
+                  placeholder="08:00"
+                />
+              </View>
+            )}
+
             <Pressable style={styles.saveButton} onPress={save}>
               <Text style={styles.saveText}>{routine ? 'Save' : 'Add routine'}</Text>
             </Pressable>
+            {routine && onSkip && (
+              <Pressable style={styles.skipButton} onPress={onSkip}>
+                <Text style={styles.skipText}>{skippedToday ? 'Undo skip' : 'Skip today (keeps your streak)'}</Text>
+              </Pressable>
+            )}
             {routine && onDelete && (
               <Pressable style={styles.deleteButton} onPress={confirmDelete}>
                 <Text style={styles.deleteText}>Delete routine</Text>
@@ -179,6 +263,13 @@ const styles = StyleSheet.create({
   inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
   inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
   smallInput: { width: 64, textAlign: 'center' },
+  timeInput: { width: 84, textAlign: 'center', fontFamily: fonts.mono },
+  flex: { flex: 1 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 },
+  switchTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+  switchSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
+  skipButton: { paddingVertical: 14, alignItems: 'center', marginTop: 10, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
+  skipText: { color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 15 },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: 999,

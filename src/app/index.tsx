@@ -3,11 +3,19 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BackupSheet } from '../components/BackupSheet';
 import { CalendarStrip } from '../components/CalendarStrip';
 import { CheckRow } from '../components/CheckRow';
+import { DayNote } from '../components/DayNote';
+import { GroceryForm } from '../components/GroceryForm';
+import { RoutineForm } from '../components/RoutineForm';
+import { RoutineRow } from '../components/RoutineRow';
 import { Divider, Section } from '../components/Section';
+import { Sheet } from '../components/Sheet';
+import { StatsSheet } from '../components/StatsSheet';
+import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
-import { dueWords, todaysLog } from '../lib/chinese';
+import { dueWords, newWord, todaysLog } from '../lib/chinese';
 import {
   type PhoneEvent,
   calendarSupported,
@@ -16,14 +24,16 @@ import {
   phoneEventsByDay,
 } from '../lib/deviceCalendar';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
-import { isDoneOn, isScheduled, routineSubtitle, sortByTime, toggleDone } from '../lib/routines';
+import { moodFace } from '../lib/journal';
+import { isDoneOn, isScheduled, isSkipped, sortByTime } from '../lib/routines';
 import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
-import { useStore } from '../lib/store';
+import { newId, useStore } from '../lib/store';
 import { colors, fonts, kinds, radius, type } from '../theme';
 
 export default function PlanScreen() {
   const store = useStore();
-  const { ready, today, groceries, toggleBought, gym, chinese, routines, updateRoutines, settings, updateSettings } = store;
+  const { ready, today, groceries, toggleBought, addGrocery, gym, chinese, updateChinese, routines, updateRoutines, settings, updateSettings, journal } = store;
+  const [panel, setPanel] = useState<'stats' | 'backup' | 'add' | 'routine' | 'grocery' | 'word' | null>(null);
   const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState(today);
   const [expanded, setExpanded] = useState(false);
@@ -49,6 +59,7 @@ export default function PlanScreen() {
   const dayState = { groceries, gym, chinese, routines };
   const marks = useCallback((d: string) => marksFor(dayState, d, today), [groceries, gym, chinese, routines, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const busy = useMemo(() => new Set(Object.keys(events)), [events]);
+  const moodFor = useCallback((d: string) => moodFace(journal[d]?.mood), [journal]);
 
   if (!ready) return null;
 
@@ -70,31 +81,38 @@ export default function PlanScreen() {
     .sort((a, b) => Number(boughtOn(a, selected)) - Number(boughtOn(b, selected)) || a.name.localeCompare(b.name));
 
   // Progress for the selected day: every routine and grocery item counts once, the workout and practice once each.
+  // Skipped routines don't count either way.
+  const plannedRoutines = dayRoutines.filter((r) => !isSkipped(r, selected));
   const done =
-    dayRoutines.filter((r) => isDoneOn(r, selected)).length +
+    plannedRoutines.filter((r) => isDoneOn(r, selected)).length +
     dayGroceries.filter((g) => boughtOn(g, selected)).length +
     (gymDone ? 1 : 0) +
     (showChinese && chineseDone ? 1 : 0);
-  const total = dayRoutines.length + dayGroceries.length + (session ? 1 : 0) + (showChinese ? 1 : 0);
+  const total = plannedRoutines.length + dayGroceries.length + (session ? 1 : 0) + (showChinese ? 1 : 0);
 
   const connect = async () => {
     const ok = await connectPhoneCalendar();
     updateSettings({ calendarConnected: ok });
   };
 
+  const close = () => setPanel(null);
+
   return (
+    <View style={styles.flex}>
     <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}>
+
       <View style={styles.header}>
         <Text style={type.hero}>{date.getDate()}</Text>
         <View style={styles.headerText}>
           <Text style={styles.weekday}>{date.toLocaleDateString('en', { weekday: 'long' })}</Text>
           <Text style={type.label}>{date.toLocaleDateString('en', { month: 'long', year: 'numeric' })}</Text>
         </View>
-        {!isToday && (
-          <Pressable style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
-            <Text style={styles.todayButtonText}>Today</Text>
-          </Pressable>
-        )}
+        <Pressable style={styles.iconButton} onPress={() => setPanel('stats')} accessibilityLabel="Your week">
+          <Ionicons name="stats-chart-outline" size={17} color={colors.text} />
+        </Pressable>
+        <Pressable style={styles.iconButton} onPress={() => setPanel('backup')} accessibilityLabel="Backup">
+          <Ionicons name="archive-outline" size={17} color={colors.text} />
+        </Pressable>
         <Pressable
           style={[styles.iconButton, expanded && styles.iconButtonActive]}
           onPress={() => setExpanded((e) => !e)}
@@ -110,14 +128,22 @@ export default function PlanScreen() {
         expanded={expanded}
         busy={busy}
         marksFor={marks}
+        moodFor={moodFor}
         onSelect={setSelected}
       />
 
       <View style={styles.status}>
-        <Text style={type.label}>
-          {isToday ? 'Today' : friendlyDate(selected, today)}
-          {total > 0 ? `  ·  ${done}/${total} done` : ''}
-        </Text>
+        <View style={styles.statusRow}>
+          <Text style={type.label}>
+            {isToday ? 'Today' : friendlyDate(selected, today)}
+            {total > 0 ? `  ·  ${done}/${total} done` : ''}
+          </Text>
+          {!isToday && (
+            <Pressable style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
+              <Text style={styles.todayButtonText}>Back to today</Text>
+            </Pressable>
+          )}
+        </View>
         <View style={styles.track}>
           <View style={[styles.fill, { flex: total ? done / total : 0 }]} />
           <View style={{ flex: total ? 1 - done / total : 1 }} />
@@ -150,13 +176,11 @@ export default function PlanScreen() {
           {dayRoutines.map((r, i) => (
             <View key={r.id}>
               {i > 0 && <Divider />}
-              <CheckRow
-                tint={kinds.routines.color}
-                title={r.name}
-                subtitle={routineSubtitle(r, selected)}
-                done={isDoneOn(r, selected)}
+              <RoutineRow
+                routine={r}
+                date={selected}
                 disabled={selected > today}
-                onToggle={() => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? toggleDone(x, selected) : x)))}
+                onChange={(next) => updateRoutines((rs) => rs.map((x) => (x.id === next.id ? next : x)))}
               />
             </View>
           ))}
@@ -239,6 +263,8 @@ export default function PlanScreen() {
         </Section>
       )}
 
+      {selected <= today && <DayNote date={selected} isToday={isToday} />}
+
       {total === 0 && dayEvents.length === 0 && (
         <Text style={[type.small, styles.nothing]}>Nothing planned for this day.</Text>
       )}
@@ -262,6 +288,58 @@ export default function PlanScreen() {
         </Pressable>
       )}
     </ScrollView>
+
+      <Pressable style={styles.fab} onPress={() => setPanel('add')} accessibilityLabel="Quick add">
+        <Ionicons name="add" size={30} color="#fff" />
+      </Pressable>
+
+      <Sheet visible={panel === 'add'} title="Add" onClose={close}>
+        {(
+          [
+            ['routine', 'repeat-outline', 'Routine', 'Something you do regularly', kinds.routines.color],
+            ['grocery', 'basket-outline', 'Grocery item', 'Goes on your shopping list', kinds.groceries.color],
+            ['word', 'language-outline', 'Chinese word', 'A new flashcard to practise', kinds.chinese.color],
+          ] as const
+        ).map(([key, icon, title, sub, color]) => (
+          <Pressable key={key} style={({ pressed }) => [styles.addRow, pressed && styles.pressed]} onPress={() => setPanel(key)}>
+            <View style={[styles.addIcon, { backgroundColor: color }]}>
+              <Ionicons name={icon} size={18} color="#fff" />
+            </View>
+            <View style={styles.flex}>
+              <Text style={type.bodyMedium}>{title}</Text>
+              <Text style={type.small}>{sub}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.faint} />
+          </Pressable>
+        ))}
+      </Sheet>
+      <RoutineForm
+        visible={panel === 'routine'}
+        onClose={close}
+        onSave={(f) => {
+          updateRoutines((rs) => [...rs, { ...f, id: newId(), doneDates: [] }]);
+          close();
+        }}
+      />
+      <GroceryForm
+        visible={panel === 'grocery'}
+        onClose={close}
+        onSave={(g) => {
+          addGrocery(g);
+          close();
+        }}
+      />
+      <WordForm
+        visible={panel === 'word'}
+        onClose={close}
+        onSave={(f) => {
+          updateChinese((c) => ({ ...c, words: [...c.words, newWord(newId(), f.hanzi, f.pinyin, f.meaning, today)] }));
+          close();
+        }}
+      />
+      <StatsSheet visible={panel === 'stats'} onClose={close} />
+      <BackupSheet visible={panel === 'backup'} onClose={close} />
+    </View>
   );
 }
 
@@ -301,15 +379,33 @@ function NavRow({
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingBottom: 48 },
+  content: { paddingHorizontal: 16, paddingBottom: 110 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 28 },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 24,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+  },
+  addRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 4, borderRadius: 12 },
+  addIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
+  header: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   headerText: { flex: 1, paddingBottom: 6, gap: 2 },
   weekday: { fontFamily: fonts.displayMedium, fontSize: 20, color: colors.text },
   todayButton: {
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.border,

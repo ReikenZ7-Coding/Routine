@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { CheckRow } from '../components/CheckRow';
 import { GroceryForm } from '../components/GroceryForm';
 import { Divider, Section } from '../components/Section';
 import { STARTER_STAPLES, useStore } from '../lib/store';
-import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, needsBuying, nextDue } from '../lib/schedule';
-import { colors, fonts, kinds, radius } from '../theme';
+import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListText, needsBuying, nextDue } from '../lib/schedule';
+import { colors, fonts, kinds, radius, type } from '../theme';
 
 const NO_AISLE = 'Other';
 
@@ -46,6 +46,16 @@ export default function GroceriesScreen() {
     setFormOpen(true);
   };
 
+  const share = async () => {
+    const message = groceryListText(toBuy);
+    try {
+      if (Platform.OS === 'web' && navigator.clipboard) {
+        await navigator.clipboard.writeText(message);
+        Alert.alert('Copied', 'Your list is on the clipboard.');
+      } else await Share.share({ message });
+    } catch {}
+  };
+
   if (!ready) return null;
 
   return (
@@ -68,7 +78,17 @@ export default function GroceriesScreen() {
           </View>
         ) : (
           <>
-            <Section title={`To buy · ${toBuy.length}`}>
+            <Section
+              title={`To buy · ${toBuy.length}`}
+              right={
+                toBuy.length > 0 ? (
+                  <Pressable onPress={share} hitSlop={8} accessibilityLabel="Share shopping list" style={styles.shareLink}>
+                    <Ionicons name="share-outline" size={14} color={colors.text} />
+                    <Text style={type.link}>Share</Text>
+                  </Pressable>
+                ) : undefined
+              }
+            >
               {toBuy.length === 0 ? (
                 <Text style={styles.emptyText}>You're all stocked up.</Text>
               ) : (
@@ -166,6 +186,7 @@ export default function GroceriesScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  shareLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   content: { padding: 16, paddingBottom: 110 },
   welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },

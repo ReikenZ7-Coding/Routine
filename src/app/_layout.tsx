@@ -13,7 +13,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
-import { StoreProvider } from '../lib/store';
+import { syncReminders } from '../lib/reminders';
+import { StoreProvider, useStore } from '../lib/store';
 import { colors, fonts } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -48,6 +49,7 @@ export default function RootLayout() {
   return (
     <StoreProvider>
       <StatusBar style="dark" />
+      <ReminderSync />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: colors.text,
@@ -82,4 +84,15 @@ export default function RootLayout() {
       </Tabs>
     </StoreProvider>
   );
+}
+
+/** Keeps scheduled notifications in step with the routines' reminder times. */
+function ReminderSync() {
+  const { ready, routines } = useStore();
+  const key = JSON.stringify(routines.map((r) => [r.name, r.repeat, r.reminder, r.target, r.repeat.kind === 'once' && r.doneDates.length > 0]));
+  useEffect(() => {
+    if (ready) syncReminders(routines).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, key]);
+  return null;
 }

@@ -123,3 +123,18 @@ export function friendlyDate(key: string, today: string): string {
   const month = d.toLocaleString('en', { month: 'short' });
   return `${WEEKDAY_SHORT[d.getDay()]} ${d.getDate()} ${month}`;
 }
+
+/** A plain-text shopping list, grouped by aisle, ready to send to someone. */
+export function groceryListText(items: GroceryItem[], title = 'Shopping list'): string {
+  const groups = new Map<string, GroceryItem[]>();
+  for (const i of items) groups.set(i.aisle || 'Other', [...(groups.get(i.aisle || 'Other') ?? []), i]);
+  const aisles = [...groups.keys()].sort((a, b) => (a === 'Other' ? 1 : b === 'Other' ? -1 : a.localeCompare(b)));
+  const lines = [title];
+  for (const a of aisles) {
+    lines.push('', a);
+    for (const i of groups.get(a)!.sort((x, y) => x.name.localeCompare(y.name))) {
+      lines.push(`☐ ${i.name}${i.quantity ? ` (${i.quantity})` : ''}`);
+    }
+  }
+  return lines.join('\n');
+}

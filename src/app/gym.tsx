@@ -18,6 +18,7 @@ import {
   toggleSet,
   workingWeight,
 } from '../lib/gym';
+import { isRecord, workoutHistory } from '../lib/records';
 import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { colors, fonts, kinds, radius } from '../theme';
@@ -51,6 +52,7 @@ export default function GymScreen() {
   const session = sessionFor(gym, today);
   const upcoming = session ? undefined : nextSession(gym, today);
 
+  const history = workoutHistory(gym);
   const weightFor = (s: Session, e: PlanExercise) => overrides[e.id] ?? workingWeight(gym, today, s, e);
 
   const changeWeight = (s: Session, e: PlanExercise, delta: number) => {
@@ -150,7 +152,14 @@ export default function GymScreen() {
                 <View key={e.id} style={styles.exercise}>
                   <View style={styles.exHeader}>
                     <View style={styles.flex}>
-                      <Text style={styles.exName}>{e.name}</Text>
+                      <View style={styles.exTitleRow}>
+                        <Text style={styles.exName}>{e.name}</Text>
+                        {isRecord(gym.logs, e.name, today) && (
+                          <View style={styles.prBadge}>
+                            <Text style={styles.prText}>🏆 New best</Text>
+                          </View>
+                        )}
+                      </View>
                       <Text style={styles.exPlan}>
                         {e.sets} × {e.reps}
                         {last ? `  ·  Last: ${formatWeight(last.weight)} × ${last.reps}, ${friendlyDate(last.date, today)}` : ''}
@@ -236,6 +245,25 @@ export default function GymScreen() {
             );
           })}
         </Section>
+
+        {history.length > 0 && (
+          <Section title="History">
+            {history.slice(0, 10).map((w, i) => (
+              <View key={w.date}>
+                {i > 0 && <Divider inset={16} />}
+                <View style={styles.historyRow}>
+                  <View style={styles.flex}>
+                    <Text style={styles.planName}>{w.sessionName}</Text>
+                    <Text style={styles.exPlan}>
+                      {friendlyDate(w.date, today)} · {w.sets} {w.sets === 1 ? 'set' : 'sets'} · {Math.round(w.volume).toLocaleString('en')} kg
+                    </Text>
+                  </View>
+                  {w.records > 0 && <Text style={styles.historyPr}>🏆 {w.records}</Text>}
+                </View>
+              </View>
+            ))}
+          </Section>
+        )}
       </ScrollView>
 
       {restEnd !== null && (
@@ -268,6 +296,11 @@ export default function GymScreen() {
 }
 
 const styles = StyleSheet.create({
+  exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  prBadge: { backgroundColor: kinds.gym.soft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  prText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: kinds.gym.color },
+  historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
+  historyPr: { fontFamily: fonts.monoMedium, fontSize: 13, color: kinds.gym.color },
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 40 },
   contentWithTimer: { paddingBottom: 110 },

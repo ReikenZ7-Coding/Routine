@@ -37,6 +37,12 @@
         {
           "calendarPermission": "Routine shows your calendar events next to your routines so you can plan your day."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#141716"
+        }
       ]
     ],
     "scheme": "routine"

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Chip } from '../components/Chip';
+import { FocusTimer } from '../components/FocusTimer';
 import { Divider, Section } from '../components/Section';
 import { WordForm } from '../components/WordForm';
 import {
@@ -130,6 +131,8 @@ export default function ChineseScreen() {
           ))}
         </View>
       </View>
+
+      <FocusTimer onLog={(m) => updateChinese((c) => addMinutes(c, today, m))} />
 
       <View style={styles.reviewCard}>
         <View style={styles.flex}>

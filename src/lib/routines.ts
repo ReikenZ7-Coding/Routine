@@ -19,6 +19,13 @@ export interface Routine {
   time: TimeOfDay;
   /** Date keys the routine was completed on. */
   doneDates: string[];
+  /** Counter routines ("8 glasses of water"): done once the day's count reaches this. */
+  target?: number;
+  counts?: Record<string, number>;
+  /** Days deliberately skipped. They don't break the streak. */
+  skipDates?: string[];
+  /** Daily reminder time, local. */
+  reminder?: { hour: number; minute: number };
 }
 
 export function lastDone(r: Routine, before?: string): string | undefined {
@@ -30,14 +37,23 @@ export function isDoneOn(r: Routine, date: string): boolean {
   return r.doneDates.includes(date);
 }
 
+export function isSkipped(r: Routine, date: string): boolean {
+  return !!r.skipDates?.includes(date);
+}
+
+/** Last day the routine was done or skipped before the date: either one "uses up" an occasion. */
+function lastHandled(r: Routine, before: string): string | undefined {
+  return lastDone({ ...r, doneDates: [...r.doneDates, ...(r.skipDates ?? [])] }, before);
+}
+
 /** Should this routine appear on the given day (done or not)? */
 export function isScheduled(r: Routine, date: string): boolean {
-  if (isDoneOn(r, date)) return true;
+  if (isDoneOn(r, date) || isSkipped(r, date)) return true;
   switch (r.repeat.kind) {
     case 'once':
       return r.doneDates.length === 0;
     case 'everyNDays': {
-      const last = lastDone(r, date);
+      const last = lastHandled(r, date);
       return !last || daysBetween(last, date) >= r.repeat.n;
     }
     case 'weekdays':
@@ -46,14 +62,38 @@ export function isScheduled(r: Routine, date: string): boolean {
 }
 
 export function toggleDone(r: Routine, date: string): Routine {
+  const skipDates = r.skipDates?.filter((d) => d !== date);
   return isDoneOn(r, date)
-    ? { ...r, doneDates: r.doneDates.filter((d) => d !== date) }
-    : { ...r, doneDates: [...r.doneDates, date] };
+    ? { ...r, skipDates, doneDates: r.doneDates.filter((d) => d !== date) }
+    : { ...r, skipDates, doneDates: [...r.doneDates, date] };
+}
+
+export function countOn(r: Routine, date: string): number {
+  return r.counts?.[date] ?? (isDoneOn(r, date) && r.target ? r.target : 0);
+}
+
+/** One tap: +1 on a counter (done when it hits the target, a tap after that starts over), else tick / untick. */
+export function tapRoutine(r: Routine, date: string): Routine {
+  if (!r.target || r.target < 2) return toggleDone(r, date);
+  const next = isDoneOn(r, date) ? 0 : countOn(r, date) + 1;
+  const counts = { ...r.counts, [date]: next };
+  if (next === 0) delete counts[date];
+  const base = { ...r, counts, skipDates: r.skipDates?.filter((d) => d !== date) };
+  const doneDates = r.doneDates.filter((d) => d !== date);
+  return { ...base, doneDates: next >= r.target ? [...doneDates, date] : doneDates };
+}
+
+export function toggleSkip(r: Routine, date: string): Routine {
+  if (isSkipped(r, date)) return { ...r, skipDates: r.skipDates!.filter((d) => d !== date) };
+  const counts = { ...r.counts };
+  delete counts[date];
+  return { ...r, counts, doneDates: r.doneDates.filter((d) => d !== date), skipDates: [...(r.skipDates ?? []), date] };
 }
 
 /** How many scheduled occasions in a row were completed, counting back from today. */
 export function streak(r: Routine, today: string): number {
   const done = new Set(r.doneDates);
+  const skipped = new Set(r.skipDates ?? []);
   switch (r.repeat.kind) {
     case 'once':
       return 0;
@@ -63,17 +103,20 @@ export function streak(r: Routine, today: string): number {
       let n = 0;
       let day = today;
       for (let i = 0; i < 366; i++, day = addDays(day, -1)) {
-        if (!days.includes(parseKey(day).getDay())) continue;
+        if (!days.includes(parseKey(day).getDay()) || skipped.has(day)) continue;
         if (done.has(day)) n++;
         else if (day !== today) break;
       }
       return n;
     }
     case 'everyNDays': {
-      const sorted = [...r.doneDates].sort().reverse();
+      // Skipped days keep the chain alive but don't add to it.
+      const sorted = [...new Set([...r.doneDates, ...skipped])].sort().reverse();
       if (sorted.length === 0 || daysBetween(sorted[0], today) > r.repeat.n) return 0;
-      let n = 1;
-      for (let i = 1; i < sorted.length && daysBetween(sorted[i], sorted[i - 1]) <= r.repeat.n; i++) n++;
+      let n = done.has(sorted[0]) ? 1 : 0;
+      for (let i = 1; i < sorted.length && daysBetween(sorted[i], sorted[i - 1]) <= r.repeat.n; i++) {
+        if (done.has(sorted[i])) n++;
+      }
       return n;
     }
   }
@@ -86,13 +129,33 @@ export function sortByTime(routines: Routine[]): Routine[] {
 }
 
 export const ROUTINE_IDEAS: Omit<Routine, 'id' | 'doneDates'>[] = [
-  { name: 'Drink 2 L of water', repeat: { kind: 'everyNDays', n: 1 }, time: 'anytime' },
+  { name: 'Drink water', repeat: { kind: 'everyNDays', n: 1 }, time: 'anytime', target: 8 },
   { name: 'Stretch 10 minutes', repeat: { kind: 'everyNDays', n: 1 }, time: 'evening' },
   { name: 'Read 20 pages', repeat: { kind: 'everyNDays', n: 1 }, time: 'evening' },
   { name: 'Clean the room', repeat: { kind: 'weekdays', days: [6] }, time: 'morning' },
 ];
 
+export function formatTime(hour: number, minute: number): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 export function routineSubtitle(r: Routine, today: string): string {
+  if (isSkipped(r, today)) return 'Skipped · streak kept';
   const s = streak(r, today);
-  return [TIME_LABELS[r.time], describeRepeat(r.repeat), s > 1 ? `${s} in a row` : ''].filter(Boolean).join(' · ');
+  return [
+    r.reminder ? formatTime(r.reminder.hour, r.reminder.minute) : TIME_LABELS[r.time],
+    describeRepeat(r.repeat),
+    s > 1 ? `${s} in a row` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** When to fire reminders: one daily trigger, or one weekly trigger per chosen weekday (1 = Sunday). */
+export function reminderTriggers(r: Routine): { weekday?: number; hour: number; minute: number }[] {
+  if (!r.reminder) return [];
+  const { hour, minute } = r.reminder;
+  if (r.repeat.kind === 'weekdays') return r.repeat.days.map((d) => ({ weekday: d + 1, hour, minute }));
+  if (r.repeat.kind === 'once' && r.doneDates.length > 0) return [];
+  return [{ hour, minute }];
 }

@@ -2,7 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
 import { type ChineseState, EMPTY_CHINESE } from './chinese';
+import type { BackupData } from './backup';
 import { EMPTY_GYM, type GymState } from './gym';
+import type { Journal } from './journal';
 import type { Routine } from './routines';
 import { type GroceryItem, dateKey, markBought, unmarkBought } from './schedule';
 
@@ -11,6 +13,7 @@ const GYM_KEY = 'routine.gym.v1';
 const CHINESE_KEY = 'routine.chinese.v1';
 const ROUTINES_KEY = 'routine.routines.v1';
 const SETTINGS_KEY = 'routine.settings.v1';
+const JOURNAL_KEY = 'routine.journal.v1';
 
 export interface Settings {
   /** User allowed Routine to read the phone's calendars. */
@@ -47,6 +50,10 @@ interface Store {
   updateRoutines: (fn: (r: Routine[]) => Routine[]) => void;
   settings: Settings;
   updateSettings: (changes: Partial<Settings>) => void;
+  journal: Journal;
+  updateJournal: (fn: (j: Journal) => Journal) => void;
+  /** Replace everything with a restored backup. */
+  restore: (data: BackupData) => void;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -62,12 +69,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [chinese, setChinese] = useState<ChineseState>(EMPTY_CHINESE);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [journal, setJournal] = useState<Journal>({});
   const [today, setToday] = useState(dateKey());
   const loaded = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY, CHINESE_KEY, ROUTINES_KEY, SETTINGS_KEY])
-      .then(([[, groceriesRaw], [, gymRaw], [, chineseRaw], [, routinesRaw], [, settingsRaw]]) => {
+    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY, CHINESE_KEY, ROUTINES_KEY, SETTINGS_KEY, JOURNAL_KEY])
+      .then(([[, groceriesRaw], [, gymRaw], [, chineseRaw], [, routinesRaw], [, settingsRaw], [, journalRaw]]) => {
+        if (journalRaw) setJournal(JSON.parse(journalRaw));
         if (groceriesRaw) setGroceries(JSON.parse(groceriesRaw));
         if (gymRaw) setGym(JSON.parse(gymRaw));
         if (chineseRaw) setChinese(JSON.parse(chineseRaw));
@@ -106,6 +115,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)).catch(() => {});
   }, [settings]);
 
+  useEffect(() => {
+    if (!loaded.current) return;
+    AsyncStorage.setItem(JOURNAL_KEY, JSON.stringify(journal)).catch(() => {});
+  }, [journal]);
+
+  const updateJournal = useCallback((fn: (j: Journal) => Journal) => setJournal(fn), []);
+  const restore = useCallback((data: BackupData) => {
+    setGroceries(data.groceries as GroceryItem[]);
+    setGym({ ...EMPTY_GYM, ...(data.gym as GymState) });
+    setChinese({ ...EMPTY_CHINESE, ...(data.chinese as ChineseState) });
+    setRoutines(data.routines as Routine[]);
+    setJournal(data.journal as Journal);
+  }, []);
   const updateSettings = useCallback((changes: Partial<Settings>) => setSettings((s) => ({ ...s, ...changes })), []);
   const updateRoutines = useCallback((fn: (r: Routine[]) => Routine[]) => setRoutines(fn), []);
   const updateGym = useCallback((fn: (g: GymState) => GymState) => setGym(fn), []);
@@ -147,8 +169,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought, gym, updateGym, chinese, updateChinese, routines, updateRoutines, settings, updateSettings }),
-    [ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought, gym, updateGym, chinese, updateChinese, routines, updateRoutines, settings, updateSettings],
+    () => ({ ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought, gym, updateGym, chinese, updateChinese, routines, updateRoutines, settings, updateSettings, journal, updateJournal, restore }),
+    [ready, today, groceries, addGrocery, addGroceries, updateGrocery, removeGrocery, toggleBought, gym, updateGym, chinese, updateChinese, routines, updateRoutines, settings, updateSettings, journal, updateJournal, restore],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

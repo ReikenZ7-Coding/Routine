@@ -14,11 +14,13 @@ interface Props {
   /** Dates (YYYY-MM-DD) that have events in the phone's calendar. */
   busy: Set<string>;
   marksFor: (date: string) => DayMarks;
+  /** Mood face logged for a day, if any. */
+  moodFor?: (date: string) => string | undefined;
   onSelect: (date: string) => void;
 }
 
 /** A week strip that opens into a month. Each day shows a dot per kind of thing planned. */
-export function CalendarStrip({ selected, today, expanded, busy, marksFor, onSelect }: Props) {
+export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodFor, onSelect }: Props) {
   const rows = expanded ? monthGrid(selected) : [weekOf(selected)];
 
   const shift = (dir: -1 | 1) => {
@@ -55,6 +57,7 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, onSel
             const isSel = date === selected;
             const isToday = date === today;
             const marks = marksFor(date);
+            const mood = moodFor?.(date);
             return (
               <Pressable
                 key={date}
@@ -74,6 +77,7 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, onSel
                   ))}
                   {busy.has(date) && <View style={[styles.dot, styles.busyDot]} />}
                 </View>
+                {mood ? <Text style={styles.mood}>{mood}</Text> : null}
               </Pressable>
             );
           })}
@@ -97,6 +101,7 @@ const styles = StyleSheet.create({
   numTextSelected: { color: '#fff' },
   past: { color: colors.faint },
   dots: { flexDirection: 'row', gap: 3, height: 5 },
+  mood: { position: 'absolute', top: 0, right: 2, fontSize: 10 },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
   busyDot: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.muted },
 });

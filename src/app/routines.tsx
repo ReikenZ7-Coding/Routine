@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CheckRow } from '../components/CheckRow';
 import { RoutineForm } from '../components/RoutineForm';
+import { RoutineRow } from '../components/RoutineRow';
 import { Divider, Section } from '../components/Section';
 import {
   ROUTINE_IDEAS,
@@ -10,9 +10,10 @@ import {
   TIME_LABELS,
   isDoneOn,
   isScheduled,
+  isSkipped,
   routineSubtitle,
   sortByTime,
-  toggleDone,
+  toggleSkip,
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
@@ -30,7 +31,9 @@ export default function RoutinesScreen() {
   const ideasLeft = ROUTINE_IDEAS.filter((idea) => !routines.some((r) => r.name === idea.name));
   const addIdea = (idea: (typeof ROUTINE_IDEAS)[number]) =>
     updateRoutines((rs) => [...rs, { ...idea, id: newId(), doneDates: [] }]);
-  const toggle = (id: string) => updateRoutines((rs) => rs.map((r) => (r.id === id ? toggleDone(r, today) : r)));
+  const replace = (next: Routine) => updateRoutines((rs) => rs.map((r) => (r.id === next.id ? next : r)));
+  const live = editing && routines.find((r) => r.id === editing.id);
+  const planned = todays.filter((r) => !isSkipped(r, today));
   const open = (r?: Routine) => {
     setEditing(r);
     setFormOpen(true);
@@ -68,21 +71,14 @@ export default function RoutinesScreen() {
           </View>
         ) : (
           <>
-            <Section title={`Today · ${todays.filter((r) => isDoneOn(r, today)).length}/${todays.length}`}>
+            <Section title={`Today · ${planned.filter((r) => isDoneOn(r, today)).length}/${planned.length}`}>
               {todays.length === 0 ? (
                 <Text style={styles.emptyText}>Nothing scheduled today.</Text>
               ) : (
                 todays.map((r, i) => (
                   <View key={r.id}>
                     {i > 0 && <Divider />}
-                    <CheckRow
-                      tint={kinds.routines.color}
-                      title={r.name}
-                      subtitle={routineSubtitle(r, today)}
-                      done={isDoneOn(r, today)}
-                      onToggle={() => toggle(r.id)}
-                      onLongPress={() => open(r)}
-                    />
+                    <RoutineRow routine={r} date={today} onChange={replace} onLongPress={() => open(r)} />
                   </View>
                 ))
               )}
@@ -122,7 +118,7 @@ export default function RoutinesScreen() {
                 ))}
               </Section>
             )}
-            <Text style={styles.hint}>Tap to tick off. Press and hold a routine to edit it.</Text>
+            <Text style={styles.hint}>Tap to tick off. Press and hold to edit, skip a day or set a reminder.</Text>
           </>
         )}
       </ScrollView>
@@ -143,6 +139,15 @@ export default function RoutinesScreen() {
           );
           setFormOpen(false);
         }}
+        skippedToday={!!live && isSkipped(live, today)}
+        onSkip={
+          live && isScheduled(live, today)
+            ? () => {
+                replace(toggleSkip(live, today));
+                setFormOpen(false);
+              }
+            : undefined
+        }
         onDelete={
           editing
             ? () => {
