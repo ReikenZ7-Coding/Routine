@@ -33,7 +33,7 @@ console.log(`Wrote ${out} (${(html.length / 1024 / 1024).toFixed(1)} MB)`);
 // Optional second output: the same page as a body fragment for hosts that supply their own <html>/<head>.
 const fragmentOut = process.argv[4];
 if (fragmentOut) {
-  const style = html.match(/<style id="expo-reset">[\s\S]*?<\/style>/)[0].replace('</style>', 'body{background:#A39BEE}</style>');
+  const style = html.match(/<style id="expo-reset">[\s\S]*?<\/style>/)[0].replace('</style>', 'body{background:#7A62E0}</style>');
   const body = html.match(/<body>([\s\S]*)<\/body>/)[1];
   writeFileSync(fragmentOut, `<title>Routine</title>\n${style}\n${body}`);
   console.log(`Wrote ${fragmentOut}`);

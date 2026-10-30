@@ -19,6 +19,7 @@ import {
 import { friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Glass } from '../components/Glass';
 
 const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
@@ -101,7 +102,7 @@ export default function ChineseScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <View style={styles.todayCard}>
+      <Glass style={styles.todayCard}>
         <View style={styles.row}>
           <Text style={styles.eyebrow}>Today's practice</Text>
           {streak > 0 && <Text style={styles.streak}>{streak}-day streak</Text>}
@@ -132,7 +133,7 @@ export default function ChineseScreen() {
             />
           ))}
         </View>
-      </View>
+      </Glass>
 
       <FocusTimer onLog={(m) => updateChinese((c) => addMinutes(c, today, m))} />
 
@@ -252,7 +253,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 150 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  todayCard: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 16 },
+  todayCard: { padding: 16 },
   eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.chinese.color, textTransform: 'uppercase', letterSpacing: 1.2 },
   streak: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
   minutes: { fontFamily: fonts.display, fontSize: 32, color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },

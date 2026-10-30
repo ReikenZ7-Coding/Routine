@@ -22,6 +22,7 @@ import { isRecord, workoutHistory } from '../lib/records';
 import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Glass } from '../components/Glass';
 
 const REST_SECONDS = 90;
 const WEIGHT_STEP = 2.5;
@@ -94,7 +95,7 @@ export default function GymScreen() {
   if (gym.sessions.length === 0) {
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.welcome}>
+        <Glass style={styles.welcome}>
           <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
           <Text style={styles.welcomeTitle}>Your training plan</Text>
           <Text style={styles.welcomeText}>
@@ -117,7 +118,7 @@ export default function GymScreen() {
           <Pressable style={styles.secondaryButton} onPress={() => openSession()}>
             <Text style={styles.secondaryText}>Build my own</Text>
           </Pressable>
-        </View>
+        </Glass>
         <SessionForm
           visible={formOpen}
           session={editing}
@@ -136,7 +137,7 @@ export default function GymScreen() {
       <ScrollView contentContainerStyle={[styles.content, restEnd !== null && styles.contentWithTimer]}>
         {session && progress ? (
           <>
-            <View style={styles.todayCard}>
+            <Glass style={styles.todayCard}>
               <Text style={styles.eyebrow}>Today's session</Text>
               <Text style={styles.sessionName}>{session.name}</Text>
               <Text style={styles.progressText}>
@@ -145,13 +146,13 @@ export default function GymScreen() {
               <View style={styles.track}>
                 <View style={[styles.fill, { width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }]} />
               </View>
-            </View>
+            </Glass>
 
             {session.exercises.map((e) => {
               const last = lastTime(gym, e.name, today);
               const weight = weightFor(session, e);
               return (
-                <View key={e.id} style={styles.exercise}>
+                <Glass key={e.id} style={styles.exercise}>
                   <View style={styles.exHeader}>
                     <View style={styles.flex}>
                       <View style={styles.exTitleRow}>
@@ -204,13 +205,13 @@ export default function GymScreen() {
                       })}
                     </View>
                   </View>
-                </View>
+                </Glass>
               );
             })}
             <Text style={styles.hint}>Tap a set when you finish it. A rest timer starts automatically.</Text>
           </>
         ) : (
-          <View style={styles.todayCard}>
+          <Glass style={styles.todayCard}>
             <Text style={styles.eyebrow}>Today</Text>
             <Text style={styles.sessionName}>Rest day</Text>
             <Text style={styles.progressText}>
@@ -218,7 +219,7 @@ export default function GymScreen() {
                 ? `Next: ${upcoming.session.name}, ${friendlyDate(upcoming.date, today).toLowerCase()}`
                 : 'No sessions scheduled this week.'}
             </Text>
-          </View>
+          </Glass>
         )}
 
         <Section
@@ -307,7 +308,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 150 },
   contentWithTimer: { paddingBottom: 190 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, alignItems: 'center', marginTop: 12 },
+  welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
   welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 12 },
   planOption: {
@@ -324,13 +325,13 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
   secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
   secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
-  todayCard: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 16 },
+  todayCard: { padding: 16 },
   eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.gym.color, textTransform: 'uppercase', letterSpacing: 1.2 },
   sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
   progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
   track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.color },
-  exercise: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 14, marginTop: 10 },
+  exercise: { padding: 14, marginTop: 10 },
   exHeader: { flexDirection: 'row', alignItems: 'center' },
   exName: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
   exPlan: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },

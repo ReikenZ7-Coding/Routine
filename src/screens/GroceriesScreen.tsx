@@ -8,6 +8,7 @@ import { STARTER_STAPLES, useStore } from '../lib/store';
 import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListText, needsBuying, nextDue } from '../lib/schedule';
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Glass } from '../components/Glass';
 
 const NO_AISLE = 'Other';
 
@@ -68,7 +69,7 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
         {all.length === 0 ? (
-          <View style={styles.welcome}>
+          <Glass style={styles.welcome}>
             <Ionicons name="cart-outline" size={40} color={kinds.groceries.color} />
             <Text style={styles.welcomeTitle}>Your grocery routine</Text>
             <Text style={styles.welcomeText}>
@@ -81,7 +82,7 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
             <Pressable style={styles.secondaryButton} onPress={openNew}>
               <Text style={styles.secondaryText}>Add my own item</Text>
             </Pressable>
-          </View>
+          </Glass>
         ) : (
           <>
             <Section
@@ -195,7 +196,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   screen: { flex: 1 },
   shareLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   content: { padding: 16, paddingBottom: 170 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, alignItems: 'center', marginTop: 12 },
+  welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
   welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
   primaryButton: {

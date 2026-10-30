@@ -19,6 +19,7 @@ import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Glass } from '../components/Glass';
 
 export default function RoutinesScreen({ query = '' }: { query?: string }) {
   const { colors, kinds } = useTheme();
@@ -49,7 +50,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
     <View style={styles.flex}>
       <ScrollView contentContainerStyle={styles.content}>
         {all.length === 0 ? (
-          <View style={styles.welcome}>
+          <Glass style={styles.welcome}>
             <Ionicons name="repeat-outline" size={40} color={kinds.routines.color} />
             <Text style={styles.welcomeTitle}>Your own routines</Text>
             <Text style={styles.welcomeText}>
@@ -74,7 +75,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
             <Pressable style={styles.primaryButton} onPress={() => open()}>
               <Text style={styles.primaryText}>Make my own routine</Text>
             </Pressable>
-          </View>
+          </Glass>
         ) : (
           <>
             <Section title={`Today · ${planned.filter((r) => isDoneOn(r, today)).length}/${planned.length}`}>
@@ -171,7 +172,7 @@ const makeStyles = ({ colors, fonts, radius }: Theme) =>
   StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 170 },
-  welcome: { backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, padding: 24, alignItems: 'center', marginTop: 12 },
+  welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
   welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
   welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 8 },
   idea: {

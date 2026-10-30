@@ -32,11 +32,13 @@ export interface Palette {
   statusBar: 'light' | 'dark';
   /** Frosted glass: a diagonal fill laid over the blur, brighter at the top-left edge. */
   glassFill: [string, string];
-  blurTint: 'light' | 'dark';
+  blurTint: 'light' | 'dark' | 'default';
   /** Coloured glow under the main buttons. */
   glow: string;
   /** Liquid glass light: the bright top rim, the specular shine, and the colour caught along the bottom edge. */
   rim: string;
+  /** Deep, soft drop shadow that lifts glass off the backdrop (CSS box-shadow syntax). */
+  shadow: string;
   shine: string;
   edgeGlow: string;
 }
@@ -52,14 +54,14 @@ export type Kind = 'routines' | 'gym' | 'chinese' | 'groceries' | 'calendar' | '
 const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindStyle> }> = {
   lavender: {
     colors: {
-      gradient: ['#B9B2F4', '#9C94EC', '#B3A2EE'],
-      bg: '#A39BEE',
-      card: 'rgba(255,255,255,0.18)',
-      cardBorder: 'rgba(255,255,255,0.5)',
-      sheet: '#9890E6',
-      input: 'rgba(255,255,255,0.18)',
+      gradient: ['#8E7CEB', '#6A52DB', '#7A5CE3'],
+      bg: '#7A62E0',
+      card: 'rgba(70,40,180,0.24)',
+      cardBorder: 'rgba(255,255,255,0.3)',
+      sheet: '#6E57D8',
+      input: 'rgba(70,40,180,0.24)',
       text: '#FFFFFF',
-      muted: 'rgba(255,255,255,0.78)',
+      muted: 'rgba(255,255,255,0.86)',
       faint: 'rgba(255,255,255,0.62)',
       border: 'rgba(255,255,255,0.28)',
       primary: '#FFFFFF',
@@ -69,11 +71,12 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       backdrop: 'rgba(40,24,110,0.35)',
       tabBar: 'rgba(255,255,255,0.18)',
       statusBar: 'light',
-      glassFill: ['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.08)'],
-      blurTint: 'light',
+      glassFill: ['rgba(72,40,190,0.55)', 'rgba(40,18,140,0.6)'],
+      blurTint: 'default',
       glow: '#E9A8FF',
-      rim: 'rgba(255,255,255,0.85)',
-      shine: 'rgba(255,255,255,0.28)',
+      rim: 'rgba(255,255,255,0.7)',
+      shadow: '0px 10px 30px rgba(40,16,130,0.32)',
+      shine: 'rgba(255,255,255,0.14)',
       edgeGlow: 'rgba(255,170,236,0.22)',
     },
     kinds: {
@@ -90,7 +93,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       gradient: ['#55553F', '#3E3E30', '#2A2A22'],
       bg: '#3E3E30',
       card: 'rgba(255,255,255,0.08)',
-      cardBorder: 'rgba(255,255,255,0.14)',
+      cardBorder: 'rgba(255,255,255,0.2)',
       sheet: '#393A2D',
       input: 'rgba(255,255,255,0.08)',
       text: '#F2EEE3',
@@ -107,7 +110,8 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       glassFill: ['rgba(255,250,235,0.16)', 'rgba(255,250,235,0.03)'],
       blurTint: 'dark',
       glow: '#E8D3A0',
-      rim: 'rgba(255,246,222,0.38)',
+      rim: 'rgba(255,246,222,0.5)',
+      shadow: '0px 12px 34px rgba(0,0,0,0.4)',
       shine: 'rgba(255,248,230,0.12)',
       edgeGlow: 'rgba(232,211,160,0.10)',
     },
@@ -143,6 +147,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       blurTint: 'light',
       glow: 'transparent',
       rim: '#E1E4E0',
+      shadow: '0px 1px 2px rgba(0,0,0,0.04)',
       shine: 'transparent',
       edgeGlow: 'transparent',
     },

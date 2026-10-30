@@ -29,7 +29,7 @@ interface Props {
  * Liquid glass: blurs what's behind it, catches light along the top rim, picks up the look's
  * glow along the bottom edge, and (when pressable) squeezes and brightens while touched.
  */
-export function Glass({ style, radius, intensity = 40, tint, onPress, onLongPress, accessibilityLabel, children }: Props) {
+export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPress, accessibilityLabel, children }: Props) {
   const theme = useTheme();
   const target = useContext(BlurTargetContext);
   const nested = useContext(InsideGlass);
@@ -55,7 +55,8 @@ export function Glass({ style, radius, intensity = 40, tint, onPress, onLongPres
     <Animated.View
       style={[
         styles.shell,
-        { borderRadius: r, borderColor: colors.cardBorder, borderTopColor: colors.rim },
+        { borderRadius: r, borderColor: colors.cardBorder, borderTopColor: colors.rim, borderLeftColor: colors.rim },
+        !nested && { boxShadow: colors.shadow },
         interactive && { transform: [{ scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.95] }) }] },
         style,
       ]}

@@ -9,7 +9,7 @@ const BACKDROPS = {
   stone: require('../../assets/art/stone-bg.jpg'),
 };
 // A light veil over each backdrop so white text keeps its contrast where the light is brightest.
-const SCRIMS = { lavender: 'rgba(52,30,140,0.16)', stone: 'rgba(16,16,10,0.3)' };
+const SCRIMS = { lavender: 'rgba(40,20,120,0.12)', stone: 'rgba(16,16,10,0.2)' };
 const PORTALS: Record<string, number> = {
   dusk: require('../../assets/art/portal-dusk.jpg'),
   rain: require('../../assets/art/portal-rain.jpg'),

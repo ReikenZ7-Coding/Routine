@@ -70,21 +70,26 @@ def save(img, name, quality=88):
 
 
 def lavender_backdrop():
-    img = gradient([(0, hexc('#B9B0F7')), (0.5, hexc('#958AEC')), (1, hexc('#A897EE'))])
-    glow(img, W * 0.95, H * 0.10, W * 0.62, hexc('#FFB9F1'), 0.85)
-    glow(img, W * 0.02, H * 0.42, W * 0.6, hexc('#7FA0FF'), 0.7)
-    glow(img, W * 0.8, H * 0.8, W * 0.75, hexc('#6C4BEA'), 0.6)
-    glow(img, W * 0.2, H * 0.03, W * 0.35, hexc('#FFE6FB'), 0.55)
-    glow(img, W * 0.35, H * 1.0, W * 0.55, hexc('#F79BDC'), 0.5)
-    img = 1 - (1 - img) * (1 - beams([(-200, 260, 0.20), (140, 90, 0.16), (330, 40, 0.14)], 28, 40))
-    img = bokeh(img, 26, 18, 70, (255, 235, 255), 0.22, 6)
-    img = bokeh(img, 60, 3, 8, (255, 255, 255), 0.55, 1.2)
+    """A multi-point mesh: hot pink, sky blue, peach and deep indigo light pooling over violet."""
+    img = gradient([(0, hexc('#8E7CEB')), (0.5, hexc('#6A52DB')), (1, hexc('#7A5CE3'))])
+    glow(img, W * 0.98, H * 0.06, W * 0.7, hexc('#FF8FE0'), 0.9)
+    glow(img, W * 0.0, H * 0.32, W * 0.62, hexc('#6FB4FF'), 0.8)
+    glow(img, W * 0.55, H * 0.5, W * 0.45, hexc('#B86BFF'), 0.55)
+    glow(img, W * 0.95, H * 0.72, W * 0.7, hexc('#3B20A8'), 0.75)
+    glow(img, W * 0.05, H * 0.9, W * 0.6, hexc('#FFAE9A'), 0.55)
+    glow(img, W * 0.2, H * 0.02, W * 0.35, hexc('#FFE6FB'), 0.5)
+    img = 1 - (1 - img) * (1 - beams([(-200, 260, 0.18), (140, 90, 0.14), (330, 40, 0.12)], 28, 40))
+    img = bokeh(img, 26, 18, 70, (255, 235, 255), 0.2, 6)
+    img = bokeh(img, 60, 3, 8, (255, 255, 255), 0.5, 1.2)
     save(grain(img, 0.018), 'lavender-bg')
 
 
 def stone_backdrop():
-    img = gradient([(0, hexc('#6A6750')), (0.4, hexc('#47463A')), (1, hexc('#1E1E19'))], tilt=0.2)
+    """Olive mesh: warm sunlight top left, cool sage on the left, amber low right, deep moss shadow."""
+    img = gradient([(0, hexc('#5E5C46')), (0.4, hexc('#3F3E31')), (1, hexc('#1B1B16'))], tilt=0.2)
     glow(img, -W * 0.1, -H * 0.05, W * 1.0, hexc('#F7EAC6'), 0.5)
+    glow(img, W * 0.0, H * 0.45, W * 0.55, hexc('#8FA27A'), 0.4)
+    glow(img, W * 1.0, H * 0.62, W * 0.6, hexc('#B48A4C'), 0.38)
     glow(img, W * 0.5, H * 1.1, W * 0.9, hexc('#0A0A07'), 0.55)
     fade = np.clip(1.15 - np.linspace(0, 1, H) * 1.1, 0, 1)[:, None, None]  # sunlight fades lower down
     light = beams([(-300, 300, 0.30), (150, 120, 0.24), (380, 60, 0.18), (560, 26, 0.14)], 32, 50) * fade
