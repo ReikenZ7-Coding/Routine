@@ -58,7 +58,7 @@ export default function ChineseScreen() {
           <Ionicons name="checkmark-circle" size={56} color={kinds.chinese.color} />
           <Text style={styles.reviewDoneTitle}>Review done</Text>
           <Text style={styles.reviewDoneText}>{log.reviewed} cards reviewed today. 加油!</Text>
-          <Pressable style={styles.primaryButton} onPress={finish}>
+          <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={finish}>
             <Text style={styles.primaryText}>Back</Text>
           </Pressable>
         </View>
@@ -74,11 +74,11 @@ export default function ChineseScreen() {
       <View style={styles.reviewScreen}>
         <View style={styles.reviewTop}>
           <Text style={styles.reviewCount}>{queue.length} left</Text>
-          <Pressable onPress={finish} hitSlop={8}>
+          <Pressable accessibilityRole="button" onPress={finish} hitSlop={8}>
             <Text style={styles.link}>Stop</Text>
           </Pressable>
         </View>
-        <Pressable style={styles.card} onPress={() => setRevealed(true)} disabled={revealed}>
+        <Pressable accessibilityRole="button" style={styles.card} onPress={() => setRevealed(true)} disabled={revealed}>
           <Text style={styles.cardHanzi}>{current.hanzi}</Text>
           {revealed ? (
             <>
@@ -151,7 +151,7 @@ export default function ChineseScreen() {
           </Text>
         </View>
         {due.length > 0 && (
-          <Pressable style={styles.startButton} onPress={() => setQueue(due.map((w) => w.id))}>
+          <Pressable accessibilityRole="button" style={styles.startButton} onPress={() => setQueue(due.map((w) => w.id))}>
             <Text style={styles.primaryText}>Start</Text>
           </Pressable>
         )}
@@ -159,7 +159,7 @@ export default function ChineseScreen() {
 
       {chinese.words.length === 0 ? (
         <View style={styles.starter}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={styles.primaryButton}
             onPress={() =>
               updateChinese((c) => ({
@@ -170,7 +170,7 @@ export default function ChineseScreen() {
           >
             <Text style={styles.primaryText}>Start with 10 beginner words</Text>
           </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => openWord()}>
+          <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => openWord()}>
             <Text style={styles.secondaryText}>Add my own words</Text>
           </Pressable>
         </View>
@@ -178,7 +178,7 @@ export default function ChineseScreen() {
         <Section
           title={`My words · ${chinese.words.length}`}
           right={
-            <Pressable onPress={() => openWord()} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={() => openWord()} hitSlop={8}>
               <Text style={styles.link}>Add word</Text>
             </Pressable>
           }
@@ -188,7 +188,7 @@ export default function ChineseScreen() {
             .map((w, i) => (
               <View key={w.id}>
                 {i > 0 && <Divider />}
-                <Pressable style={({ pressed }) => [styles.wordRow, pressed && styles.pressed]} onPress={() => openWord(w)}>
+                <Pressable accessibilityRole="button" style={({ pressed }) => [styles.wordRow, pressed && styles.pressed]} onPress={() => openWord(w)}>
                   <Text style={styles.wordHanzi}>{w.hanzi}</Text>
                   <View style={styles.flex}>
                     <Text style={styles.wordPinyin}>{w.pinyin}</Text>
@@ -241,20 +241,20 @@ function GradeButton({
   const styles = useStyles(makeStyles);
   const color = tone === 'danger' ? colors.danger : tone === 'primary' ? colors.primary : colors.muted;
   return (
-    <Pressable style={[styles.gradeButton, { borderColor: color }]} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={[styles.gradeButton, { borderColor: color }]} onPress={onPress}>
       <Text style={[styles.gradeLabel, { color }]}>{label}</Text>
       <Text style={styles.gradeSub}>{sub}</Text>
     </Pressable>
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
   StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 150 },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   todayCard: { padding: 16 },
-  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.chinese.color, textTransform: 'uppercase', letterSpacing: 1.2 },
+  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 12, color: glass ? colors.muted : kinds.chinese.color, textTransform: 'uppercase', letterSpacing: 1.2 },
   streak: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
   minutes: { fontFamily: fonts.display, fontSize: 32, color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },
   minutesOf: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.muted },

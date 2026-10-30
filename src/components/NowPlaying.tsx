@@ -35,13 +35,13 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
   const s = useSounds();
   if (!s.started) return null;
   return (
-    <Pressable style={[styles.mini, { bottom }]} onPress={() => s.setSheetOpen(true)} accessibilityLabel="Open focus sounds">
+    <Pressable accessibilityRole="button" style={[styles.mini, { bottom }]} onPress={() => s.setSheetOpen(true)} accessibilityLabel="Open focus sounds">
       <SoundArt icon={s.current.icon} id={s.current.id} size={38} />
       <View style={styles.flex}>
         <Text style={styles.miniTitle}>{s.current.name}</Text>
         <Text style={styles.miniSub}>{s.playing ? 'Playing' : 'Paused'} · Focus sounds</Text>
       </View>
-      <Pressable onPress={s.toggle} hitSlop={10} style={styles.miniButton} accessibilityLabel={s.playing ? 'Pause' : 'Play'}>
+      <Pressable accessibilityRole="button" onPress={s.toggle} hitSlop={10} style={styles.miniButton} accessibilityLabel={s.playing ? 'Pause' : 'Play'}>
         <Ionicons name={s.playing ? 'pause' : 'play'} size={18} color={colors.onPrimary} />
       </Pressable>
     </Pressable>
@@ -60,10 +60,10 @@ export function NowPlaying() {
   return (
     <Modal visible={s.sheetOpen} animationType="slide" transparent onRequestClose={() => s.setSheetOpen(false)}>
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={() => s.setSheetOpen(false)} accessibilityLabel="Close" />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={() => s.setSheetOpen(false)} accessibilityLabel="Close" />
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 28 }]}>
           <View style={styles.topRow}>
-            <Pressable onPress={() => s.setSheetOpen(false)} hitSlop={10} accessibilityLabel="Close player">
+            <Pressable accessibilityRole="button" onPress={() => s.setSheetOpen(false)} hitSlop={10} accessibilityLabel="Close player">
               <Ionicons name="chevron-down" size={24} color={colors.text} />
             </Pressable>
             <View style={styles.center}>
@@ -90,13 +90,13 @@ export function NowPlaying() {
           </View>
 
           <View style={styles.controls}>
-            <Pressable onPress={() => s.skip(-1)} hitSlop={10} accessibilityLabel="Previous sound">
+            <Pressable accessibilityRole="button" onPress={() => s.skip(-1)} hitSlop={10} accessibilityLabel="Previous sound">
               <Ionicons name="play-skip-back" size={26} color={colors.text} />
             </Pressable>
-            <Pressable style={styles.bigButton} onPress={s.toggle} accessibilityLabel={s.playing ? 'Pause' : 'Play'}>
+            <Pressable accessibilityRole="button" style={styles.bigButton} onPress={s.toggle} accessibilityLabel={s.playing ? 'Pause' : 'Play'}>
               <Ionicons name={s.playing ? 'pause' : 'play'} size={30} color={colors.onPrimary} />
             </Pressable>
-            <Pressable onPress={() => s.skip(1)} hitSlop={10} accessibilityLabel="Next sound">
+            <Pressable accessibilityRole="button" onPress={() => s.skip(1)} hitSlop={10} accessibilityLabel="Next sound">
               <Ionicons name="play-skip-forward" size={26} color={colors.text} />
             </Pressable>
           </View>
@@ -105,7 +105,7 @@ export function NowPlaying() {
             {SOUNDS.map((x) => {
               const active = x.id === s.current.id;
               return (
-                <Pressable key={x.id} style={[styles.item, active && styles.itemActive]} onPress={() => s.play(x.id)}>
+                <Pressable accessibilityRole="button" key={x.id} style={[styles.item, active && styles.itemActive]} onPress={() => s.play(x.id)}>
                   <SoundArt icon={x.icon} id={x.id} size={44} />
                   <View style={styles.flex}>
                     <Text style={type.bodyMedium}>{x.name}</Text>

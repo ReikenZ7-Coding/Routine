@@ -152,7 +152,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.sheet}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{routine ? 'Edit routine' : 'New routine'}</Text>
@@ -235,7 +235,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
               {ROUTINE_ICONS.map((ic) => {
                 const active = (icon ?? iconFor({ name, icon })) === ic;
                 return (
-                  <Pressable
+                  <Pressable accessibilityRole="button"
                     key={ic}
                     style={[styles.iconChoice, active && { backgroundColor: kinds.routines.color, borderColor: kinds.routines.color }]}
                     onPress={() => setIcon(ic)}
@@ -300,16 +300,16 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
               </View>
             )}
 
-            <Pressable style={styles.saveButton} onPress={save}>
+            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
               <Text style={styles.saveText}>{routine ? 'Save' : 'Add routine'}</Text>
             </Pressable>
             {routine && onSkip && (
-              <Pressable style={styles.skipButton} onPress={onSkip}>
+              <Pressable accessibilityRole="button" style={styles.skipButton} onPress={onSkip}>
                 <Text style={styles.skipText}>{skippedToday ? 'Undo skip' : 'Skip today (keeps your streak)'}</Text>
               </Pressable>
             )}
             {routine && onDelete && (
-              <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
                 <Text style={styles.deleteText}>Delete routine</Text>
               </Pressable>
             )}

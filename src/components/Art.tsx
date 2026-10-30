@@ -1,4 +1,5 @@
 // Artwork for the glass looks: the rendered light behind every screen, and scenes for cards and focus sounds.
+import { LinearGradient as Veil } from 'expo-linear-gradient';
 import { Image, StyleSheet, View } from 'react-native';
 import Svg, { Defs, Ellipse, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { useTheme } from '../theme';
@@ -10,6 +11,11 @@ const BACKDROPS = {
 };
 // A light veil over each backdrop so white text keeps its contrast where the light is brightest.
 const SCRIMS = { lavender: 'rgba(40,20,120,0.12)', stone: 'rgba(16,16,10,0.2)' };
+// Headers sit straight on the backdrop, where its light is brightest; a deeper veil up top keeps them readable.
+const TOP_VEILS: Record<'lavender' | 'stone', [string, string]> = {
+  lavender: ['rgba(46,22,150,0.58)', 'rgba(46,22,150,0)'],
+  stone: ['rgba(12,12,8,0.45)', 'rgba(12,12,8,0)'],
+};
 const PORTALS: Record<string, number> = {
   dusk: require('../../assets/art/portal-dusk.jpg'),
   rain: require('../../assets/art/portal-rain.jpg'),
@@ -25,6 +31,7 @@ export function Ambience() {
     <>
       <Image source={BACKDROPS[name]} style={StyleSheet.absoluteFill} resizeMode="cover" />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: SCRIMS[name] }]} />
+      <Veil colors={TOP_VEILS[name]} end={{ x: 0, y: 0.35 }} style={StyleSheet.absoluteFill} />
     </>
   );
 }

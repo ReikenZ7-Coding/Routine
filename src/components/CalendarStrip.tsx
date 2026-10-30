@@ -37,7 +37,7 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
   return (
     <View style={styles.wrap}>
       <View style={styles.nav}>
-        <Pressable onPress={() => shift(-1)} hitSlop={10} accessibilityLabel={expanded ? 'Previous month' : 'Previous week'}>
+        <Pressable accessibilityRole="button" onPress={() => shift(-1)} hitSlop={14} accessibilityLabel={expanded ? 'Previous month' : 'Previous week'}>
           <Ionicons name="chevron-back" size={18} color={colors.muted} />
         </Pressable>
         <View style={styles.letters}>
@@ -47,7 +47,7 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
             </Text>
           ))}
         </View>
-        <Pressable onPress={() => shift(1)} hitSlop={10} accessibilityLabel={expanded ? 'Next month' : 'Next week'}>
+        <Pressable accessibilityRole="button" onPress={() => shift(1)} hitSlop={14} accessibilityLabel={expanded ? 'Next month' : 'Next week'}>
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>
       </View>
@@ -61,7 +61,7 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
             const marks = marksFor(date);
             const mood = moodFor?.(date);
             return (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={date}
                 style={styles.day}
                 onPress={() => onSelect(date)}

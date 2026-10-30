@@ -73,7 +73,7 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
       />
 
       <Section title="More">
-        <Pressable
+        <Pressable accessibilityRole="button"
           style={styles.row}
           onPress={
             settings.calendarConnected ? () => updateSettings({ calendarConnected: false }) : calendarSupported ? connect : undefined
@@ -92,7 +92,7 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
           </View>
         </Pressable>
         <Divider inset={50} />
-        <Pressable style={styles.row} onPress={onBackup}>
+        <Pressable accessibilityRole="button" style={styles.row} onPress={onBackup}>
           <Ionicons name="archive-outline" size={20} color={colors.text} />
           <View style={styles.flex}>
             <Text style={type.bodyMedium}>Backup and restore</Text>
@@ -118,7 +118,7 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
     swatchLine: { flex: 1, height: 4, borderRadius: 2, opacity: 0.8 },
     swatchButton: { alignSelf: 'flex-end', width: 22, height: 22, borderRadius: 11 },
     themeName: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text, marginTop: 8 },
-    themeDesc: { fontFamily: fonts.body, fontSize: 11, lineHeight: 14, color: colors.muted, marginTop: 2 },
+    themeDesc: { fontFamily: fonts.body, fontSize: 12, lineHeight: 14, color: colors.muted, marginTop: 2 },
     check: {
       position: 'absolute',
       top: 4,

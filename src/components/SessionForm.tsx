@@ -99,7 +99,7 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.sheet}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{session ? 'Edit session' : 'New session'}</Text>
@@ -155,7 +155,7 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
                   placeholder="0" placeholderTextColor={colors.faint}
                   maxLength={5}
                 />
-                <Pressable
+                <Pressable accessibilityRole="button"
                   onPress={() => setRows((prev) => prev.filter((x) => x.id !== r.id))}
                   hitSlop={8}
                   accessibilityLabel={`Remove ${r.name || 'exercise'}`}
@@ -164,16 +164,16 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
                 </Pressable>
               </View>
             ))}
-            <Pressable style={styles.addRow} onPress={() => setRows((prev) => [...prev, blankRow()])}>
+            <Pressable accessibilityRole="button" style={styles.addRow} onPress={() => setRows((prev) => [...prev, blankRow()])}>
               <Ionicons name="add" size={18} color={colors.primary} />
               <Text style={styles.addRowText}>Add exercise</Text>
             </Pressable>
 
-            <Pressable style={styles.saveButton} onPress={save}>
+            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
               <Text style={styles.saveText}>{session ? 'Save' : 'Add session'}</Text>
             </Pressable>
             {session && onDelete && (
-              <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
                 <Text style={styles.deleteText}>Delete session</Text>
               </Pressable>
             )}

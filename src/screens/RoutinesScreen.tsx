@@ -58,7 +58,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
               make your own.
             </Text>
             {ROUTINE_IDEAS.map((idea) => (
-              <Pressable
+              <Pressable accessibilityRole="button"
                 key={idea.name}
                 style={styles.idea}
                 onPress={() => addIdea(idea)}
@@ -72,7 +72,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
                 </View>
               </Pressable>
             ))}
-            <Pressable style={styles.primaryButton} onPress={() => open()}>
+            <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => open()}>
               <Text style={styles.primaryText}>Make my own routine</Text>
             </Pressable>
           </Glass>
@@ -95,7 +95,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
                 {others.map((r, i) => (
                   <View key={r.id}>
                     {i > 0 && <Divider />}
-                    <Pressable style={({ pressed }) => [styles.otherRow, pressed && styles.pressed]} onPress={() => open(r)}>
+                    <Pressable accessibilityRole="button" style={({ pressed }) => [styles.otherRow, pressed && styles.pressed]} onPress={() => open(r)}>
                       <Text style={styles.otherName}>{r.name}</Text>
                       <Text style={styles.otherSub}>{routineSubtitle(r, today)}</Text>
                     </Pressable>
@@ -108,7 +108,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
                 {ideasLeft.map((idea, i) => (
                   <View key={idea.name}>
                     {i > 0 && <Divider />}
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={({ pressed }) => [styles.ideaRow, pressed && styles.pressed]}
                       onPress={() => addIdea(idea)}
                       accessibilityLabel={`Add ${idea.name}`}
@@ -131,7 +131,7 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
       </ScrollView>
 
       {all.length > 0 && (
-        <Pressable style={[styles.fab, { bottom: fabBottom }]} onPress={() => open()} accessibilityLabel="Add routine">
+        <Pressable accessibilityRole="button" style={[styles.fab, { bottom: fabBottom }]} onPress={() => open()} accessibilityLabel="Add routine">
           <Ionicons name="add" size={30} color={colors.onPrimary} />
         </Pressable>
       )}

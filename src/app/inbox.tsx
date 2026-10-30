@@ -57,7 +57,7 @@ export default function InboxScreen() {
               ['Inbox', undefined],
             ] as const
           ).map(([label, date]) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={label}
               style={[styles.action, item.date === date && styles.actionActive]}
               onPress={() => {
@@ -68,7 +68,7 @@ export default function InboxScreen() {
               <Text style={[styles.actionText, item.date === date && styles.actionTextActive]}>{label}</Text>
             </Pressable>
           ))}
-          <Pressable style={styles.action} onPress={() => remove(item.id)} accessibilityLabel={`Delete ${item.title}`}>
+          <Pressable accessibilityRole="button" style={styles.action} onPress={() => remove(item.id)} accessibilityLabel={`Delete ${item.title}`}>
             <Ionicons name="trash-outline" size={15} color={colors.danger} />
           </Pressable>
         </View>
@@ -94,7 +94,7 @@ export default function InboxScreen() {
           blurOnSubmit={false}
         />
         {draft.trim() ? (
-          <Pressable style={styles.addButton} onPress={add} accessibilityLabel="Add to inbox">
+          <Pressable accessibilityRole="button" style={styles.addButton} onPress={add} accessibilityLabel="Add to inbox">
             <Ionicons name="arrow-up" size={18} color={colors.onPrimary} />
           </Pressable>
         ) : null}

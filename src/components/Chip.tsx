@@ -4,7 +4,7 @@ import { type Theme, useStyles, useTheme } from '../theme';
 export function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   const styles = useStyles(makeStyles);
   return (
-    <Pressable
+    <Pressable accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && !active && styles.pressed]}
       accessibilityState={{ selected: active }}

@@ -87,14 +87,14 @@ function ThemedApp() {
           )}
           screenOptions={{
             tabBarActiveTintColor: colors.text,
-            tabBarInactiveTintColor: colors.faint,
+            tabBarInactiveTintColor: colors.muted,
             tabBarStyle: {
               backgroundColor: colors.tabBar,
               borderTopColor: colors.border,
               borderTopWidth: StyleSheet.hairlineWidth,
               elevation: 0,
             },
-            tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
+            tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 12 },
             headerStyle: { backgroundColor: colors.gradient[0] },
             headerShadowVisible: false,
             headerTitleAlign: 'left',

@@ -92,7 +92,7 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.sheet}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{item ? 'Edit item' : 'New item'}</Text>
@@ -153,11 +153,11 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
               </View>
             )}
 
-            <Pressable style={styles.saveButton} onPress={save}>
+            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
               <Text style={styles.saveText}>{item ? 'Save' : 'Add to list'}</Text>
             </Pressable>
             {item && onDelete && (
-              <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
                 <Text style={styles.deleteText}>Delete item</Text>
               </Pressable>
             )}

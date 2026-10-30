@@ -1,6 +1,6 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useStyles, useTheme, type Theme } from '../theme';
 import { Glass } from './Glass';
 
@@ -18,13 +18,19 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
   const right = useRef(new Animated.Value(0)).current;
   const placed = useRef(false);
   const lastIndex = useRef(state.index);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => sub.remove();
+  }, []);
   const slot = width ? (width - PAD * 2) / state.routes.length : 0;
 
   useEffect(() => {
     if (!slot) return;
     const l = PAD + state.index * slot;
     const r = l + slot;
-    if (!placed.current) {
+    if (!placed.current || reduceMotion) {
       left.setValue(l);
       right.setValue(r);
       placed.current = true;
@@ -48,7 +54,7 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
       ]).start();
     }
     lastIndex.current = state.index;
-  }, [state.index, slot, left, right]);
+  }, [state.index, slot, left, right, reduceMotion]);
 
   return (
     <View style={[styles.wrap, { bottom }]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
@@ -105,5 +111,5 @@ const makeStyles = ({ fonts }: Theme) =>
     drop: { flex: 1 },
     row: { flex: 1, flexDirection: 'row', paddingHorizontal: PAD },
     tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
-    label: { fontFamily: fonts.bodyMedium, fontSize: 11 },
+    label: { fontFamily: fonts.bodyMedium, fontSize: 12 },
   });

@@ -43,7 +43,7 @@ export default function LibraryScreen() {
             placeholderTextColor={colors.faint}
           />
           {query ? (
-            <Pressable onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
+            <Pressable accessibilityRole="button" onPress={() => setQuery('')} hitSlop={8} accessibilityLabel="Clear search">
               <Ionicons name="close-circle" size={17} color={colors.muted} />
             </Pressable>
           ) : null}

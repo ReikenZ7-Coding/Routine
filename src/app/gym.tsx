@@ -103,7 +103,7 @@ export default function GymScreen() {
             you lifted last time.
           </Text>
           {STARTER_PLANS.map((p) => (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={p.id}
               style={styles.planOption}
               onPress={() => updateGym((g) => ({ ...g, sessions: buildSessions(p.sessions, newId) }))}
@@ -115,7 +115,7 @@ export default function GymScreen() {
               <Ionicons name="chevron-forward" size={20} color={colors.muted} />
             </Pressable>
           ))}
-          <Pressable style={styles.secondaryButton} onPress={() => openSession()}>
+          <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => openSession()}>
             <Text style={styles.secondaryText}>Build my own</Text>
           </Pressable>
         </Glass>
@@ -171,7 +171,7 @@ export default function GymScreen() {
                   </View>
                   <View style={styles.exControls}>
                     <View style={styles.stepper}>
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         onPress={() => changeWeight(session, e, -WEIGHT_STEP)}
                         style={styles.stepBtn}
                         accessibilityLabel={`Lower ${e.name} weight`}
@@ -179,7 +179,7 @@ export default function GymScreen() {
                         <Ionicons name="remove" size={18} color={colors.text} />
                       </Pressable>
                       <Text style={styles.weight}>{formatWeight(weight)}</Text>
-                      <Pressable
+                      <Pressable accessibilityRole="button"
                         onPress={() => changeWeight(session, e, WEIGHT_STEP)}
                         style={styles.stepBtn}
                         accessibilityLabel={`Raise ${e.name} weight`}
@@ -225,7 +225,7 @@ export default function GymScreen() {
         <Section
           title="Weekly plan"
           right={
-            <Pressable onPress={() => openSession()} hitSlop={8}>
+            <Pressable accessibilityRole="button" onPress={() => openSession()} hitSlop={8}>
               <Text style={styles.link}>Add session</Text>
             </Pressable>
           }
@@ -235,7 +235,7 @@ export default function GymScreen() {
             return (
               <View key={d}>
                 {i > 0 && <Divider />}
-                <Pressable
+                <Pressable accessibilityRole="button"
                   style={({ pressed }) => [styles.planRow, pressed && s && styles.pressed]}
                   onPress={() => s && openSession(s)}
                   disabled={!s}
@@ -270,7 +270,7 @@ export default function GymScreen() {
       </ScrollView>
 
       {restEnd !== null && (
-        <Pressable style={styles.timer} onPress={() => setRestEnd(null)} accessibilityLabel="Dismiss rest timer">
+        <Pressable accessibilityRole="button" style={styles.timer} onPress={() => setRestEnd(null)} accessibilityLabel="Dismiss rest timer">
           <Ionicons name="timer-outline" size={22} color={colors.onPrimary} />
           <Text style={styles.timerText}>
             Rest {Math.floor(restLeft / 60)}:{String(restLeft % 60).padStart(2, '0')}
@@ -298,7 +298,7 @@ export default function GymScreen() {
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
   StyleSheet.create({
   exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   prBadge: { backgroundColor: kinds.gym.soft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
@@ -326,7 +326,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
   secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
   todayCard: { padding: 16 },
-  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 11, color: kinds.gym.color, textTransform: 'uppercase', letterSpacing: 1.2 },
+  eyebrow: { fontFamily: fonts.monoMedium, fontSize: 12, color: glass ? colors.muted : kinds.gym.color, textTransform: 'uppercase', letterSpacing: 1.2 },
   sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
   progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
   track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },

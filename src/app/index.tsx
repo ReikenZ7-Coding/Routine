@@ -211,7 +211,7 @@ export default function TodayScreen() {
         </View>
 
         <View style={styles.dateRow}>
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={styles.dateTitle}
             onPress={() => setExpanded((e) => !e)}
             accessibilityLabel={expanded ? 'Show week' : 'Show month'}
@@ -223,7 +223,7 @@ export default function TodayScreen() {
             <Ionicons name={expanded ? 'chevron-up' : 'chevron-forward'} size={20} color={kinds.chinese.color} />
           </Pressable>
           {!isToday && (
-            <Pressable style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
+            <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
               <Text style={styles.todayButtonText}>Back to today</Text>
             </Pressable>
           )}
@@ -400,7 +400,7 @@ export default function TodayScreen() {
             right={<Link label="Edit" onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })} />}
           >
             {dayGroceries.length === 0 ? (
-              <Pressable style={styles.empty} onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}>
+              <Pressable accessibilityRole="button" style={styles.empty} onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}>
                 <Text style={type.small}>
                   {groceries.length === 0
                     ? 'Add the things you buy often. They show up here on the days you need them.'
@@ -426,7 +426,7 @@ export default function TodayScreen() {
         )}
 
         {routines.length === 0 && (
-          <Pressable style={styles.hintCard} onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'routines' } })}>
+          <Pressable accessibilityRole="button" style={styles.hintCard} onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'routines' } })}>
             <Ionicons name="sparkles-outline" size={20} color={colors.text} />
             <View style={styles.flex}>
               <Text style={type.bodyMedium}>Build your day</Text>
@@ -438,7 +438,7 @@ export default function TodayScreen() {
         {!isFuture && <DayNote date={selected} isToday={isToday} />}
       </ScrollView>
 
-      <Pressable style={[styles.fab, { bottom: fabBottom }]} onPress={() => setPanel('add')} accessibilityLabel="Quick add">
+      <Pressable accessibilityRole="button" style={[styles.fab, { bottom: fabBottom }]} onPress={() => setPanel('add')} accessibilityLabel="Quick add">
         <Ionicons name="add" size={30} color={colors.onPrimary} />
       </Pressable>
 
@@ -451,7 +451,7 @@ export default function TodayScreen() {
             ['word', 'language', 'Chinese word', 'A new flashcard to practise', kinds.chinese.color],
           ] as const
         ).map(([key, icon, title, sub, color]) => (
-          <Pressable
+          <Pressable accessibilityRole="button"
             key={key}
             style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
             onPress={() => (key === 'routine' ? edit() : setPanel(key))}
@@ -477,7 +477,7 @@ export default function TodayScreen() {
           placeholderTextColor={colors.faint}
           autoFocus
         />
-        <Pressable style={styles.saveButton} onPress={addTodo}>
+        <Pressable accessibilityRole="button" style={styles.saveButton} onPress={addTodo}>
           <Text style={type.button}>Add for {isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}</Text>
         </Pressable>
       </Sheet>
@@ -568,7 +568,7 @@ function UpNextCard({
               <Ionicons name={iconFor(r) as 'sunny'} size={22} color="#FFFFFF" />
             </View>
             <View style={styles.flex} />
-            <Pressable style={styles.heroAction} onPress={() => onTap(r)} accessibilityLabel={`Mark ${r.name} done`}>
+            <Pressable accessibilityRole="button" style={styles.heroAction} onPress={() => onTap(r)} accessibilityLabel={`Mark ${r.name} done`}>
               <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
               <Text style={styles.heroActionText}>{r.target ? '+1' : 'Done'}</Text>
             </Pressable>
@@ -585,7 +585,7 @@ function UpNextCard({
               <View style={[styles.heroFill, { flex: total ? done / total : 0 }]} />
               <View style={{ flex: total ? 1 - done / total : 1 }} />
             </View>
-            <Pressable style={styles.heroAction} onPress={() => onEdit()} accessibilityLabel="Add routine">
+            <Pressable accessibilityRole="button" style={styles.heroAction} onPress={() => onEdit()} accessibilityLabel="Add routine">
               <Ionicons name="add" size={18} color={colors.onPrimary} />
               <Text style={styles.heroActionText}>Routine</Text>
             </Pressable>
@@ -725,7 +725,7 @@ function Shortcut({
     );
   }
   return (
-    <Pressable style={styles.shortcut} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
+    <Pressable accessibilityRole="button" style={styles.shortcut} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
       <View style={[styles.shortcutCircle, { backgroundColor: color }, filled && styles.shortcutFilled]}>{icons}</View>
       {caption}
     </Pressable>
@@ -735,7 +735,7 @@ function Shortcut({
 function Link({ label, onPress }: { label: string; onPress: () => void }) {
   const { type } = useTheme();
   return (
-    <Pressable onPress={onPress} hitSlop={8}>
+    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8}>
       <Text style={type.link}>{label}</Text>
     </Pressable>
   );
@@ -759,7 +759,7 @@ function NavRow({
   const { colors, type } = useTheme();
   const styles = useStyles(makeStyles);
   return (
-    <Pressable style={({ pressed }) => [styles.navRow, pressed && styles.pressed]} onPress={onPress}>
+    <Pressable accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && styles.pressed]} onPress={onPress}>
       <View style={[styles.navIcon, { backgroundColor: tint }]}>
         <Ionicons name={(done ? 'checkmark' : icon) as 'sunny'} size={18} color="#FFFFFF" />
       </View>
@@ -855,7 +855,7 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
     tIconDone: { opacity: 0.45 },
     tSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
     tCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    tCount: { fontFamily: fonts.monoMedium, fontSize: 11 },
+    tCount: { fontFamily: fonts.monoMedium, fontSize: 12 },
     doneTitle: { color: colors.faint, textDecorationLine: 'line-through' },
     eventRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 16 },
     eventBar: { width: 3, height: 22, borderRadius: 2 },

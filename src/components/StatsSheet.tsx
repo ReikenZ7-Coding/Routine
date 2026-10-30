@@ -120,7 +120,7 @@ const makeStyles = ({ colors, fonts, radius }: Theme) =>
   barCol: { flex: 1, alignItems: 'center', gap: 6 },
   barTrack: { flex: 1, width: '100%', borderRadius: 6, backgroundColor: colors.primarySoft, justifyContent: 'flex-end', overflow: 'hidden' },
   barFill: { width: '100%', borderRadius: 6 },
-  barLabel: { fontFamily: fonts.mono, fontSize: 11, color: colors.muted },
+  barLabel: { fontFamily: fonts.mono, fontSize: 12, color: colors.muted },
   barToday: { color: colors.text, fontFamily: fonts.monoMedium },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
   num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text },

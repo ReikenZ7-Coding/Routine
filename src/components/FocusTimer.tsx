@@ -70,12 +70,12 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
           {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}
         </Text>
         {run ? (
-          <Pressable style={[styles.btn, styles.stop]} onPress={() => stop(false)} accessibilityLabel="Stop and log">
+          <Pressable accessibilityRole="button" style={[styles.btn, styles.stop]} onPress={() => stop(false)} accessibilityLabel="Stop and log">
             <Ionicons name="stop" size={16} color={colors.text} />
             <Text style={styles.stopText}>Stop & log</Text>
           </Pressable>
         ) : (
-          <Pressable
+          <Pressable accessibilityRole="button"
             style={styles.btn}
             onPress={() => {
               const start = Date.now();

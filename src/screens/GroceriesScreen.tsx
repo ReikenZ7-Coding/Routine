@@ -76,10 +76,10 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
               Add the things you buy regularly and how often. They come back on your list when it's time to buy them
               again.
             </Text>
-            <Pressable style={styles.primaryButton} onPress={() => addGroceries(STARTER_STAPLES)}>
+            <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => addGroceries(STARTER_STAPLES)}>
               <Text style={styles.primaryText}>Start with common staples</Text>
             </Pressable>
-            <Pressable style={styles.secondaryButton} onPress={openNew}>
+            <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={openNew}>
               <Text style={styles.secondaryText}>Add my own item</Text>
             </Pressable>
           </Glass>
@@ -89,7 +89,7 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
               title={`To buy · ${toBuy.length}`}
               right={
                 toBuy.length > 0 ? (
-                  <Pressable onPress={share} hitSlop={8} accessibilityLabel="Share shopping list" style={styles.shareLink}>
+                  <Pressable accessibilityRole="button" onPress={share} hitSlop={8} accessibilityLabel="Share shopping list" style={styles.shareLink}>
                     <Ionicons name="share-outline" size={14} color={colors.text} />
                     <Text style={type.link}>Share</Text>
                   </Pressable>
@@ -143,7 +143,7 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
                 {later.map(({ item, due }, i) => (
                   <View key={item.id}>
                     {i > 0 && <Divider />}
-                    <Pressable
+                    <Pressable accessibilityRole="button"
                       style={({ pressed }) => [styles.laterRow, pressed && styles.pressed]}
                       onPress={() => openEdit(item)}
                     >
@@ -164,7 +164,7 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
       </ScrollView>
 
       {all.length > 0 && (
-        <Pressable style={[styles.fab, { bottom: fabBottom }]} onPress={openNew} accessibilityLabel="Add grocery item">
+        <Pressable accessibilityRole="button" style={[styles.fab, { bottom: fabBottom }]} onPress={openNew} accessibilityLabel="Add grocery item">
           <Ionicons name="add" size={30} color={colors.onPrimary} />
         </Pressable>
       )}
@@ -213,7 +213,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
   aisle: {
     fontFamily: fonts.monoMedium,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: kinds.groceries.color,

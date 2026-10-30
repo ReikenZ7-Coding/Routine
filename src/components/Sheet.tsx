@@ -8,7 +8,7 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
         <View style={styles.sheet}>
           <View style={styles.grip} />
           <ScrollView keyboardShouldPersistTaps="handled">

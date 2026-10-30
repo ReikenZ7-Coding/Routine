@@ -61,7 +61,7 @@ export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.sheet}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{word ? 'Edit word' : 'New word'}</Text>
@@ -85,11 +85,11 @@ export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
             <Text style={styles.label}>Meaning</Text>
             <TextInput style={styles.input} value={meaning} onChangeText={setMeaning} placeholder="water" placeholderTextColor={colors.faint} />
 
-            <Pressable style={styles.saveButton} onPress={save}>
+            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
               <Text style={styles.saveText}>{word ? 'Save' : 'Add word'}</Text>
             </Pressable>
             {word && onDelete && (
-              <Pressable style={styles.deleteButton} onPress={confirmDelete}>
+              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
                 <Text style={styles.deleteText}>Delete word</Text>
               </Pressable>
             )}

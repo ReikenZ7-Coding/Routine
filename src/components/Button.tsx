@@ -14,7 +14,7 @@ export function Button({ label, onPress, variant = 'primary', style }: Props) {
   const { colors, type } = useTheme();
   const styles = useStyles(makeStyles);
   return (
-    <Pressable
+    <Pressable accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
         variant === 'primary' ? styles.primary : styles.plain,
@@ -37,7 +37,7 @@ export function Fab({ onPress, label }: { onPress: () => void; label: string }) 
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   return (
-    <Pressable
+    <Pressable accessibilityRole="button"
       style={({ pressed }) => [styles.fab, pressed && styles.pressed]}
       onPress={onPress}
       accessibilityLabel={label}

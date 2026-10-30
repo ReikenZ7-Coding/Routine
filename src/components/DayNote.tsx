@@ -24,7 +24,7 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
         {MOODS.map((m) => {
           const active = entry.mood === m.value;
           return (
-            <Pressable
+            <Pressable accessibilityRole="button"
               key={m.value}
               style={[styles.mood, active && styles.moodActive]}
               onPress={() => updateJournal((j) => setEntry(j, date, { mood: active ? undefined : m.value }))}
@@ -58,7 +58,7 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
   moodActive: { backgroundColor: colors.primarySoft },
   face: { fontSize: 24 },
   faceDim: { opacity: 0.35 },
-  moodLabel: { fontFamily: fonts.body, fontSize: 11, color: colors.muted },
+  moodLabel: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
   moodLabelActive: { color: colors.text, fontFamily: fonts.bodyMedium },
   note: {
     ...type.body,
