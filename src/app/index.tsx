@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient as ExpoGradient } from 'expo-linear-gradient';
+import { Bloom, SceneArt } from '../components/Art';
+import { Glass } from '../components/Glass';
 import { BackupSheet } from '../components/BackupSheet';
 import { CalendarStrip } from '../components/CalendarStrip';
 import { CheckRow } from '../components/CheckRow';
@@ -54,7 +57,8 @@ function minutesNow(): number {
 }
 
 export default function TodayScreen() {
-  const { colors, kinds, type } = useTheme();
+  const theme = useTheme();
+  const { colors, kinds, type } = theme;
   const styles = useStyles(makeStyles);
   const fabBottom = useFabBottom();
   const store = useStore();
@@ -180,17 +184,34 @@ export default function TodayScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
         <View style={styles.top}>
           <View style={styles.flex}>
-            <Text style={type.small}>{greeting(Math.floor(now / 60))},</Text>
+            <Text style={styles.greet}>{greeting(Math.floor(now / 60))},</Text>
             <Text style={styles.name} numberOfLines={1}>
-              {settings.name || 'friend'} 👋
+              {settings.name || 'friend'}
+              {theme.name === 'lavender' ? ' 👋' : ''}
             </Text>
+            {theme.glass && (
+              <Text style={styles.tagline}>
+                {theme.name === 'stone' ? 'Breathe in calm. One thing at a time.' : 'Small steps, bright days. ✨'}
+              </Text>
+            )}
           </View>
-          <Pressable style={styles.roundButton} onPress={() => setPanel('stats')} accessibilityLabel="Your week">
-            <Ionicons name="stats-chart" size={16} color={colors.text} />
-          </Pressable>
-          <Pressable style={styles.roundButton} onPress={() => setPanel('settings')} accessibilityLabel="Settings">
-            <Ionicons name="settings-outline" size={18} color={colors.text} />
-          </Pressable>
+          {theme.name === 'stone' && (
+            <View style={styles.bloom} pointerEvents="none">
+              <Bloom size={80} />
+            </View>
+          )}
+          <View style={styles.topButtons}>
+            <Pressable onPress={() => setPanel('stats')} accessibilityLabel="Your week">
+              <Glass radius={21} style={styles.roundButton}>
+                <Ionicons name="stats-chart" size={16} color={colors.text} />
+              </Glass>
+            </Pressable>
+            <Pressable onPress={() => setPanel('settings')} accessibilityLabel="Settings">
+              <Glass radius={21} style={styles.roundButton}>
+                <Ionicons name="settings-outline" size={18} color={colors.text} />
+              </Glass>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.dateRow}>
@@ -224,6 +245,11 @@ export default function TodayScreen() {
 
         {isToday && <UpNextCard next={next} done={done} total={total} onTap={tap} onEdit={edit} />}
 
+        <Glass style={styles.shortcutPanel}>
+        <View style={styles.shortcutHead}>
+          <Text style={type.sectionTitle}>Shortcuts</Text>
+          {pinned.length === 0 && <Text style={type.small}>Pin a routine to add it here</Text>}
+        </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shortcuts}>
           {pinned.map((r) => {
             const isDone = isDoneOn(r, selected);
@@ -256,6 +282,7 @@ export default function TodayScreen() {
             onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}
           />
         </ScrollView>
+        </Glass>
 
         <View style={styles.status}>
           <Text style={type.label}>
@@ -527,8 +554,10 @@ function UpNextCard({
   const styles = useStyles(makeStyles);
   const r = next?.entry.routine;
   const left = next ? (next.minutes >= 60 ? `${Math.floor(next.minutes / 60)} h ${next.minutes % 60} min` : `${next.minutes} min`) : '';
-  return (
-    <View style={styles.hero}>
+  const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const inner = (
+    <>
       <Text style={styles.heroEyebrow}>{next ? (next.state === 'now' ? 'Happening now' : 'Up next') : "Today's progress"}</Text>
       {r && next ? (
         <>
@@ -567,8 +596,26 @@ function UpNextCard({
           </View>
         </>
       )}
-    </View>
+    </>
   );
+  if (theme.name === 'lavender') {
+    // An art card: the scene fills it and the text sits on a soft shade.
+    return (
+      <View style={styles.heroArt}>
+        <View style={StyleSheet.absoluteFill}>
+          <SceneArt width={width - 32} height={230} />
+        </View>
+        <ExpoGradient
+          colors={['rgba(30,16,80,0.6)', 'rgba(30,16,80,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0.8, y: 0.4 }}
+          style={StyleSheet.absoluteFill}
+        />
+        {inner}
+      </View>
+    );
+  }
+  return <Glass style={styles.hero}>{inner}</Glass>;
 }
 
 function TimelineRow({
@@ -656,13 +703,23 @@ function Shortcut({
   onPress: () => void;
   onLongPress?: () => void;
 }) {
+  const { colors, glass, name } = useTheme();
   const styles = useStyles(makeStyles);
+  // Lavender: white icons on a tinted glass bubble. Stone: muted glass with a gold icon. Paper: solid colour.
+  const iconColor = name === 'stone' ? (filled ? colors.onPrimary : colors.primary) : '#FFFFFF';
+  const tint = filled ? (name === 'stone' ? colors.primary : color) : name === 'lavender' ? `${color}66` : undefined;
   return (
     <Pressable style={styles.shortcut} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
-      <View style={[styles.shortcutCircle, { backgroundColor: color }, filled && styles.shortcutFilled]}>
-        <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color="#FFFFFF" />
-        {badge ? <Text style={styles.shortcutBadge}>{badge}</Text> : null}
-      </View>
+      {glass ? (
+        <Glass radius={28} tint={tint} style={styles.shortcutCircle}>
+          <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color={iconColor} />
+        </Glass>
+      ) : (
+        <View style={[styles.shortcutCircle, { backgroundColor: color }, filled && styles.shortcutFilled]}>
+          <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color="#FFFFFF" />
+        </View>
+      )}
+      {badge ? <Text style={styles.shortcutBadge}>{badge}</Text> : null}
       <Text style={styles.shortcutLabel} numberOfLines={2}>
         {label}
       </Text>
@@ -716,16 +773,14 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
     flex: { flex: 1 },
     top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     name: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.text, letterSpacing: -0.3 },
-    roundButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      backgroundColor: colors.card,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+    roundButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+    topButtons: { flexDirection: 'row', gap: 10, alignSelf: 'flex-start' },
+    greet: { ...type.small, fontSize: 15 },
+    tagline: { ...type.small, marginTop: 6, maxWidth: 220 },
+    bloom: { position: 'absolute', right: 100, top: -14, opacity: 0.9 },
+    heroArt: { marginTop: 18, height: 230, borderRadius: radius + 4, overflow: 'hidden', padding: 20, gap: 4, borderWidth: 1, borderColor: colors.cardBorder },
+    shortcutPanel: { marginTop: 18, paddingTop: 14 },
+    shortcutHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
     dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 },
     dateTitle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     dateText: { fontFamily: fonts.display, fontSize: 28, color: colors.text, letterSpacing: -0.5 },
@@ -739,15 +794,7 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
       backgroundColor: colors.card,
     },
     todayButtonText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-    hero: {
-      marginTop: 18,
-      padding: 18,
-      borderRadius: radius + 4,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      gap: 4,
-    },
+    hero: { marginTop: 18, padding: 20, gap: 4 },
     heroEyebrow: { ...type.small, fontFamily: fonts.bodyMedium },
     heroTitle: { fontFamily: fonts.display, fontSize: 28, lineHeight: 33, color: colors.text, letterSpacing: -0.4 },
     heroBottom: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14 },
@@ -760,11 +807,16 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
       height: 46,
       borderRadius: 23,
       backgroundColor: colors.primary,
+      shadowColor: colors.glow,
+      shadowOpacity: 0.8,
+      shadowRadius: 16,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: glass ? 8 : 0,
     },
     heroActionText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
     heroTrack: { flex: 1, flexDirection: 'row', height: 6, borderRadius: 3, backgroundColor: colors.primarySoft, overflow: 'hidden' },
     heroFill: { backgroundColor: colors.text, borderRadius: 3 },
-    shortcuts: { gap: 14, paddingVertical: 18, paddingHorizontal: 2 },
+    shortcuts: { gap: 12, paddingVertical: 14, paddingHorizontal: 14 },
     shortcut: { width: 64, alignItems: 'center', gap: 6 },
     shortcutCircle: {
       width: 56,
@@ -772,13 +824,11 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
       borderRadius: 28,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: glass ? 1.5 : 0,
-      borderColor: 'rgba(255,255,255,0.55)',
     },
     shortcutFilled: { opacity: 0.55 },
     shortcutBadge: {
       position: 'absolute',
-      bottom: -6,
+      top: 46,
       fontFamily: fonts.monoMedium,
       fontSize: 10,
       color: colors.onPrimary,
@@ -788,7 +838,7 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
       overflow: 'hidden',
     },
     shortcutLabel: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 15, color: colors.text, textAlign: 'center' },
-    status: { gap: 8 },
+    status: { gap: 8, marginTop: 20 },
     track: { flexDirection: 'row', height: 3, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
     fill: { backgroundColor: colors.text },
     timeline: { paddingVertical: 6 },

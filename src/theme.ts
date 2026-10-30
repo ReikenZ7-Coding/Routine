@@ -30,6 +30,11 @@ export interface Palette {
   backdrop: string;
   tabBar: string;
   statusBar: 'light' | 'dark';
+  /** Frosted glass: a diagonal fill laid over the blur, brighter at the top-left edge. */
+  glassFill: [string, string];
+  blurTint: 'light' | 'dark';
+  /** Coloured glow under the main buttons. */
+  glow: string;
 }
 
 interface KindStyle {
@@ -45,8 +50,8 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     colors: {
       gradient: ['#B9B2F4', '#9C94EC', '#B3A2EE'],
       bg: '#A39BEE',
-      card: 'rgba(255,255,255,0.20)',
-      cardBorder: 'rgba(255,255,255,0.45)',
+      card: 'rgba(255,255,255,0.18)',
+      cardBorder: 'rgba(255,255,255,0.5)',
       sheet: '#9890E6',
       input: 'rgba(255,255,255,0.18)',
       text: '#FFFFFF',
@@ -60,6 +65,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       backdrop: 'rgba(40,24,110,0.35)',
       tabBar: 'rgba(255,255,255,0.18)',
       statusBar: 'light',
+      glassFill: ['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.08)'],
+      blurTint: 'light',
+      glow: '#E9A8FF',
     },
     kinds: {
       routines: { color: '#5B43D6', soft: 'rgba(91,67,214,0.25)', label: 'Routines' },
@@ -89,6 +97,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       backdrop: 'rgba(0,0,0,0.45)',
       tabBar: 'rgba(30,30,24,0.6)',
       statusBar: 'light',
+      glassFill: ['rgba(255,250,235,0.16)', 'rgba(255,250,235,0.03)'],
+      blurTint: 'dark',
+      glow: '#E8D3A0',
     },
     kinds: {
       routines: { color: '#A9B9D3', soft: 'rgba(169,185,211,0.18)', label: 'Routines' },
@@ -118,6 +129,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       backdrop: 'rgba(0,0,0,0.35)',
       tabBar: '#F2F3F1',
       statusBar: 'dark',
+      glassFill: ['#FFFFFF', '#FFFFFF'],
+      blurTint: 'light',
+      glow: 'transparent',
     },
     kinds: {
       routines: { color: '#2F54EB', soft: '#E5EAFD', label: 'Routines' },

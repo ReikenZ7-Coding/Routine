@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Glass } from './Glass';
 
 interface Props {
   title: string;
@@ -22,7 +23,7 @@ export function Section({ title, dot, right, children }: Props) {
         </View>
         {right}
       </View>
-      <View style={styles.card}>{children}</View>
+      <Glass style={styles.card}>{children}</Glass>
     </View>
   );
 }
@@ -32,7 +33,7 @@ export function Divider({ inset = 52 }: { inset?: number }) {
   return <View style={[styles.divider, { marginLeft: inset }]} />;
 }
 
-const makeStyles = ({ colors, radius }: Theme) =>
+const makeStyles = ({ colors }: Theme) =>
   StyleSheet.create({
   wrap: { marginTop: 24 },
   header: {
@@ -44,12 +45,6 @@ const makeStyles = ({ colors, radius }: Theme) =>
   },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: radius,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    overflow: 'hidden',
-  },
+  card: { overflow: 'hidden' },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
 });

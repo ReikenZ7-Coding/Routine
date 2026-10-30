@@ -11,10 +11,13 @@ import { useFonts } from 'expo-font';
 import { Tabs } from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { BlurTargetView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect } from 'react';
+import { type ComponentRef, type ReactNode, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ambience } from '../components/Art';
+import { BlurTargetContext, Glass } from '../components/Glass';
 import { MiniPlayer, NowPlaying } from '../components/NowPlaying';
 import { syncReminders } from '../lib/reminders';
 import { SoundProvider } from '../lib/sounds';
@@ -75,12 +78,7 @@ function ThemedApp() {
         <ReminderSync />
         <Tabs
           // Each screen paints its own gradient, so screens kept alive in the background never show through.
-          screenLayout={({ children }) => (
-            <View style={styles.root}>
-              <LinearGradient colors={colors.gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
-              {children}
-            </View>
-          )}
+          screenLayout={({ children }) => <ScreenFrame gradient={colors.gradient}>{children}</ScreenFrame>}
           screenOptions={{
             tabBarActiveTintColor: colors.text,
             tabBarInactiveTintColor: colors.faint,
@@ -97,7 +95,8 @@ function ThemedApp() {
                   borderWidth: 1,
                   borderColor: colors.cardBorder,
                   borderTopColor: colors.cardBorder,
-                  backgroundColor: colors.tabBar,
+                  backgroundColor: 'transparent',
+                  overflow: 'hidden',
                   elevation: 0,
                 }
               : {
@@ -106,6 +105,7 @@ function ThemedApp() {
                   borderTopWidth: StyleSheet.hairlineWidth,
                   elevation: 0,
                 },
+            tabBarBackground: glass ? () => <Glass radius={28} intensity={50} style={StyleSheet.absoluteFill} /> : undefined,
             tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 11 },
             headerStyle: { backgroundColor: colors.gradient[0] },
             headerShadowVisible: false,
@@ -137,6 +137,21 @@ function ThemedApp() {
 }
 
 const styles = StyleSheet.create({ root: { flex: 1 } });
+
+/** Each screen paints its own backdrop (gradient, light and glow), so screens kept alive in the
+ *  background never show through, and glass on the screen has something to blur. */
+function ScreenFrame({ gradient, children }: { gradient: [string, string, string]; children: ReactNode }) {
+  const target = useRef<ComponentRef<typeof View>>(null);
+  return (
+    <View style={styles.root}>
+      <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
+        <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
+        <Ambience />
+      </BlurTargetView>
+      <BlurTargetContext.Provider value={target}>{children}</BlurTargetContext.Provider>
+    </View>
+  );
+}
 
 /** Keeps scheduled notifications in step with the routines' reminder times. */
 function ReminderSync() {

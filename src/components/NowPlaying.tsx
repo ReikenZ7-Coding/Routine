@@ -3,11 +3,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUNDS, useSounds } from '../lib/sounds';
+import { SceneArt } from './Art';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 /** Art for a sound: a soft gradient tile with its icon. */
-export function SoundArt({ icon, size }: { icon: string; size: number }) {
-  const { kinds } = useTheme();
+export function SoundArt({ icon, size, id }: { icon: string; size: number; id?: string }) {
+  const { kinds, glass } = useTheme();
+  if (glass) {
+    return (
+      <View style={{ width: size, height: size, borderRadius: size * 0.22, overflow: 'hidden' }}>
+        <SceneArt width={size} height={size} variant={id} />
+      </View>
+    );
+  }
   return (
     <LinearGradient
       colors={[kinds.routines.color, kinds.chinese.color, kinds.gym.color]}
@@ -28,7 +36,7 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
   if (!s.started) return null;
   return (
     <Pressable style={[styles.mini, { bottom }]} onPress={() => s.setSheetOpen(true)} accessibilityLabel="Open focus sounds">
-      <SoundArt icon={s.current.icon} size={38} />
+      <SoundArt icon={s.current.icon} id={s.current.id} size={38} />
       <View style={styles.flex}>
         <Text style={styles.miniTitle}>{s.current.name}</Text>
         <Text style={styles.miniSub}>{s.playing ? 'Playing' : 'Paused'} · Focus sounds</Text>
@@ -66,7 +74,7 @@ export function NowPlaying() {
           </View>
 
           <View style={styles.art}>
-            <SoundArt icon={s.current.icon} size={220} />
+            <SoundArt icon={s.current.icon} id={s.current.id} size={240} />
           </View>
           <Text style={styles.name}>{s.current.name}</Text>
           <Text style={type.small}>{s.current.subtitle}</Text>
@@ -98,7 +106,7 @@ export function NowPlaying() {
               const active = x.id === s.current.id;
               return (
                 <Pressable key={x.id} style={[styles.item, active && styles.itemActive]} onPress={() => s.play(x.id)}>
-                  <SoundArt icon={x.icon} size={40} />
+                  <SoundArt icon={x.icon} id={x.id} size={44} />
                   <View style={styles.flex}>
                     <Text style={type.bodyMedium}>{x.name}</Text>
                     <Text style={type.small}>{x.subtitle}</Text>
@@ -158,6 +166,11 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       height: 72,
       borderRadius: 36,
       backgroundColor: colors.primary,
+      shadowColor: colors.glow,
+      shadowOpacity: 0.9,
+      shadowRadius: 22,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 10,
       alignItems: 'center',
       justifyContent: 'center',
     },
