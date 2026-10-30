@@ -299,7 +299,7 @@ function ArtRow({
   );
 }
 
-const makeStyles = ({ colors, fonts, radius }: Theme) =>
+const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     shelf: { gap: 10 },
@@ -326,8 +326,23 @@ const makeStyles = ({ colors, fonts, radius }: Theme) =>
       justifyContent: 'center',
       backgroundColor: colors.primarySoft,
     },
-    rowTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
-    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    rowTitle: {
+      fontFamily: fonts.bodyBold,
+      fontSize: 16,
+      color: colors.text,
+      ...(name === 'lavender'
+        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
+        : null),
+    },
+    rowMeta: {
+      marginTop: 2,
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.muted,
+      ...(name === 'lavender'
+        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
+        : null),
+    },
     rowDone: { textDecorationLine: 'line-through', opacity: 0.75 },
     tick: {
       width: 44,

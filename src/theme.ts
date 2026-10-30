@@ -59,10 +59,10 @@ export type Kind = 'routines' | 'gym' | 'chinese' | 'groceries' | 'calendar' | '
 const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindStyle> }> = {
   lavender: {
     colors: {
-      gradient: ['#B4A8EE', '#8494E3', '#3D5FB9'],
-      bg: '#8494E3',
+      gradient: ['#A3A6F2', '#5E5FD0', '#221A68'],
+      bg: '#5E5FD0',
       card: 'rgba(40,70,160,0.32)',
-      cardBorder: 'rgba(255,255,255,0.24)',
+      cardBorder: 'rgba(255,255,255,0.28)',
       sheet: '#5B6BBC',
       input: 'rgba(40,70,160,0.32)',
       text: '#FFFFFF',
@@ -74,18 +74,18 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       primarySoft: 'rgba(147,141,238,0.6)',
       danger: '#FFD1DC',
       backdrop: 'rgba(20,30,80,0.4)',
-      tabBar: 'rgba(104,112,224,0.55)',
+      tabBar: 'rgba(255,255,255,0.12)',
       statusBar: 'light',
-      glassFill: ['rgba(96,102,226,0.55)', 'rgba(58,70,192,0.62)'],
+      glassFill: ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.03)'],
       blurTint: 'default',
       glow: '#CD94E6',
-      rim: 'rgba(255,255,255,0.4)',
+      rim: 'rgba(255,255,255,0.62)',
       accent: '#F270C8',
       selected: '#6E5FD3',
       onSelected: '#FFFFFF',
-      shadow: '0px 10px 30px rgba(35,58,140,0.35)',
-      shine: 'rgba(255,255,255,0.12)',
-      edgeGlow: 'rgba(205,148,230,0.22)',
+      shadow: '0px 14px 34px rgba(26,14,96,0.38), inset 0px 1px 1px rgba(255,255,255,0.45)',
+      shine: 'rgba(255,255,255,0.2)',
+      edgeGlow: 'rgba(255,143,208,0.2)',
     },
     kinds: {
       routines: { color: '#5B43D6', soft: 'rgba(91,67,214,0.25)', label: 'Routines' },
@@ -101,7 +101,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       gradient: ['#676755', '#4B4B44', '#31332B'],
       bg: '#4B4B44',
       card: 'rgba(255,250,235,0.08)',
-      cardBorder: 'rgba(255,250,235,0.14)',
+      cardBorder: 'rgba(255,250,235,0.10)',
       sheet: '#3F403A',
       input: 'rgba(255,250,235,0.08)',
       text: '#FFFBE9',
@@ -113,17 +113,17 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       primarySoft: 'rgba(255,251,233,0.12)',
       danger: '#E7A08F',
       backdrop: 'rgba(0,0,0,0.45)',
-      tabBar: 'rgba(40,40,32,0.45)',
+      tabBar: 'rgba(28,28,22,0.4)',
       statusBar: 'light',
-      glassFill: ['rgba(255,250,235,0.10)', 'rgba(255,250,235,0.04)'],
+      glassFill: ['rgba(40,39,30,0.30)', 'rgba(22,22,16,0.42)'],
       blurTint: 'dark',
       glow: '#E6D6B3',
-      rim: '#93917C',
+      rim: 'rgba(255,248,230,0.24)',
       accent: '#E6D6B3',
       selected: '#E6D6B3',
       onSelected: '#2E2D24',
-      shadow: '0px 6px 18px rgba(0,0,0,0.18)',
-      shine: 'rgba(255,248,230,0.08)',
+      shadow: '0px 12px 30px rgba(0,0,0,0.3), inset 0px 1px 0px rgba(255,248,230,0.12)',
+      shine: 'rgba(255,248,230,0.07)',
       edgeGlow: 'rgba(230,214,179,0.06)',
     },
     kinds: {
@@ -230,7 +230,15 @@ export interface Theme {
 export function buildTheme(name: ThemeName): Theme {
   const { colors, kinds } = PALETTES[name] ?? PALETTES.lavender;
   const fonts = { ...FONTS, ...DISPLAY[name] };
-  return { name, colors, kinds, fonts, type: makeType(colors, fonts, name !== 'paper'), radius: name === 'paper' ? 16 : 22, glass: name !== 'paper' };
+  return {
+    name,
+    colors,
+    kinds,
+    fonts,
+    type: makeType(colors, fonts, name !== 'paper'),
+    radius: name === 'paper' ? 16 : 22,
+    glass: name !== 'paper',
+  };
 }
 
 const THEMES: Record<ThemeName, Theme> = {

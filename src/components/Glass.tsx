@@ -39,7 +39,11 @@ export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPres
   const interactive = !!(onPress || onLongPress);
 
   if (!glass) {
-    const plain = <View style={[{ borderRadius: r, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder }, style]}>{children}</View>;
+    const plain = (
+      <View style={[{ borderRadius: r, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder }, style]}>
+        {children}
+      </View>
+    );
     return interactive ? (
       <Pressable onPress={onPress} onLongPress={onLongPress} accessibilityLabel={accessibilityLabel} accessibilityRole="button">
         {plain}
@@ -70,18 +74,39 @@ export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPres
           style={StyleSheet.absoluteFill}
         />
       )}
-      <LinearGradient colors={colors.glassFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
+      <LinearGradient
+        colors={colors.glassFill}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
       {tint ? <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} pointerEvents="none" /> : null}
       {/* Specular shine across the top, and the surrounding colour caught along the bottom edge. */}
-      <LinearGradient colors={[colors.shine, 'transparent']} end={{ x: 0, y: 0.45 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      <LinearGradient colors={['transparent', colors.edgeGlow]} start={{ x: 0, y: 0.6 }} end={{ x: 0, y: 1 }} style={StyleSheet.absoluteFill} pointerEvents="none" />
-      {interactive && <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.shine, opacity: press }]} pointerEvents="none" />}
+      <LinearGradient
+        colors={[colors.shine, 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.65, y: 0.65 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        colors={['transparent', colors.edgeGlow]}
+        start={{ x: 0, y: 0.6 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {interactive && (
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.shine, opacity: press }]} pointerEvents="none" />
+      )}
       <InsideGlass.Provider value>{children}</InsideGlass.Provider>
     </Animated.View>
   );
   if (!interactive) return body;
 
-  const springTo = (toValue: number) => Animated.spring(press, { toValue, useNativeDriver: true, speed: 40, bounciness: toValue ? 0 : 10 }).start();
+  const springTo = (toValue: number) =>
+    Animated.spring(press, { toValue, useNativeDriver: true, speed: 40, bounciness: toValue ? 0 : 10 }).start();
   return (
     <Pressable
       onPress={onPress}

@@ -22,6 +22,22 @@ export interface HomeItem {
   onLongPress?: () => void;
 }
 
+/** Each category circle carries its own tint of light, with a matching glow beneath it. */
+const CIRCLE_TINTS = [
+  'rgba(236,120,220,0.30)',
+  'rgba(110,170,255,0.30)',
+  'rgba(160,120,255,0.32)',
+  'rgba(255,140,190,0.28)',
+  'rgba(200,190,255,0.28)',
+];
+const CIRCLE_GLOWS = [
+  'rgba(236,120,220,0.45)',
+  'rgba(110,170,255,0.45)',
+  'rgba(160,120,255,0.45)',
+  'rgba(255,140,190,0.42)',
+  'rgba(200,190,255,0.4)',
+];
+
 /** Vivid tile colours for Lavender rows, so each row reads at a glance like album art. */
 const TILES: [string, string][] = [
   ['#FF8AD8', '#7B5CFF'],
@@ -137,12 +153,12 @@ function LavenderHome(p: Props) {
 
       <SectionHead title="Categories" action="See all" onAction={p.onSeeAll} />
       <View style={styles.circles}>
-        {p.categories.map((c) => (
+        {p.categories.map((c, i) => (
           <View key={c.label} style={styles.circleItem}>
             <Glass
               radius={26}
-              tint={c.active ? colors.selected : undefined}
-              style={styles.circle}
+              tint={c.active ? colors.selected : CIRCLE_TINTS[i % CIRCLE_TINTS.length]}
+              style={[styles.circle, { boxShadow: `0px 6px 20px ${CIRCLE_GLOWS[i % CIRCLE_GLOWS.length]}` }]}
               onPress={c.onPress}
               accessibilityLabel={c.label}
             >
@@ -332,7 +348,7 @@ function SectionHead({ title, action, onAction }: { title: string; action?: stri
   );
 }
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ colors, fonts, name }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 44 },
@@ -368,8 +384,9 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       overflow: 'hidden',
       padding: 20,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.35)',
-      boxShadow: colors.shadow,
+      borderColor: 'rgba(255,255,255,0.4)',
+      // A pink bloom under the artwork, as if the scene lights the glass around it.
+      boxShadow: '0px 18px 44px rgba(255,110,200,0.32), 0px 8px 18px rgba(30,16,100,0.35)',
     },
     lavEyebrow: { fontFamily: fonts.bodyMedium, fontSize: 14, color: 'rgba(255,255,255,0.85)' },
     lavHeroTitle: {
@@ -401,13 +418,35 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     circles: { flexDirection: 'row', justifyContent: 'space-between' },
     circleItem: { alignItems: 'center', gap: 8, width: 66 },
     circle: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
-    circleLabel: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
+    circleLabel: {
+      fontFamily: fonts.bodyMedium,
+      fontSize: 13,
+      color: colors.text,
+      ...(name === 'lavender'
+        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
+        : null),
+    },
     rows: { gap: 10 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 12 },
     emptyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16 },
     thumb: { width: 48, height: 48, borderRadius: 14, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-    rowTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
-    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    rowTitle: {
+      fontFamily: fonts.bodyBold,
+      fontSize: 16,
+      color: colors.text,
+      ...(name === 'lavender'
+        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
+        : null),
+    },
+    rowMeta: {
+      marginTop: 2,
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.muted,
+      ...(name === 'lavender'
+        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
+        : null),
+    },
     rowDone: { opacity: 0.6, textDecorationLine: 'line-through' },
     rowButton: {
       width: 44,

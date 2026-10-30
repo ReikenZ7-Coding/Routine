@@ -70,31 +70,36 @@ def save(img, name, quality=88):
 
 
 def lavender_backdrop():
-    """Measured from the reference: a light lavender sky that deepens through periwinkle into cobalt,
-    with orchid and a touch of hot pink in the light."""
-    img = gradient([(0, hexc('#B4A8EE')), (0.3, hexc('#8494E3')), (0.62, hexc('#5B6BBC')), (1, hexc('#2C4790'))], tilt=0.08)
-    glow(img, W * 0.1, H * 0.02, W * 0.6, hexc('#DBDCFD'), 0.6)
-    glow(img, W * 1.0, H * 0.12, W * 0.55, hexc('#CD94E6'), 0.65)
-    glow(img, W * 0.95, H * 0.45, W * 0.4, hexc('#F270C8'), 0.22)
-    glow(img, W * 0.0, H * 0.55, W * 0.5, hexc('#8494E3'), 0.35)
-    glow(img, W * 0.5, H * 1.05, W * 0.8, hexc('#233A73'), 0.6)
-    img = 1 - (1 - img) * (1 - beams([(-200, 260, 0.12), (140, 90, 0.09)], 24, 50))
-    img = bokeh(img, 22, 18, 64, (235, 235, 255), 0.16, 6)
-    img = bokeh(img, 50, 3, 7, (255, 255, 255), 0.45, 1.2)
-    save(grain(img, 0.016), 'lavender-bg')
+    """A lit digital environment: periwinkle light falling from the top left, lilac and a pink bloom
+    on the right, sinking into electric-indigo depth lower down, where the glass and its text sit."""
+    img = gradient([(0, hexc('#A3A6F2')), (0.28, hexc('#7479DD')), (0.6, hexc('#4636B0')), (1, hexc('#221A68'))], tilt=0.1)
+    glow(img, W * 0.05, H * 0.0, W * 0.75, hexc('#C9D2FF'), 0.6)
+    glow(img, W * 1.05, H * 0.16, W * 0.6, hexc('#D9A6F2'), 0.6)
+    glow(img, W * 0.92, H * 0.42, W * 0.45, hexc('#FF8FD0'), 0.42)
+    glow(img, W * -0.1, H * 0.5, W * 0.55, hexc('#7C8CFF'), 0.45)
+    glow(img, W * 0.15, H * 0.82, W * 0.55, hexc('#9A55E8'), 0.4)
+    glow(img, W * 1.0, H * 0.9, W * 0.5, hexc('#5E8BFF'), 0.32)
+    glow(img, W * 0.55, H * 0.66, W * 0.5, hexc('#24187A'), 0.45)
+    img = 1 - (1 - img) * (1 - beams([(-220, 300, 0.10), (160, 110, 0.07)], 24, 60))
+    img = bokeh(img, 18, 20, 70, (230, 220, 255), 0.13, 8)
+    img = bokeh(img, 60, 2, 6, (255, 255, 255), 0.5, 1.0)
+    save(grain(img, 0.014), 'lavender-bg')
 
 
 def stone_backdrop():
-    """Measured from the reference: warm olive-grey, sunlit at the top left, falling into shadow.
-    All warm; no cool colours."""
-    img = gradient([(0, hexc('#676755')), (0.45, hexc('#4B4B44')), (1, hexc('#31332B'))], tilt=0.2)
-    glow(img, -W * 0.1, -H * 0.05, W * 1.0, hexc('#F3E6C4'), 0.45)
-    glow(img, W * 0.5, H * 1.1, W * 0.9, hexc('#1B1A16'), 0.5)
-    fade = np.clip(1.15 - np.linspace(0, 1, H) * 1.1, 0, 1)[:, None, None]  # sunlight fades lower down
-    light = beams([(-300, 300, 0.28), (150, 120, 0.22), (380, 60, 0.16), (560, 26, 0.12)], 32, 50) * fade
-    img = 1 - (1 - img) * (1 - light * hexc('#FFF1CF'))
-    img = bokeh(img, 8, 8, 24, (255, 240, 205), 0.1, 4, ymax=0.5)
-    save(grain(img, 0.02), 'stone-bg')
+    """A quiet room lit through a window: a broad warm shaft of sunlight from the top left with haze,
+    olive-grey walls and deep, warm shadow in the lower right. All warm; no cool colours."""
+    img = gradient([(0, hexc('#6A6A58')), (0.4, hexc('#4C4C43')), (1, hexc('#2B2C25'))], tilt=0.22)
+    glow(img, -W * 0.15, -H * 0.08, W * 1.1, hexc('#F6E9C8'), 0.55)
+    glow(img, W * 0.95, H * 1.05, W * 1.0, hexc('#16150F'), 0.6)
+    glow(img, W * 0.2, H * 0.55, W * 0.6, hexc('#8A8A70'), 0.18)
+    fade = np.clip(1.25 - np.linspace(0, 1, H) * 1.15, 0, 1)[:, None, None]  # sunlight falls off lower down
+    light = beams([(-340, 360, 0.34), (120, 170, 0.28), (360, 80, 0.2), (560, 36, 0.14)], 34, 60) * fade
+    img = 1 - (1 - img) * (1 - light * hexc('#FFF0CC'))
+    haze = np.clip(1 - np.linspace(0, 1, H) * 1.6, 0, 1)[:, None, None] * 0.10
+    img = img * (1 - haze) + hexc('#EFE4C8') * haze
+    img = bokeh(img, 10, 8, 26, (255, 240, 205), 0.1, 5, ymax=0.55)
+    save(grain(img, 0.022), 'stone-bg')
 
 
 def portal(name, top, mid, horizon, glow_color, figure, size=1000):
