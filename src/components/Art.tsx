@@ -8,20 +8,42 @@ import { useTheme } from '../theme';
 const BACKDROPS = {
   lavender: require('../../assets/art/lavender-bg.jpg'),
   stone: require('../../assets/art/stone-bg.jpg'),
+  pine: require('../../assets/art/pine-bg.jpg'),
 };
 // The backdrops carry their own light and depth now; only a breath of tint keeps them in the look's family.
-const SCRIMS = { lavender: 'rgba(30,20,110,0.26)', stone: 'rgba(16,16,10,0.06)' };
+const SCRIMS = { lavender: 'rgba(30,20,110,0.26)', stone: 'rgba(16,16,10,0.06)', pine: 'rgba(0,0,0,0)' };
 // Headers sit straight on the backdrop, where its light is brightest; a deeper veil up top keeps them readable.
-const TOP_VEILS: Record<'lavender' | 'stone', [string, string]> = {
+const TOP_VEILS: Record<'lavender' | 'stone' | 'pine', [string, string]> = {
   lavender: ['rgba(46,40,150,0.55)', 'rgba(46,40,150,0)'],
   stone: ['rgba(20,20,14,0.52)', 'rgba(20,20,14,0)'],
+  pine: ['rgba(10,43,37,0)', 'rgba(10,43,37,0)'],
 };
+// Misty ridges and pines behind the Today header on the page looks. They fade into the page on their own.
+const HEADERS = {
+  paper: require('../../assets/art/paper-header.png'),
+  pine: require('../../assets/art/pine-header.png'),
+};
+const HEADER_RATIO = 900 / 1080;
 const PORTALS: Record<string, number> = {
   dusk: require('../../assets/art/portal-dusk.jpg'),
   rain: require('../../assets/art/portal-rain.jpg'),
   waves: require('../../assets/art/portal-waves.jpg'),
   brown: require('../../assets/art/portal-brown.jpg'),
 };
+
+/** Mountains in mist at the top of a page; `width` is the screen width and it sits flush to the top edge. */
+export function HeaderScene({ width }: { width: number }) {
+  const { name } = useTheme();
+  if (name !== 'paper' && name !== 'pine') return null;
+  return (
+    <Image
+      source={HEADERS[name]}
+      style={{ position: 'absolute', top: 0, left: 0, width, height: Math.round(width * HEADER_RATIO) }}
+      resizeMode="cover"
+      accessibilityIgnoresInvertColors
+    />
+  );
+}
 
 /** Light and glow behind a whole screen. */
 export function Ambience() {

@@ -53,7 +53,8 @@ export async function phoneEventsByDay(start: Date, end: Date): Promise<Record<s
       });
     }
   }
-  for (const list of Object.values(byDay)) list.sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.getTime() - b.start.getTime());
+  for (const list of Object.values(byDay))
+    list.sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.start.getTime() - b.start.getTime());
   return byDay;
 }
 

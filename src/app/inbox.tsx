@@ -22,9 +22,7 @@ export default function InboxScreen() {
 
   const tomorrow = addDays(today, 1);
   const waiting = inboxOpen(inbox, today).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  const planned = inbox
-    .filter((i) => !i.doneOn && i.date && i.date >= today)
-    .sort((a, b) => a.date!.localeCompare(b.date!));
+  const planned = inbox.filter((i) => !i.doneOn && i.date && i.date >= today).sort((a, b) => a.date!.localeCompare(b.date!));
   const done = recentlyDone(inbox, today);
 
   const add = () => {
@@ -33,8 +31,7 @@ export default function InboxScreen() {
     updateInbox((items) => [{ id: newId(), title, createdAt: new Date().toISOString() }, ...items]);
     setDraft('');
   };
-  const change = (id: string, fn: (i: InboxItem) => InboxItem) =>
-    updateInbox((items) => items.map((i) => (i.id === id ? fn(i) : i)));
+  const change = (id: string, fn: (i: InboxItem) => InboxItem) => updateInbox((items) => items.map((i) => (i.id === id ? fn(i) : i)));
   const remove = (id: string) => updateInbox((items) => items.filter((i) => i.id !== id));
 
   const row = (item: InboxItem, i: number) => (
@@ -43,7 +40,13 @@ export default function InboxScreen() {
       <CheckRow
         tint={kinds.inbox.color}
         title={item.title}
-        subtitle={item.date && !item.doneOn ? (item.date < today ? `Was planned ${friendlyDate(item.date, today).toLowerCase()}` : friendlyDate(item.date, today)) : undefined}
+        subtitle={
+          item.date && !item.doneOn
+            ? item.date < today
+              ? `Was planned ${friendlyDate(item.date, today).toLowerCase()}`
+              : friendlyDate(item.date, today)
+            : undefined
+        }
         done={!!item.doneOn}
         onToggle={() => change(item.id, (x) => toggleItem(x, today))}
         onLongPress={() => setOpen(open === item.id ? null : item.id)}
@@ -57,7 +60,8 @@ export default function InboxScreen() {
               ['Inbox', undefined],
             ] as const
           ).map(([label, date]) => (
-            <Pressable accessibilityRole="button"
+            <Pressable
+              accessibilityRole="button"
               key={label}
               style={[styles.action, item.date === date && styles.actionActive]}
               onPress={() => {
@@ -68,7 +72,12 @@ export default function InboxScreen() {
               <Text style={[styles.actionText, item.date === date && styles.actionTextActive]}>{label}</Text>
             </Pressable>
           ))}
-          <Pressable accessibilityRole="button" style={styles.action} onPress={() => remove(item.id)} accessibilityLabel={`Delete ${item.title}`}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.action}
+            onPress={() => remove(item.id)}
+            accessibilityLabel={`Delete ${item.title}`}
+          >
             <Ionicons name="trash-outline" size={15} color={colors.danger} />
           </Pressable>
         </View>
@@ -101,11 +110,7 @@ export default function InboxScreen() {
       </View>
 
       <Section title={`To sort · ${waiting.length}`} dot={kinds.inbox.color}>
-        {waiting.length === 0 ? (
-          <Text style={styles.empty}>All clear. New to-dos land here.</Text>
-        ) : (
-          waiting.map(row)
-        )}
+        {waiting.length === 0 ? <Text style={styles.empty}>All clear. New to-dos land here.</Text> : waiting.map(row)}
       </Section>
 
       {planned.length > 0 && <Section title="Planned">{planned.map(row)}</Section>}

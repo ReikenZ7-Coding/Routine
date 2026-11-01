@@ -1,23 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient as ExpoGradient } from 'expo-linear-gradient';
-import { Bloom, SceneArt } from '../components/Art';
-import { Glass } from '../components/Glass';
 import { GlassHome } from '../components/GlassHome';
 import { BackupSheet } from '../components/BackupSheet';
 import { CalendarStrip } from '../components/CalendarStrip';
-import { CheckRow } from '../components/CheckRow';
 import { DayNote } from '../components/DayNote';
 import { GroceryForm } from '../components/GroceryForm';
 import { RoutineForm } from '../components/RoutineForm';
-import { RoutineRow } from '../components/RoutineRow';
-import { Divider, Section } from '../components/Section';
 import { SettingsSheet } from '../components/SettingsSheet';
 import { Sheet } from '../components/Sheet';
 import { StatsSheet } from '../components/StatsSheet';
+import { type TrailItem, TrailHome } from '../components/TrailHome';
 import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
 import { dueWords, newWord, todaysLog } from '../lib/chinese';
@@ -28,8 +23,9 @@ import { moodFace } from '../lib/journal';
 import { type Routine, countOn, iconFor, isDoneOn, isScheduled, isSkipped, sortByTime, tapRoutine, toggleSkip } from '../lib/routines';
 import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
 import { useSounds } from '../lib/sounds';
+import { dayStreak } from '../lib/stats';
 import { newId, useStore } from '../lib/store';
-import { type TimedEntry, clock, formatSpan, timedRoutines, upNext } from '../lib/timeline';
+import { type TimedEntry, clock, timedRoutines, upNext } from '../lib/timeline';
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
 
@@ -182,6 +178,116 @@ export default function TodayScreen() {
     close();
   };
 
+  const calendar = (
+    <View>
+      <View style={styles.dateRow}>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.dateTitle}
+          onPress={() => setExpanded((e) => !e)}
+          accessibilityLabel={expanded ? 'Show week' : 'Show month'}
+        >
+          <Text style={styles.dateText}>
+            {date.getDate()}. {date.toLocaleDateString('en', { month: 'long' })}
+          </Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
+        </Pressable>
+        {!isToday && (
+          <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
+            <Text style={styles.todayButtonText}>Back to today</Text>
+          </Pressable>
+        )}
+      </View>
+      <CalendarStrip
+        selected={selected}
+        today={today}
+        expanded={expanded}
+        busy={busy}
+        marksFor={marks}
+        moodFor={moodFor}
+        onSelect={setSelected}
+      />
+    </View>
+  );
+
+  // One list of the day's things for both layouts: routines, to-dos, then the workout, practice and shopping,
+  // so the rows match the progress count.
+  const items: TrailItem[] = [
+    ...dayRoutines.map((r) => {
+      const count = r.target ? countOn(r, selected) : 0;
+      const when = r.start ? `${r.start}${r.duration ? ` · ${r.duration} min` : ''}` : 'Anytime';
+      return {
+        key: r.id,
+        title: r.name,
+        icon: iconFor(r),
+        color: kinds.routines.color,
+        meta: isSkipped(r, selected) ? 'Skipped today' : r.target ? `${when} · ${count}/${r.target}` : when,
+        done: isDoneOn(r, selected),
+        skipped: isSkipped(r, selected),
+        progress: r.target && r.target > 1 ? { value: count, total: r.target } : undefined,
+        onPress: () => tap(r),
+        onLongPress: () => edit(r),
+      };
+    }),
+    ...dayTodos.map((t) => ({
+      key: t.id,
+      title: t.title,
+      meta: 'To-do',
+      icon: 'checkbox-outline',
+      color: kinds.inbox.color,
+      done: !!t.doneOn,
+      onPress: () => !isFuture && updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
+    })),
+    ...(session && gymProgress
+      ? [
+          {
+            key: 'gym',
+            title: session.name,
+            icon: 'barbell',
+            color: kinds.gym.color,
+            meta: `Workout · ${gymProgress.done}/${gymProgress.total} sets`,
+            done: gymDone,
+            nav: true,
+            progress: { value: gymProgress.done, total: gymProgress.total },
+            onPress: () => router.navigate('/gym'),
+          },
+        ]
+      : []),
+    ...(showChinese
+      ? [
+          {
+            key: 'chinese',
+            title: 'Chinese practice',
+            icon: 'language',
+            color: kinds.chinese.color,
+            meta: `${practice.minutes}/${chinese.target} min${toReview ? ` · ${toReview} words to review` : ''}`,
+            done: chineseDone,
+            nav: true,
+            progress: { value: practice.minutes, total: chinese.target },
+            onPress: () => router.navigate('/chinese'),
+          },
+        ]
+      : []),
+    ...(dayGroceries.length > 0
+      ? [
+          {
+            key: 'groceries',
+            title: isPast ? 'Groceries bought' : 'Groceries',
+            icon: 'basket',
+            color: kinds.groceries.color,
+            meta: `${dayGroceries.filter((g) => boughtOn(g, selected)).length} of ${dayGroceries.length} bought · ${dayGroceries
+              .slice(0, 3)
+              .map((g) => g.name)
+              .join(', ')}${dayGroceries.length > 3 ? '…' : ''}`,
+            done: dayGroceries.every((g) => boughtOn(g, selected)),
+            nav: true,
+            onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
+          },
+        ]
+      : []),
+  ];
+  const openLibrary = (shelf: 'routines' | 'groceries') => router.navigate({ pathname: '/library', params: { shelf } });
+
   return (
     <View style={styles.flex}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
@@ -195,37 +301,7 @@ export default function TodayScreen() {
             }
             calendarOpen={calendarOpen}
             onToggleCalendar={() => setCalendarOpen((o) => !o)}
-            calendar={
-              <View>
-                <View style={styles.dateRow}>
-                  <Pressable
-                    accessibilityRole="button"
-                    style={styles.dateTitle}
-                    onPress={() => setExpanded((e) => !e)}
-                    accessibilityLabel={expanded ? 'Show week' : 'Show month'}
-                  >
-                    <Text style={styles.dateText}>
-                      {date.getDate()}. {date.toLocaleDateString('en', { month: 'long' })}
-                    </Text>
-                    <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
-                  </Pressable>
-                  {!isToday && (
-                    <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
-                      <Text style={styles.todayButtonText}>Back to today</Text>
-                    </Pressable>
-                  )}
-                </View>
-                <CalendarStrip
-                  selected={selected}
-                  today={today}
-                  expanded={expanded}
-                  busy={busy}
-                  marksFor={marks}
-                  moodFor={moodFor}
-                  onSelect={setSelected}
-                />
-              </View>
-            }
+            calendar={calendar}
             hero={
               next && isToday
                 ? {
@@ -261,364 +337,78 @@ export default function TodayScreen() {
                     active: isDoneOn(pinned[0], selected),
                     onPress: () => tap(pinned[0]),
                   }
-                : {
-                    label: 'Routines',
-                    icon: 'repeat',
-                    onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'routines' } }),
-                  },
+                : { label: 'Routines', icon: 'repeat', onPress: () => openLibrary('routines') },
               { label: 'Gym', icon: 'barbell', active: gymDone, onPress: () => router.navigate('/gym') },
               { label: 'Chinese', icon: 'language', active: chineseDone, onPress: () => router.navigate('/chinese') },
-              {
-                label: 'Groceries',
-                icon: 'basket',
-                onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
-              },
+              { label: 'Groceries', icon: 'basket', onPress: () => openLibrary('groceries') },
               { label: 'Sounds', icon: sounds.playing ? 'pause' : 'musical-notes', onPress: () => sounds.setSheetOpen(true) },
             ]}
-            items={[
-              ...dayRoutines.map((r) => {
-                const count = r.target ? countOn(r, selected) : 0;
-                const when = r.start ? `${r.start}${r.duration ? ` · ${r.duration} min` : ''}` : 'Anytime';
-                return {
-                  key: r.id,
-                  title: r.name,
-                  icon: iconFor(r),
-                  meta: isSkipped(r, selected) ? 'Skipped today' : r.target ? `${when} · ${count}/${r.target}` : when,
-                  done: isDoneOn(r, selected),
-                  onPress: () => tap(r),
-                  onLongPress: () => edit(r),
-                };
-              }),
-              ...dayTodos.map((t) => ({
-                key: t.id,
-                title: t.title,
-                meta: 'To-do',
-                icon: 'checkbox-outline',
-                done: !!t.doneOn,
-                onPress: () => !isFuture && updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
-              })),
-              // The workout, practice and shopping show up as rows too, so the list matches the progress count.
-              ...(session && gymProgress
-                ? [
-                    {
-                      key: 'gym',
-                      title: session.name,
-                      icon: 'barbell',
-                      meta: `Workout · ${gymProgress.done}/${gymProgress.total} sets`,
-                      done: gymDone,
-                      onPress: () => router.navigate('/gym'),
-                      onLongPress: () => router.navigate('/gym'),
-                    },
-                  ]
-                : []),
-              ...(showChinese
-                ? [
-                    {
-                      key: 'chinese',
-                      title: 'Chinese practice',
-                      icon: 'language',
-                      meta: `${practice.minutes}/${chinese.target} min${toReview ? ` · ${toReview} words to review` : ''}`,
-                      done: chineseDone,
-                      onPress: () => router.navigate('/chinese'),
-                      onLongPress: () => router.navigate('/chinese'),
-                    },
-                  ]
-                : []),
-              ...(dayGroceries.length > 0
-                ? [
-                    {
-                      key: 'groceries',
-                      title: isPast ? 'Groceries bought' : 'Groceries',
-                      icon: 'basket',
-                      meta: `${dayGroceries.filter((g) => boughtOn(g, selected)).length} of ${dayGroceries.length} bought · ${dayGroceries
-                        .slice(0, 3)
-                        .map((g) => g.name)
-                        .join(', ')}${dayGroceries.length > 3 ? '…' : ''}`,
-                      done: dayGroceries.every((g) => boughtOn(g, selected)),
-                      onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
-                      onLongPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
-                    },
-                  ]
-                : []),
-            ]}
+            items={items}
             done={done}
             total={total}
             onAdd={() => setPanel('add')}
             onSettings={() => setPanel('settings')}
             onStats={() => setPanel('stats')}
-            onSeeAll={() => router.navigate({ pathname: '/library', params: { shelf: 'routines' } })}
+            onSeeAll={() => openLibrary('routines')}
           />
         ) : (
-          <>
-            <View style={styles.top}>
-              <View style={styles.flex}>
-                <Text style={styles.greet}>{greeting(Math.floor(now / 60))},</Text>
-                <Text style={styles.name} numberOfLines={1}>
-                  {settings.name || 'friend'}
-                  {theme.name === 'lavender' ? ' 👋' : ''}
-                </Text>
-                {theme.glass && (
-                  <Text style={styles.tagline}>
-                    {theme.name === 'stone' ? 'Breathe in calm. One thing at a time.' : 'Small steps, bright days. ✨'}
-                  </Text>
-                )}
-              </View>
-              {theme.name === 'stone' && (
-                <View style={styles.bloom} pointerEvents="none">
-                  <Bloom size={80} />
-                </View>
-              )}
-              <View style={styles.topButtons}>
-                <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('stats')} accessibilityLabel="Your week">
-                  <Ionicons name="stats-chart" size={16} color={colors.text} />
-                </Glass>
-                <Glass radius={21} style={styles.roundButton} onPress={() => setPanel('settings')} accessibilityLabel="Settings">
-                  <Ionicons name="settings-outline" size={18} color={colors.text} />
-                </Glass>
-              </View>
-            </View>
-
-            <View style={styles.dateRow}>
-              <Pressable
-                accessibilityRole="button"
-                style={styles.dateTitle}
-                onPress={() => setExpanded((e) => !e)}
-                accessibilityLabel={expanded ? 'Show week' : 'Show month'}
-              >
-                <Text style={styles.dateText}>
-                  {date.getDate()}. {date.toLocaleDateString('en', { month: 'long' })}
-                  <Text style={styles.dateYear}> {date.getFullYear()}</Text>
-                </Text>
-                <Ionicons name={expanded ? 'chevron-up' : 'chevron-forward'} size={20} color={kinds.chinese.color} />
-              </Pressable>
-              {!isToday && (
-                <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
-                  <Text style={styles.todayButtonText}>Back to today</Text>
-                </Pressable>
-              )}
-            </View>
-
-            <CalendarStrip
-              selected={selected}
-              today={today}
-              expanded={expanded}
-              busy={busy}
-              marksFor={marks}
-              moodFor={moodFor}
-              onSelect={setSelected}
-            />
-
-            {isToday && <UpNextCard next={next} done={done} total={total} onTap={tap} onEdit={edit} />}
-
-            <Glass style={styles.shortcutPanel}>
-              <View style={styles.shortcutHead}>
-                <Text style={type.sectionTitle}>Shortcuts</Text>
-                {pinned.length === 0 && <Text style={type.small}>Pin a routine to add it here</Text>}
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shortcuts}>
-                {pinned.map((r) => {
-                  const isDone = isDoneOn(r, selected);
-                  const count = r.target ? countOn(r, selected) : 0;
-                  return (
-                    <Shortcut
-                      key={r.id}
-                      label={r.name}
-                      icon={iconFor(r)}
-                      color={kinds.routines.color}
-                      filled={isDone}
-                      badge={r.target && !isDone && count ? `${count}/${r.target}` : undefined}
-                      onPress={() => tap(r)}
-                      onLongPress={() => edit(r)}
-                    />
-                  );
-                })}
-                <Shortcut
-                  label="Sounds"
-                  icon={sounds.playing ? 'pause' : 'musical-notes'}
-                  color={kinds.inbox.color}
-                  onPress={() => sounds.setSheetOpen(true)}
-                />
-                <Shortcut label="Gym" icon="barbell" color={kinds.gym.color} filled={gymDone} onPress={() => router.navigate('/gym')} />
-                <Shortcut
-                  label="Chinese"
-                  icon="language"
-                  color={kinds.chinese.color}
-                  filled={chineseDone}
-                  onPress={() => router.navigate('/chinese')}
-                />
-                <Shortcut
-                  label="Groceries"
-                  icon="basket"
-                  color={kinds.groceries.color}
-                  onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}
-                />
-              </ScrollView>
-            </Glass>
-
-            <View style={styles.status}>
-              <Text style={type.label}>
-                {isToday ? 'Today' : friendlyDate(selected, today)}
-                {total > 0 ? `  ·  ${done}/${total} done` : ''}
-              </Text>
-              <View style={styles.track}>
-                <View style={[styles.fill, { flex: total ? done / total : 0 }]} />
-                <View style={{ flex: total ? 1 - done / total : 1 }} />
-              </View>
-            </View>
-
-            {timeline.length > 0 && (
-              <Section title="Timeline">
-                <View style={styles.timeline}>
-                  <View style={styles.rail} />
-                  {timeline.map((e) => (
-                    <TimelineRow
-                      key={e.id}
-                      entry={e}
-                      date={selected}
-                      current={isToday && e.start <= now && now < e.end}
-                      now={now}
-                      disabled={isFuture}
-                      onTap={tap}
-                      onEdit={edit}
-                    />
-                  ))}
-                </View>
-              </Section>
-            )}
-
-            {(anytime.length > 0 || dayTodos.length > 0 || allDayEvents.length > 0) && (
-              <Section title="Anytime">
-                {allDayEvents.map((e, i) => (
-                  <View key={e.id}>
-                    {i > 0 && <Divider />}
-                    <View style={styles.eventRow}>
-                      <View style={[styles.eventBar, { backgroundColor: e.color ?? colors.muted }]} />
-                      <Text style={[type.bodyMedium, styles.flex]} numberOfLines={1}>
-                        {e.title}
-                      </Text>
-                      <Text style={styles.mono}>{formatEventTime(e)}</Text>
-                    </View>
-                  </View>
-                ))}
-                {anytime.map((r, i) => (
-                  <View key={r.id}>
-                    {(i > 0 || allDayEvents.length > 0) && <Divider />}
-                    <RoutineRow routine={r} date={selected} disabled={isFuture} onChange={replace} onLongPress={() => edit(r)} />
-                  </View>
-                ))}
-                {dayTodos.map((t, i) => (
-                  <View key={t.id}>
-                    {(i > 0 || anytime.length > 0 || allDayEvents.length > 0) && <Divider />}
-                    <CheckRow
-                      tint={kinds.inbox.color}
-                      title={t.title}
-                      subtitle="To-do"
-                      done={!!t.doneOn}
-                      disabled={isFuture}
-                      onToggle={() => updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x)))}
-                    />
-                  </View>
-                ))}
-              </Section>
-            )}
-          </>
-        )}
-
-        {/* On the glass looks Gym and Chinese live in the category circles. */}
-        {!theme.glass && (session || isToday) && (
-          <Section title="Gym" dot={kinds.gym.color}>
-            <NavRow
-              onPress={() => router.navigate('/gym')}
-              done={gymDone}
-              tint={kinds.gym.color}
-              icon="barbell"
-              title={session ? session.name : gym.sessions.length === 0 ? 'Set up your training plan' : 'Rest day'}
-              subtitle={
-                session && gymProgress
-                  ? gymDone
-                    ? 'Done'
-                    : `${session.exercises.length} exercises · ${gymProgress.done}/${gymProgress.total} sets`
-                  : gym.sessions.length === 0
-                    ? 'Pick a starter plan or build your own'
-                    : upcoming
-                      ? `Next: ${upcoming.session.name}, ${friendlyDate(upcoming.date, today).toLowerCase()}`
-                      : 'Enjoy it'
-              }
-            />
-          </Section>
-        )}
-
-        {!theme.glass && showChinese && (
-          <Section title="Chinese" dot={kinds.chinese.color}>
-            <NavRow
-              onPress={() => router.navigate('/chinese')}
-              done={chineseDone}
-              tint={kinds.chinese.color}
-              icon="language"
-              title={`${practice.minutes} / ${chinese.target} min practice`}
-              subtitle={
-                !isToday
-                  ? isPast
-                    ? `${practice.reviewed} cards reviewed`
-                    : 'Daily practice'
-                  : chinese.words.length === 0
-                    ? 'Add words to start flashcard reviews'
-                    : toReview
-                      ? `${toReview} words to review`
-                      : 'Flashcards all caught up'
-              }
-            />
-          </Section>
-        )}
-
-        {!theme.glass && (dayGroceries.length > 0 || isToday) && (
-          <Section
-            title={isPast ? 'Bought' : 'Groceries'}
-            dot={kinds.groceries.color}
-            right={<Link label="Edit" onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })} />}
-          >
-            {dayGroceries.length === 0 ? (
-              <Pressable
-                accessibilityRole="button"
-                style={styles.empty}
-                onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } })}
-              >
-                <Text style={type.small}>
-                  {groceries.length === 0
-                    ? 'Add the things you buy often. They show up here on the days you need them.'
-                    : 'Nothing to buy today.'}
-                </Text>
-              </Pressable>
-            ) : (
-              dayGroceries.map((g, i) => (
-                <View key={g.id}>
-                  {i > 0 && <Divider />}
-                  <CheckRow
-                    tint={kinds.groceries.color}
-                    title={g.name}
-                    subtitle={g.quantity}
-                    done={boughtOn(g, selected)}
-                    disabled={!isToday}
-                    onToggle={() => toggleBought(g.id)}
-                  />
-                </View>
-              ))
-            )}
-          </Section>
-        )}
-
-        {!theme.glass && routines.length === 0 && (
-          <Pressable
-            accessibilityRole="button"
-            style={styles.hintCard}
-            onPress={() => router.navigate({ pathname: '/library', params: { shelf: 'routines' } })}
-          >
-            <Ionicons name="sparkles-outline" size={20} color={colors.text} />
-            <View style={styles.flex}>
-              <Text style={type.bodyMedium}>Build your day</Text>
-              <Text style={type.small}>Add routines with a start time and they line up on your timeline.</Text>
-            </View>
-          </Pressable>
+          <TrailHome
+            name={settings.name || 'friend'}
+            greeting={greeting(Math.floor(now / 60))}
+            dateLabel={
+              isToday
+                ? `Today, ${date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })}`
+                : date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })
+            }
+            isToday={isToday}
+            streak={dayStreak(routines, today)}
+            done={done}
+            total={total}
+            items={items}
+            nextKey={next?.entry.routine?.id}
+            nextLabel={
+              next
+                ? next.state === 'now'
+                  ? `Happening now · ${formatLeft(next.minutes)} left`
+                  : `Up next · ${clock(next.entry.start)} · in ${formatLeft(next.minutes)}`
+                : undefined
+            }
+            balance={[
+              {
+                label: 'Routines',
+                value: planned.filter((r) => isDoneOn(r, selected)).length,
+                total: planned.length,
+                unit: planned.length === 1 ? 'routine' : 'routines',
+                color: kinds.routines.color,
+                soft: kinds.routines.soft,
+              },
+              {
+                label: 'Gym',
+                value: gymProgress?.done ?? 0,
+                total: gymProgress?.total ?? 0,
+                unit: 'sets',
+                color: kinds.gym.color,
+                soft: kinds.gym.soft,
+              },
+              {
+                label: 'Chinese',
+                value: practice.minutes,
+                total: showChinese ? chinese.target : 0,
+                unit: 'min',
+                color: kinds.chinese.color,
+                soft: kinds.chinese.soft,
+              },
+            ]}
+            calendarOpen={calendarOpen}
+            onToggleCalendar={() => setCalendarOpen((o) => !o)}
+            calendar={calendar}
+            topInset={insets.top + 16}
+            soundsPlaying={sounds.playing}
+            onSounds={() => sounds.setSheetOpen(true)}
+            onStats={() => setPanel('stats')}
+            onSettings={() => setPanel('settings')}
+            onAdd={() => setPanel('add')}
+          />
         )}
 
         {!isFuture && <DayNote date={selected} isToday={isToday} />}
@@ -733,357 +523,30 @@ export default function TodayScreen() {
   );
 }
 
-/** The hero card: what's happening now or next, or how the day is going. */
-function UpNextCard({
-  next,
-  done,
-  total,
-  onTap,
-  onEdit,
-}: {
-  next: ReturnType<typeof upNext>;
-  done: number;
-  total: number;
-  onTap: (r: Routine) => void;
-  onEdit: (r?: Routine) => void;
-}) {
-  const { colors, kinds, type } = useTheme();
-  const styles = useStyles(makeStyles);
-  const r = next?.entry.routine;
-  const left = next ? (next.minutes >= 60 ? `${Math.floor(next.minutes / 60)} h ${next.minutes % 60} min` : `${next.minutes} min`) : '';
-  const theme = useTheme();
-  const { width } = useWindowDimensions();
-  const inner = (
-    <>
-      <Text style={styles.heroEyebrow}>{next ? (next.state === 'now' ? 'Happening now' : 'Up next') : "Today's progress"}</Text>
-      {r && next ? (
-        <>
-          <Text style={styles.heroTitle} numberOfLines={2}>
-            {r.name}
-          </Text>
-          <Text style={type.small}>{next.state === 'now' ? `${left} remaining` : `At ${clock(next.entry.start)} · in ${left}`}</Text>
-          <View style={styles.heroBottom}>
-            <View style={[styles.heroIcon, { backgroundColor: kinds.routines.color }]}>
-              <Ionicons name={iconFor(r) as 'sunny'} size={22} color="#FFFFFF" />
-            </View>
-            <View style={styles.flex} />
-            <Pressable
-              accessibilityRole="button"
-              style={styles.heroAction}
-              onPress={() => onTap(r)}
-              accessibilityLabel={`Mark ${r.name} done`}
-            >
-              <Ionicons name="checkmark" size={18} color={colors.onPrimary} />
-              <Text style={styles.heroActionText}>{r.target ? '+1' : 'Done'}</Text>
-            </Pressable>
-          </View>
-        </>
-      ) : (
-        <>
-          <Text style={styles.heroTitle}>
-            {total === 0 ? 'A clear day' : done === total ? 'All done. Nice work!' : `${done} of ${total} done`}
-          </Text>
-          <Text style={type.small}>
-            {total === 0
-              ? 'Add a routine or a to-do to plan it.'
-              : done === total
-                ? 'Enjoy the rest of your day.'
-                : 'Keep going, one thing at a time.'}
-          </Text>
-          <View style={styles.heroBottom}>
-            <View style={styles.heroTrack}>
-              <View style={[styles.heroFill, { flex: total ? done / total : 0 }]} />
-              <View style={{ flex: total ? 1 - done / total : 1 }} />
-            </View>
-            <Pressable accessibilityRole="button" style={styles.heroAction} onPress={() => onEdit()} accessibilityLabel="Add routine">
-              <Ionicons name="add" size={18} color={colors.onPrimary} />
-              <Text style={styles.heroActionText}>Routine</Text>
-            </Pressable>
-          </View>
-        </>
-      )}
-    </>
-  );
-  if (theme.name === 'lavender') {
-    // An art card: the scene fills it and the text sits on a soft shade.
-    return (
-      <View style={styles.heroArt}>
-        <View style={StyleSheet.absoluteFill}>
-          <SceneArt width={width - 32} height={230} />
-        </View>
-        <ExpoGradient
-          colors={['rgba(30,16,80,0.6)', 'rgba(30,16,80,0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.8, y: 0.4 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {inner}
-      </View>
-    );
-  }
-  return <Glass style={styles.hero}>{inner}</Glass>;
-}
-
-function TimelineRow({
-  entry,
-  date,
-  current,
-  now,
-  disabled,
-  onTap,
-  onEdit,
-}: {
-  entry: TimedEntry;
-  date: string;
-  current: boolean;
-  now: number;
-  disabled: boolean;
-  onTap: (r: Routine) => void;
-  onEdit: (r: Routine) => void;
-}) {
-  const { colors, kinds, type } = useTheme();
-  const styles = useStyles(makeStyles);
-  const r = entry.routine;
-  const color = entry.event ? (entry.event.color ?? kinds.calendar.color) : kinds.routines.color;
-  const done = !!r && isDoneOn(r, date);
-  const skipped = !!r && isSkipped(r, date);
-  const count = r?.target ? countOn(r, date) : 0;
-  const subtitle = current ? `${entry.end - now} min remaining` : skipped ? 'Skipped · streak kept' : formatSpan(entry.start, entry.end);
-
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.tRow, pressed && r && styles.pressed]}
-      onPress={r && !disabled ? () => onTap(r) : undefined}
-      onLongPress={r ? () => onEdit(r) : undefined}
-      accessibilityRole={r ? 'checkbox' : undefined}
-      accessibilityState={r ? { checked: done } : undefined}
-    >
-      <Text style={styles.tTime}>{clock(entry.start)}</Text>
-      <View style={[styles.tIcon, { backgroundColor: color }, current && styles.tIconCurrent, (done || skipped) && styles.tIconDone]}>
-        <Ionicons name={(entry.event ? 'calendar' : iconFor(r!)) as 'sunny'} size={20} color="#FFFFFF" />
-      </View>
-      <View style={styles.flex}>
-        <Text style={[styles.tSub, current && { color: colors.text }]}>{subtitle}</Text>
-        <Text style={[type.bodyMedium, (done || skipped) && styles.doneTitle]} numberOfLines={2}>
-          {entry.title}
-        </Text>
-      </View>
-      {r && !skipped && (
-        <View style={[styles.tCheck, { borderColor: color }, done && { backgroundColor: color }]}>
-          {done ? (
-            <Ionicons name="checkmark" size={14} color="#FFFFFF" />
-          ) : count ? (
-            <Text style={[styles.tCount, { color }]}>{count}</Text>
-          ) : null}
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-function Shortcut({
-  label,
-  icon,
-  color,
-  filled,
-  badge,
-  onPress,
-  onLongPress,
-}: {
-  label: string;
-  icon: string;
-  color: string;
-  filled?: boolean;
-  badge?: string;
-  onPress: () => void;
-  onLongPress?: () => void;
-}) {
-  const { colors, glass, name } = useTheme();
-  const styles = useStyles(makeStyles);
-  // Lavender: white icons on a tinted glass bubble. Stone: muted glass with a gold icon. Paper: solid colour.
-  const iconColor = name === 'stone' ? (filled ? colors.onPrimary : colors.primary) : '#FFFFFF';
-  const tint = filled ? (name === 'stone' ? colors.primary : color) : name === 'lavender' ? `${color}66` : undefined;
-  const icons = <Ionicons name={(filled ? 'checkmark' : icon) as 'sunny'} size={24} color={glass ? iconColor : '#FFFFFF'} />;
-  const caption = (
-    <>
-      {badge ? <Text style={styles.shortcutBadge}>{badge}</Text> : null}
-      <Text style={styles.shortcutLabel} numberOfLines={2}>
-        {label}
-      </Text>
-    </>
-  );
-  // Glass drops sit inside the Shortcuts glass panel, so they share its blur and read as one sheet.
-  if (glass) {
-    return (
-      <View style={styles.shortcut}>
-        <Glass radius={28} tint={tint} style={styles.shortcutCircle} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
-          {icons}
-        </Glass>
-        {caption}
-      </View>
-    );
-  }
-  return (
-    <Pressable accessibilityRole="button" style={styles.shortcut} onPress={onPress} onLongPress={onLongPress} accessibilityLabel={label}>
-      <View style={[styles.shortcutCircle, { backgroundColor: color }, filled && styles.shortcutFilled]}>{icons}</View>
-      {caption}
-    </Pressable>
-  );
-}
-
-function Link({ label, onPress }: { label: string; onPress: () => void }) {
-  const { type } = useTheme();
-  return (
-    <Pressable accessibilityRole="button" onPress={onPress} hitSlop={8}>
-      <Text style={type.link}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function NavRow({
-  title,
-  subtitle,
-  done,
-  tint,
-  icon,
-  onPress,
-}: {
-  title: string;
-  subtitle: string;
-  done: boolean;
-  tint: string;
-  icon: string;
-  onPress: () => void;
-}) {
-  const { colors, type } = useTheme();
-  const styles = useStyles(makeStyles);
-  return (
-    <Pressable accessibilityRole="button" style={({ pressed }) => [styles.navRow, pressed && styles.pressed]} onPress={onPress}>
-      <View style={[styles.navIcon, { backgroundColor: tint }]}>
-        <Ionicons name={(done ? 'checkmark' : icon) as 'sunny'} size={18} color="#FFFFFF" />
-      </View>
-      <View style={styles.flex}>
-        <Text style={[type.bodyMedium, done && styles.doneTitle]}>{title}</Text>
-        <Text style={type.small}>{subtitle}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.faint} />
-    </Pressable>
-  );
-}
-
-const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
+const makeStyles = ({ colors, fonts, type, glass }: Theme) =>
   StyleSheet.create({
     content: { paddingHorizontal: 16, paddingBottom: 170 },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     flex: { flex: 1 },
-    top: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    name: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.text, letterSpacing: -0.3 },
-    roundButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-    topButtons: { flexDirection: 'row', gap: 10, alignSelf: 'flex-start' },
-    greet: { ...type.small, fontSize: 15 },
-    tagline: { ...type.small, marginTop: 6, maxWidth: 220 },
-    bloom: { position: 'absolute', right: 100, top: -14, opacity: 0.9 },
-    heroArt: {
-      marginTop: 18,
-      height: 230,
-      borderRadius: radius + 4,
-      overflow: 'hidden',
-      padding: 20,
-      gap: 4,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
+    dateRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: glass ? 18 : 4,
+      paddingHorizontal: glass ? 0 : 8,
     },
-    shortcutPanel: { marginTop: 18, paddingTop: 14 },
-    shortcutHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16 },
-    dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 18 },
-    dateTitle: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    dateText: { fontFamily: fonts.display, fontSize: 28, color: colors.text, letterSpacing: -0.5 },
-    dateYear: { color: colors.faint },
+    dateTitle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 },
+    dateText: { fontFamily: fonts.display, fontSize: glass ? 28 : 22, color: colors.text, letterSpacing: -0.5 },
     todayButton: {
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      minHeight: 36,
+      justifyContent: 'center',
       borderRadius: 999,
       borderWidth: 1,
       borderColor: colors.cardBorder,
-      backgroundColor: colors.card,
+      backgroundColor: glass ? colors.card : colors.chip,
     },
     todayButtonText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-    hero: { marginTop: 18, padding: 20, gap: 4 },
-    heroEyebrow: { ...type.small, fontFamily: fonts.bodyMedium },
-    heroTitle: { fontFamily: fonts.display, fontSize: 28, lineHeight: 33, color: colors.text, letterSpacing: -0.4 },
-    heroBottom: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 14 },
-    heroIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-    heroAction: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      paddingHorizontal: 18,
-      height: 46,
-      borderRadius: 23,
-      backgroundColor: colors.primary,
-      shadowColor: colors.glow,
-      shadowOpacity: 0.8,
-      shadowRadius: 16,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: glass ? 8 : 0,
-    },
-    heroActionText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
-    heroTrack: { flex: 1, flexDirection: 'row', height: 6, borderRadius: 3, backgroundColor: colors.primarySoft, overflow: 'hidden' },
-    heroFill: { backgroundColor: colors.accent, borderRadius: 3 },
-    shortcuts: { gap: 12, paddingVertical: 14, paddingHorizontal: 14 },
-    shortcut: { width: 64, alignItems: 'center', gap: 6 },
-    shortcutCircle: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    shortcutFilled: { opacity: 0.55 },
-    shortcutBadge: {
-      position: 'absolute',
-      top: 46,
-      fontFamily: fonts.monoMedium,
-      fontSize: 10,
-      color: colors.onPrimary,
-      backgroundColor: colors.primary,
-      paddingHorizontal: 5,
-      borderRadius: 6,
-      overflow: 'hidden',
-    },
-    shortcutLabel: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 15, color: colors.text, textAlign: 'center' },
-    status: { gap: 8, marginTop: 20 },
-    track: { flexDirection: 'row', height: 3, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
-    fill: { backgroundColor: colors.accent },
-    timeline: { paddingVertical: 6 },
-    rail: { position: 'absolute', left: 88, top: 24, bottom: 24, width: 2, backgroundColor: colors.border },
-    tRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8, paddingLeft: 12, paddingRight: 16 },
-    tTime: { width: 42, fontFamily: fonts.mono, fontSize: 12, color: colors.muted },
-    tIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-    tIconCurrent: { height: 84 },
-    tIconDone: { opacity: 0.45 },
-    tSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
-    tCheck: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-    tCount: { fontFamily: fonts.monoMedium, fontSize: 12 },
-    doneTitle: { color: colors.faint, textDecorationLine: 'line-through' },
-    eventRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 16 },
-    eventBar: { width: 3, height: 22, borderRadius: 2 },
-    mono: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },
-    navRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 14 },
-    navIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-    pressed: { backgroundColor: colors.primarySoft },
-    empty: { padding: 16 },
-    hintCard: {
-      marginTop: 24,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      padding: 16,
-      borderRadius: radius,
-      borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: colors.faint,
-    },
     fab: {
       position: 'absolute',
       right: 20,
@@ -1093,12 +556,9 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 3 },
+      boxShadow: '0px 8px 20px rgba(0,0,0,0.22)',
     },
+    pressed: { backgroundColor: colors.primarySoft },
     addRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12 },
     addIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
     todoInput: {
@@ -1114,4 +574,5 @@ const makeStyles = ({ colors, fonts, type, radius, glass }: Theme) =>
       color: colors.text,
     },
     saveButton: { marginTop: 16, backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
+    label: type.label,
   });

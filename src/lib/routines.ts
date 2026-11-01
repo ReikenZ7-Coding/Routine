@@ -37,8 +37,24 @@ export interface Routine {
 }
 
 export const ROUTINE_ICONS = [
-  'sunny', 'water', 'barbell', 'body', 'walk', 'bicycle', 'book', 'cafe', 'restaurant', 'bed',
-  'medkit', 'leaf', 'brush', 'call', 'laptop', 'musical-notes', 'heart', 'sparkles',
+  'sunny',
+  'water',
+  'barbell',
+  'body',
+  'walk',
+  'bicycle',
+  'book',
+  'cafe',
+  'restaurant',
+  'bed',
+  'medkit',
+  'leaf',
+  'brush',
+  'call',
+  'laptop',
+  'musical-notes',
+  'heart',
+  'sparkles',
 ] as const;
 
 const ICON_WORDS: [RegExp, string][] = [

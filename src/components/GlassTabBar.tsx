@@ -20,7 +20,9 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
   const lastIndex = useRef(state.index);
   const [reduceMotion, setReduceMotion] = useState(false);
   useEffect(() => {
-    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(setReduceMotion)
+      .catch(() => {});
     const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
     return () => sub.remove();
   }, []);

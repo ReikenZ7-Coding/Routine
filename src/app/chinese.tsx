@@ -93,7 +93,11 @@ export default function ChineseScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <PageTitle title="Chinese" />
+      <PageTitle
+        title="Chinese"
+        subtitle="Daily practice and flashcards"
+        badge={`${chinese.words.length} ${chinese.words.length === 1 ? 'word' : 'words'}`}
+      />
       <Glass style={styles.todayCard}>
         <View style={styles.row}>
           <Text style={styles.eyebrow}>Today's practice</Text>

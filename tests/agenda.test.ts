@@ -7,9 +7,7 @@ import { EMPTY_GYM } from '../src/lib/gym.ts';
 const today = '2026-10-29'; // Thursday
 
 test('weeks start on Monday', () => {
-  assert.deepEqual(weekOf(today), [
-    '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01',
-  ]);
+  assert.deepEqual(weekOf(today), ['2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01']);
 });
 
 test('month grid covers every day of the month once', () => {
@@ -37,7 +35,9 @@ test('past days only show what was actually done', () => {
     groceries: [],
     chinese: EMPTY_CHINESE,
     gym: EMPTY_GYM,
-    routines: [{ id: 'r', name: 'Stretch', repeat: { kind: 'everyNDays' as const, n: 1 }, time: 'evening' as const, doneDates: ['2026-10-27'] }],
+    routines: [
+      { id: 'r', name: 'Stretch', repeat: { kind: 'everyNDays' as const, n: 1 }, time: 'evening' as const, doneDates: ['2026-10-27'] },
+    ],
   };
   assert.equal(marksFor(state, '2026-10-27', today).routines, true);
   assert.equal(marksFor(state, '2026-10-28', today).routines, false);

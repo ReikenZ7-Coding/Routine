@@ -1,7 +1,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { type ReactNode, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { HubHeader, RoutineCard } from '../components/Hub';
+import { Press } from '../components/Motion';
 import { RoutineForm } from '../components/RoutineForm';
 import { RoutineRow } from '../components/RoutineRow';
 import { Divider, Section } from '../components/Section';
@@ -37,13 +39,37 @@ const TILES: [string, string][] = [
   ['#FFE08A', '#FF8A5B'],
 ];
 
-export default function RoutinesScreen({ query = '' }: { query?: string }) {
+export type WhenFilter = 'all' | Routine['time'];
+export type RepeatFilter = 'all' | 'daily' | 'some' | 'once';
+
+function matchesRepeat(r: Routine, f: RepeatFilter): boolean {
+  if (f === 'all') return true;
+  if (f === 'once') return r.repeat.kind === 'once';
+  const daily = r.repeat.kind === 'everyNDays' && r.repeat.n === 1;
+  return f === 'daily' ? daily : !daily && r.repeat.kind !== 'once';
+}
+
+export default function RoutinesScreen({
+  query = '',
+  when = 'all',
+  repeat = 'all',
+  header,
+}: {
+  query?: string;
+  when?: WhenFilter;
+  repeat?: RepeatFilter;
+  header?: ReactNode;
+}) {
   const { colors, kinds, glass } = useTheme();
   const styles = useStyles(makeStyles);
   const fabBottom = useFabBottom();
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.floor((width - 32 - 10) / 2);
   const { ready, today, routines: all, updateRoutines } = useStore();
   const q = query.trim().toLowerCase();
-  const routines = q ? all.filter((r) => r.name.toLowerCase().includes(q)) : all;
+  const filtered = all.filter((r) => (when === 'all' || r.time === when) && matchesRepeat(r, repeat));
+  const routines = q ? filtered.filter((r) => r.name.toLowerCase().includes(q)) : filtered;
+  const filtering = q.length > 0 || when !== 'all' || repeat !== 'all';
   const [editing, setEditing] = useState<Routine | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
@@ -63,7 +89,8 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
 
   return (
     <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
             <Ionicons name="repeat-outline" size={40} color={kinds.routines.color} />
@@ -129,57 +156,60 @@ export default function RoutinesScreen({ query = '' }: { query?: string }) {
           </View>
         ) : (
           <>
-            <Section title={`Today · ${planned.filter((r) => isDoneOn(r, today)).length}/${planned.length}`}>
-              {todays.length === 0 ? (
-                <Text style={styles.emptyText}>Nothing scheduled today.</Text>
-              ) : (
-                todays.map((r, i) => (
-                  <View key={r.id}>
-                    {i > 0 && <Divider />}
-                    <RoutineRow routine={r} date={today} onChange={replace} onLongPress={() => open(r)} />
-                  </View>
-                ))
-              )}
-            </Section>
-            {others.length > 0 && (
-              <Section title="Not today">
-                {others.map((r, i) => (
-                  <View key={r.id}>
-                    {i > 0 && <Divider />}
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [styles.otherRow, pressed && styles.pressed]}
-                      onPress={() => open(r)}
-                    >
-                      <Text style={styles.otherName}>{r.name}</Text>
-                      <Text style={styles.otherSub}>{routineSubtitle(r, today)}</Text>
-                    </Pressable>
-                  </View>
+            <Text style={styles.countLine}>
+              {routines.length} {routines.length === 1 ? 'routine' : 'routines'}
+              {filtering ? ` of ${all.length}` : ''}
+            </Text>
+            <HubHeader
+              icon="today-outline"
+              title="Today"
+              count={todays.length}
+              color={kinds.routines.color}
+              right={<Text style={styles.hubMeta}>{`${planned.filter((r) => isDoneOn(r, today)).length}/${planned.length} done`}</Text>}
+            />
+            {todays.length === 0 ? (
+              <Text style={styles.emptyGrid}>{filtering ? 'Nothing here matches.' : 'Nothing scheduled today.'}</Text>
+            ) : (
+              <View style={styles.grid}>
+                {todays.map((r) => (
+                  <RoutineCard key={r.id} routine={r} today={today} width={cardWidth} onChange={replace} onOpen={() => open(r)} />
                 ))}
-              </Section>
+              </View>
             )}
-            {ideasLeft.length > 0 && (
-              <Section title="Ideas">
-                {ideasLeft.map((idea, i) => (
-                  <View key={idea.name}>
-                    {i > 0 && <Divider />}
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [styles.ideaRow, pressed && styles.pressed]}
+            {others.length > 0 && (
+              <>
+                <HubHeader icon="calendar-outline" title="Other days" count={others.length} color={kinds.calendar.color} />
+                <View style={styles.grid}>
+                  {others.map((r) => (
+                    <RoutineCard key={r.id} routine={r} today={today} width={cardWidth} onOpen={() => open(r)} />
+                  ))}
+                </View>
+              </>
+            )}
+            {ideasLeft.length > 0 && !filtering && (
+              <>
+                <HubHeader icon="sparkles-outline" title="Ideas" count={ideasLeft.length} color={kinds.inbox.color} />
+                <View style={styles.grid}>
+                  {ideasLeft.map((idea) => (
+                    <Press
+                      key={idea.name}
+                      style={[styles.ideaCard, { width: cardWidth }]}
                       onPress={() => addIdea(idea)}
-                      accessibilityLabel={`Add ${idea.name}`}
+                      accessibilityLabel={`Add ${idea.name}, ${TIME_LABELS[idea.time]}, ${describeRepeat(idea.repeat)}`}
                     >
-                      <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
-                      <View style={styles.flex}>
-                        <Text style={styles.otherName}>{idea.name}</Text>
-                        <Text style={styles.otherSub}>
-                          {TIME_LABELS[idea.time]} · {describeRepeat(idea.repeat)}
-                        </Text>
+                      <View style={styles.ideaPlus}>
+                        <Ionicons name="add" size={20} color={colors.text} />
                       </View>
-                    </Pressable>
-                  </View>
-                ))}
-              </Section>
+                      <Text style={styles.ideaCardName} numberOfLines={2}>
+                        {idea.name}
+                      </Text>
+                      <Text style={styles.otherSub} numberOfLines={2}>
+                        {TIME_LABELS[idea.time]} · {describeRepeat(idea.repeat)}
+                      </Text>
+                    </Press>
+                  ))}
+                </View>
+              </>
             )}
             <Text style={styles.hint}>Tap to tick off. Press and hold to edit, skip a day or set a reminder.</Text>
           </>
@@ -398,6 +428,37 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
     otherName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
     otherSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
     hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
+    countLine: {
+      fontFamily: fonts.monoMedium,
+      fontSize: 12,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      color: colors.muted,
+      marginTop: 18,
+    },
+    hubMeta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    emptyGrid: { color: colors.muted, fontFamily: fonts.body, fontSize: 15, paddingVertical: 8 },
+    ideaCard: {
+      minHeight: 150,
+      borderRadius: radius,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      borderColor: colors.faint,
+      padding: 14,
+      gap: 8,
+      justifyContent: 'flex-end',
+    },
+    ideaPlus: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.chip,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 'auto',
+    },
+    ideaCardName: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 21, color: colors.text },
     fab: {
       position: 'absolute',
       right: 20,

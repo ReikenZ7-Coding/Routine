@@ -12,13 +12,13 @@ interface Props {
 }
 
 export function Section({ title, dot, right, children }: Props) {
-  const { type } = useTheme();
+  const { type, glass } = useTheme();
   const styles = useStyles(makeStyles);
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          {dot && <View style={[styles.dot, { backgroundColor: dot }]} />}
+          {dot && <View style={[glass ? styles.dot : styles.bar, { backgroundColor: dot }]} />}
           <Text style={type.sectionTitle}>{title}</Text>
         </View>
         {right}
@@ -35,16 +35,17 @@ export function Divider({ inset = 52 }: { inset?: number }) {
 
 const makeStyles = ({ colors }: Theme) =>
   StyleSheet.create({
-  wrap: { marginTop: 24 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-    paddingHorizontal: 2,
-  },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  card: { overflow: 'hidden' },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
-});
+    wrap: { marginTop: 24 },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 8,
+      paddingHorizontal: 2,
+    },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    dot: { width: 8, height: 8, borderRadius: 4 },
+    bar: { width: 3, height: 18, borderRadius: 2 },
+    card: { overflow: 'hidden', boxShadow: colors.shadow },
+    divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  });

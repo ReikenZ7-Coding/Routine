@@ -144,6 +144,108 @@ def portal(name, top, mid, horizon, glow_color, figure, size=1000):
     save(grain(img, 0.015), name, quality=86)
 
 
+def noise(w, h, scale, octaves=4, seed=7):
+    """Soft value noise in 0..1 for fog and mist."""
+    r = np.random.default_rng(seed)
+    out = np.zeros((h, w))
+    amp, total = 1.0, 0.0
+    for o in range(octaves):
+        sw, sh = max(2, int(w / scale) * 2 ** o), max(2, int(h / scale) * 2 ** o)
+        layer = Image.fromarray((r.random((sh, sw)) * 255).astype(np.uint8)).resize((w, h), Image.BICUBIC)
+        out += np.asarray(layer).astype(float) / 255 * amp
+        total += amp
+        amp *= 0.5
+    return out / total
+
+
+def ridge(w, y0, amp, freqs, seed):
+    """A mountain ridge line: height per column, in pixels from the top."""
+    r = np.random.default_rng(seed)
+    x = np.linspace(0, 1, w)
+    y = np.full(w, float(y0))
+    for f, a in freqs:
+        y += np.sin(x * f * np.pi * 2 + r.uniform(0, 6.3)) * amp * a
+    return y
+
+
+def fill_below(img, line, color, soft=2):
+    h, w = img.shape[:2]
+    yy = np.arange(h)[:, None]
+    m = np.clip((yy - line[None, :]) / soft + 0.5, 0, 1)[..., None]
+    return img * (1 - m) + np.asarray(color) * m
+
+
+def pines(img, spots, color, seed=11):
+    """Pine silhouettes: stacked triangles on a trunk, drawn with Pillow then blended."""
+    h, w = img.shape[:2]
+    layer = Image.new('L', (w, h), 0)
+    d = ImageDraw.Draw(layer)
+    r = np.random.default_rng(seed)
+    for x, base, height in spots:
+        tiers = 5
+        for t in range(tiers):
+            top = base - height + t * height / tiers * 0.78
+            bottom = top + height / tiers * 1.5
+            half = (t + 1.3) / tiers * height * 0.26 * r.uniform(0.9, 1.1)
+            d.polygon([(x, top), (x - half, bottom), (x + half, bottom)], fill=255)
+        d.rectangle([x - height * 0.015, base - height * 0.1, x + height * 0.015, base], fill=255)
+    m = np.asarray(layer.filter(ImageFilter.GaussianBlur(0.8))).astype(float)[..., None] / 255
+    return img * (1 - m) + np.asarray(color) * m
+
+
+def mountain_header(name, w, h, sky_top, sky_bottom, ridges, pine_color, fog_color, fog_strength, page, light=None):
+    """A misty ridge with pines, fading into the page colour along the left and the bottom,
+    so it sits behind a header without any masking in the app."""
+    img = np.zeros((h, w, 3))
+    t = np.linspace(0, 1, h)[:, None, None]
+    img[:] = np.asarray(sky_top) * (1 - t) + np.asarray(sky_bottom) * t
+    if light:
+        glow(img, light[0] * w, light[1] * h, light[2] * w, hexc(light[3]), light[4])
+    for i, (y0, amp, color, seed) in enumerate(ridges):
+        line = ridge(w, y0 * h, amp * h, [(1.3, 1), (3.1, 0.45), (7, 0.18), (17, 0.06)], seed)
+        img = fill_below(img, line, hexc(color))
+        # a band of mist along the foot of every ridge
+        mist = noise(w, h, 90, 3, seed + 1) * np.exp(-((np.arange(h)[:, None] - (y0 * h + amp * h * 0.9)) / (h * 0.09)) ** 2)
+        img = img * (1 - mist[..., None] * fog_strength) + hexc(fog_color) * mist[..., None] * fog_strength
+    r = np.random.default_rng(5)
+    spots = [(w * (0.58 + 0.42 * k / 7) + r.uniform(-20, 20), h * r.uniform(0.86, 0.98), h * r.uniform(0.22, 0.42)) for k in range(8)]
+    img = pines(img, spots, hexc(pine_color))
+    fog = noise(w, h, 140, 4, 21)
+    img = img * (1 - fog[..., None] * fog_strength * 0.45) + hexc(fog_color) * fog[..., None] * fog_strength * 0.45
+    # fade into the page along the left and the bottom: the alpha channel carries the fade,
+    # so the scene blends into whatever backdrop sits behind it.
+    x = np.linspace(0, 1, w)[None, :]
+    y = np.linspace(0, 1, h)[:, None]
+    keep = np.clip((x - 0.08) / 0.5, 0, 1) ** 1.4 * np.clip((0.95 - y) / 0.4, 0, 1) ** 1.2
+    rgba = np.dstack([np.clip(grain(img, 0.01), 0, 1), keep])
+    small = Image.fromarray((rgba * 255).astype(np.uint8), 'RGBA').resize((w * 3 // 4, h * 3 // 4), Image.LANCZOS)
+    small.save(f'{OUT}/{name}.png', optimize=True)
+
+
+def paper_header():
+    mountain_header('paper-header', 1080, 900, hexc('#F7F7F4'), hexc('#E7E8E4'),
+                    [(0.3, 0.16, '#C9CCC8', 3), (0.46, 0.14, '#AEB3AE', 4), (0.62, 0.11, '#8E948F', 6)],
+                    '#5A615B', '#F5F5F2', 0.7, '#F5F5F2')
+    # page colour is only used by the old flat render; the PNG keeps its fade in the alpha channel
+
+
+def pine_header():
+    mountain_header('pine-header', 1080, 900, hexc('#1B5A4C'), hexc('#0A2B25'),
+                    [(0.3, 0.16, '#164A3F', 3), (0.46, 0.14, '#0F3A31', 4), (0.62, 0.11, '#0B2E27', 6)],
+                    '#04170F', '#2A6A58', 0.5, '#0A2B25', light=(0.78, 0.12, 0.3, '#7CE3BC', 0.28))
+
+
+def pine_backdrop():
+    """Night in the pines: a deep green page lit softly from the top left, darker towards the foot."""
+    img = gradient([(0, hexc('#10403A')), (0.45, hexc('#0A2B25')), (1, hexc('#051813'))], tilt=0.12)
+    glow(img, W * 0.1, H * 0.02, W * 0.8, hexc('#1E6A58'), 0.5)
+    glow(img, W * 1.0, H * 0.55, W * 0.6, hexc('#0E3E35'), 0.4)
+    glow(img, W * 0.5, H * 1.05, W * 0.9, hexc('#030F0C'), 0.6)
+    mist = noise(W, H, 260, 3, 31)[..., None]
+    img = img * (1 - mist * 0.08) + hexc('#2C7A66') * mist * 0.08
+    save(grain(img, 0.012), 'pine-bg')
+
+
 if __name__ == '__main__':
     lavender_backdrop()
     stone_backdrop()

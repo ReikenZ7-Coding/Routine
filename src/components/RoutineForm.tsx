@@ -81,7 +81,11 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
     setCounter(!!routine?.target);
     setTarget(String(routine?.target ?? 8));
     setRemind(!!routine?.reminder);
-    setRemindAt(routine?.reminder ? formatTime(routine.reminder.hour, routine.reminder.minute) : routine?.start ?? DEFAULT_REMINDER[routine?.time ?? 'anytime']);
+    setRemindAt(
+      routine?.reminder
+        ? formatTime(routine.reminder.hour, routine.reminder.minute)
+        : (routine?.start ?? DEFAULT_REMINDER[routine?.time ?? 'anytime']),
+    );
     setStart(routine?.start ?? '');
     setDuration(routine?.duration ?? 15);
     setIcon(routine?.icon);
@@ -125,7 +129,13 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
       startAt = clock(m);
     }
     const goal = counter ? Math.max(2, parseInt(target, 10) || 2) : undefined;
-    const when: TimeOfDay = startAt ? (parseClock(startAt)! < 720 ? 'morning' : parseClock(startAt)! < 1020 ? 'afternoon' : 'evening') : time;
+    const when: TimeOfDay = startAt
+      ? parseClock(startAt)! < 720
+        ? 'morning'
+        : parseClock(startAt)! < 1020
+          ? 'afternoon'
+          : 'evening'
+      : time;
     onSave({
       name: name.trim(),
       repeat,
@@ -146,8 +156,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
     ]);
   }
 
-  const toggleDay = (d: number) =>
-    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -162,7 +171,8 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Stretch 10 minutes" placeholderTextColor={colors.faint}
+              placeholder="e.g. Stretch 10 minutes"
+              placeholderTextColor={colors.faint}
               autoFocus={!routine}
             />
 
@@ -215,7 +225,12 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
                 <Text style={styles.label}>Takes</Text>
                 <View style={styles.chips}>
                   {DURATIONS.map((d) => (
-                    <Chip key={d} label={d >= 60 ? `${d / 60} h`.replace('1.5 h', '1½ h') : `${d} min`} active={duration === d} onPress={() => setDuration(d)} />
+                    <Chip
+                      key={d}
+                      label={d >= 60 ? `${d / 60} h`.replace('1.5 h', '1½ h') : `${d} min`}
+                      active={duration === d}
+                      onPress={() => setDuration(d)}
+                    />
                   ))}
                 </View>
               </>
@@ -235,7 +250,8 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
               {ROUTINE_ICONS.map((ic) => {
                 const active = (icon ?? iconFor({ name, icon })) === ic;
                 return (
-                  <Pressable accessibilityRole="button"
+                  <Pressable
+                    accessibilityRole="button"
                     key={ic}
                     style={[styles.iconChoice, active && { backgroundColor: kinds.routines.color, borderColor: kinds.routines.color }]}
                     onPress={() => setIcon(ic)}
@@ -295,7 +311,8 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
                   onChangeText={setRemindAt}
                   keyboardType="numbers-and-punctuation"
                   maxLength={5}
-                  placeholder="08:00" placeholderTextColor={colors.faint}
+                  placeholder="08:00"
+                  placeholderTextColor={colors.faint}
                 />
               </View>
             )}
@@ -322,49 +339,58 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
 
 const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-  sheet: {
-    backgroundColor: colors.sheet,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: 20,
-    paddingBottom: 32,
-    maxHeight: '90%',
-  },
-  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-  label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-  input: {
-    backgroundColor: colors.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontFamily: fonts.body, fontSize: 16,
-    color: colors.text,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  gapTop: { marginTop: 12 },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
-  inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-  smallInput: { width: 64, textAlign: 'center' },
-  icons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  iconChoice: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  timeInput: { width: 84, textAlign: 'center', fontFamily: fonts.mono },
-  flex: { flex: 1 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 },
-  switchTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
-  switchSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
-  skipButton: { paddingVertical: 14, alignItems: 'center', marginTop: 10, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
-  skipText: { color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 15 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-  deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
-});
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
+    sheet: {
+      backgroundColor: colors.sheet,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      padding: 20,
+      paddingBottom: 32,
+      maxHeight: '90%',
+    },
+    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
+    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
+    input: {
+      backgroundColor: colors.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontFamily: fonts.body,
+      fontSize: 16,
+      color: colors.text,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    gapTop: { marginTop: 12 },
+    inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+    inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+    smallInput: { width: 64, textAlign: 'center' },
+    icons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    iconChoice: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    timeInput: { width: 84, textAlign: 'center', fontFamily: fonts.mono },
+    flex: { flex: 1 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 },
+    switchTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+    switchSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
+    skipButton: { paddingVertical: 14, alignItems: 'center', marginTop: 10, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
+    skipText: { color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 15 },
+    saveButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  });

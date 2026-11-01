@@ -40,7 +40,13 @@ export async function syncReminders(routines: Routine[]): Promise<void> {
       content: { title: r.name, body: r.target ? `Goal today: ${r.target}` : 'Time for your routine' },
       trigger:
         t.weekday !== undefined
-          ? { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, channelId: CHANNEL, weekday: t.weekday, hour: t.hour, minute: t.minute }
+          ? {
+              type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+              channelId: CHANNEL,
+              weekday: t.weekday,
+              hour: t.hour,
+              minute: t.minute,
+            }
           : { type: Notifications.SchedulableTriggerInputTypes.DAILY, channelId: CHANNEL, hour: t.hour, minute: t.minute },
     });
   }

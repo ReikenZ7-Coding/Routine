@@ -24,7 +24,8 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
         {MOODS.map((m) => {
           const active = entry.mood === m.value;
           return (
-            <Pressable accessibilityRole="button"
+            <Pressable
+              accessibilityRole="button"
               key={m.value}
               style={[styles.mood, active && styles.moodActive]}
               onPress={() => updateJournal((j) => setEntry(j, date, { mood: active ? undefined : m.value }))}
@@ -53,21 +54,21 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-  moods: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingTop: 12 },
-  mood: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 12, gap: 2 },
-  moodActive: { backgroundColor: colors.primarySoft },
-  face: { fontSize: 24 },
-  faceDim: { opacity: 0.35 },
-  moodLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  moodLabelActive: { color: colors.text, fontFamily: fonts.bodyMedium },
-  note: {
-    ...type.body,
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
-    paddingVertical: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    minHeight: 40,
-  },
-});
+    moods: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingTop: 12 },
+    mood: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 12, gap: 2 },
+    moodActive: { backgroundColor: colors.primarySoft },
+    face: { fontSize: 24 },
+    faceDim: { opacity: 0.35 },
+    moodLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    moodLabelActive: { color: colors.text, fontFamily: fonts.bodyMedium },
+    note: {
+      ...type.body,
+      marginHorizontal: 16,
+      marginTop: 8,
+      marginBottom: 12,
+      paddingVertical: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      minHeight: 40,
+    },
+  });

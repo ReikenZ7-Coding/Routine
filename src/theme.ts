@@ -1,12 +1,13 @@
 // Visual identity. Three looks share one layout:
 // - Lavender: soft violet glass, white type, bright accents.
 // - Stone: warm olive and stone glass, cream type, earthy accents.
-// - Paper: the original quiet planner page, ink on cool paper.
+// - Paper: a bright trail page, ink on warm paper, a misty mountain header.
+// - Pine: a dark evergreen training hub, mint accents, uppercase micro labels.
 // Screens read the active look with useTheme() / useStyles(makeStyles).
 import { createContext, useContext, useMemo } from 'react';
 import type { TextStyle } from 'react-native';
 
-export type ThemeName = 'lavender' | 'stone' | 'paper';
+export type ThemeName = 'lavender' | 'stone' | 'paper' | 'pine';
 
 export interface Palette {
   /** Background gradient, top to bottom. */
@@ -46,6 +47,13 @@ export interface Palette {
   shadow: string;
   shine: string;
   edgeGlow: string;
+  /** Page looks: the light square behind a row's icon. */
+  tile: string;
+  /** Page looks: small pills and chips at rest (streak, filters). */
+  chip: string;
+  /** Page looks: the filled trail node and the count badge. */
+  node: string;
+  onNode: string;
 }
 
 interface KindStyle {
@@ -86,6 +94,10 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       shadow: '0px 14px 34px rgba(26,14,96,0.38), inset 0px 1px 1px rgba(255,255,255,0.45)',
       shine: 'rgba(255,255,255,0.14)',
       edgeGlow: 'rgba(255,143,208,0.2)',
+      tile: 'rgba(255,255,255,0.18)',
+      chip: 'rgba(255,255,255,0.14)',
+      node: '#FFFFFF',
+      onNode: '#4A55B8',
     },
     kinds: {
       routines: { color: '#5B43D6', soft: 'rgba(91,67,214,0.25)', label: 'Routines' },
@@ -125,6 +137,10 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       shadow: '0px 12px 30px rgba(0,0,0,0.3), inset 0px 1px 0px rgba(255,248,230,0.12)',
       shine: 'rgba(255,248,230,0.07)',
       edgeGlow: 'rgba(230,214,179,0.06)',
+      tile: 'rgba(255,250,235,0.1)',
+      chip: 'rgba(255,250,235,0.1)',
+      node: '#E6D6B3',
+      onNode: '#2E2D24',
     },
     kinds: {
       routines: { color: '#A9B9D3', soft: 'rgba(169,185,211,0.18)', label: 'Routines' },
@@ -137,33 +153,37 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
   },
   paper: {
     colors: {
-      gradient: ['#F2F3F1', '#F2F3F1', '#F2F3F1'],
-      bg: '#F2F3F1',
+      gradient: ['#F5F5F2', '#F5F5F2', '#F5F5F2'],
+      bg: '#F5F5F2',
       card: '#FFFFFF',
-      cardBorder: '#E1E4E0',
-      sheet: '#F7F8F6',
+      cardBorder: '#E9E9E4',
+      sheet: '#FAFAF7',
       input: '#FFFFFF',
-      text: '#141716',
-      muted: '#5F6661',
-      faint: '#7D837E',
-      border: '#E1E4E0',
-      primary: '#141716',
+      text: '#131512',
+      muted: '#5C625D',
+      faint: '#767C77',
+      border: '#E9E9E4',
+      primary: '#1A1C19',
       onPrimary: '#FFFFFF',
-      primarySoft: '#E7E9E6',
+      primarySoft: '#ECECE7',
       danger: '#C42B1C',
       backdrop: 'rgba(0,0,0,0.35)',
-      tabBar: '#F2F3F1',
+      tabBar: '#FBFBF9',
       statusBar: 'dark',
       glassFill: ['#FFFFFF', '#FFFFFF'],
       blurTint: 'light',
       glow: 'transparent',
-      rim: '#E1E4E0',
-      accent: '#141716',
-      selected: '#141716',
+      rim: '#E9E9E4',
+      accent: '#1A1C19',
+      selected: '#1A1C19',
       onSelected: '#FFFFFF',
-      shadow: '0px 1px 2px rgba(0,0,0,0.04)',
+      shadow: '0px 1px 2px rgba(20,22,18,0.04), 0px 8px 24px rgba(20,22,18,0.06)',
       shine: 'transparent',
       edgeGlow: 'transparent',
+      tile: '#F1F1ED',
+      chip: '#ECECE7',
+      node: '#4B4E3E',
+      onNode: '#FFFFFF',
     },
     kinds: {
       routines: { color: '#2F54EB', soft: '#E5EAFD', label: 'Routines' },
@@ -174,12 +194,56 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       inbox: { color: '#7A5AF8', soft: '#EEE9FE', label: 'Inbox' },
     },
   },
+  pine: {
+    colors: {
+      gradient: ['#0F3F36', '#0A2B25', '#061B17'],
+      bg: '#0A2B25',
+      card: '#11352E',
+      cardBorder: 'rgba(214,240,228,0.1)',
+      sheet: '#0F3129',
+      input: 'rgba(6,27,23,0.6)',
+      text: '#F1F7F3',
+      muted: '#A6C4B9',
+      faint: '#86A79B',
+      border: 'rgba(214,240,228,0.12)',
+      primary: '#7CE3BC',
+      onPrimary: '#06201A',
+      primarySoft: 'rgba(124,227,188,0.14)',
+      danger: '#F0998A',
+      backdrop: 'rgba(0,10,8,0.55)',
+      tabBar: '#082520',
+      statusBar: 'light',
+      glassFill: ['#12382F', '#0D2C25'],
+      blurTint: 'dark',
+      glow: '#7CE3BC',
+      rim: 'rgba(214,240,228,0.16)',
+      accent: '#7CE3BC',
+      selected: '#5ED0A8',
+      onSelected: '#06201A',
+      shadow: '0px 10px 28px rgba(0,8,6,0.4), inset 0px 1px 0px rgba(214,240,228,0.08)',
+      shine: 'transparent',
+      edgeGlow: 'transparent',
+      tile: 'rgba(124,227,188,0.1)',
+      chip: 'rgba(214,240,228,0.07)',
+      node: '#7CE3BC',
+      onNode: '#06201A',
+    },
+    kinds: {
+      routines: { color: '#7CE3BC', soft: 'rgba(124,227,188,0.16)', label: 'Routines' },
+      gym: { color: '#F2A65A', soft: 'rgba(242,166,90,0.16)', label: 'Gym' },
+      chinese: { color: '#F08C7A', soft: 'rgba(240,140,122,0.16)', label: 'Chinese' },
+      groceries: { color: '#B5E47F', soft: 'rgba(181,228,127,0.16)', label: 'Groceries' },
+      calendar: { color: '#B7C9C2', soft: 'rgba(183,201,194,0.16)', label: 'Calendar' },
+      inbox: { color: '#8FC7FF', soft: 'rgba(143,199,255,0.16)', label: 'Inbox' },
+    },
+  },
 };
 
 export const THEME_OPTIONS: { name: ThemeName; label: string; description: string }[] = [
   { name: 'lavender', label: 'Lavender', description: 'Soft violet glass, bright and playful' },
   { name: 'stone', label: 'Stone', description: 'Warm olive and stone, calm and grounded' },
-  { name: 'paper', label: 'Paper', description: 'The original: ink on a clean page' },
+  { name: 'paper', label: 'Paper', description: 'Bright and clear, a trail through your day' },
+  { name: 'pine', label: 'Pine', description: 'Deep evergreen, a training hub at night' },
 ];
 
 const FONTS = {
@@ -194,6 +258,7 @@ const DISPLAY: Record<ThemeName, { display: string; displayMedium: string }> = {
   lavender: { display: 'DMSans_700Bold', displayMedium: 'DMSans_700Bold' },
   stone: { display: 'DMSans_300Light', displayMedium: 'DMSans_400Regular' },
   paper: { display: 'BricolageGrotesque_700Bold', displayMedium: 'BricolageGrotesque_500Medium' },
+  pine: { display: 'DMSans_700Bold', displayMedium: 'DMSans_500Medium' },
 };
 
 export type Fonts = typeof FONTS & { display: string; displayMedium: string };
@@ -202,7 +267,7 @@ function makeType(colors: Palette, fonts: Fonts, glass: boolean) {
   return {
     sectionTitle: glass
       ? { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text }
-      : { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted },
+      : { fontFamily: fonts.display, fontSize: 20, lineHeight: 24, color: colors.text, letterSpacing: -0.3 },
     hero: { fontFamily: fonts.display, fontSize: 56, lineHeight: 58, color: colors.text, letterSpacing: -1.5 },
     title: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, color: colors.text, letterSpacing: -0.4 },
     heading: { fontFamily: fonts.displayMedium, fontSize: 19, lineHeight: 24, color: colors.text },
@@ -225,19 +290,23 @@ export interface Theme {
   radius: number;
   /** Glass looks use rounder, softer cards. */
   glass: boolean;
+  /** Light type on a dark page. */
+  dark: boolean;
 }
 
 export function buildTheme(name: ThemeName): Theme {
   const { colors, kinds } = PALETTES[name] ?? PALETTES.lavender;
   const fonts = { ...FONTS, ...DISPLAY[name] };
+  const glass = name === 'lavender' || name === 'stone';
   return {
     name,
     colors,
     kinds,
     fonts,
-    type: makeType(colors, fonts, name !== 'paper'),
-    radius: name === 'paper' ? 16 : 22,
-    glass: name !== 'paper',
+    type: makeType(colors, fonts, glass),
+    radius: glass ? 22 : 20,
+    glass,
+    dark: name !== 'paper',
   };
 }
 
@@ -245,6 +314,7 @@ const THEMES: Record<ThemeName, Theme> = {
   lavender: buildTheme('lavender'),
   stone: buildTheme('stone'),
   paper: buildTheme('paper'),
+  pine: buildTheme('pine'),
 };
 
 export function themeFor(name: ThemeName | undefined): Theme {

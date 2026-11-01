@@ -3,7 +3,17 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleShee
 import { type Theme, useStyles, useTheme } from '../theme';
 
 /** Bottom sheet used by the smaller panels (stats, backup, quick add). */
-export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
+export function Sheet({
+  visible,
+  title,
+  onClose,
+  children,
+}: {
+  visible: boolean;
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
   const styles = useStyles(makeStyles);
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -23,16 +33,16 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
 
 const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-  sheet: {
-    backgroundColor: colors.sheet,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: 20,
-    paddingTop: 10,
-    paddingBottom: 32,
-    maxHeight: '90%',
-  },
-  grip: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 12 },
-  heading: { fontFamily: fonts.display, fontSize: 22, color: colors.text, marginBottom: 4 },
-});
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
+    sheet: {
+      backgroundColor: colors.sheet,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      padding: 20,
+      paddingTop: 10,
+      paddingBottom: 32,
+      maxHeight: '90%',
+    },
+    grip: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: 12 },
+    heading: { fontFamily: fonts.display, fontSize: 22, color: colors.text, marginBottom: 4 },
+  });

@@ -94,7 +94,7 @@ export default function GymScreen() {
   if (gym.sessions.length === 0) {
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <PageTitle title="Gym" />
+        <PageTitle title="Gym" subtitle="Pick a plan to start with, or build your own" />
         <Glass style={styles.welcome}>
           <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
           <Text style={styles.welcomeTitle}>Your training plan</Text>
@@ -129,7 +129,11 @@ export default function GymScreen() {
   return (
     <View style={styles.flex}>
       <ScrollView contentContainerStyle={[styles.content, restEnd !== null && styles.contentWithTimer]}>
-        <PageTitle title="Gym" />
+        <PageTitle
+          title="Gym"
+          subtitle="Your training plan, one day at a time"
+          badge={`${gym.sessions.length} ${gym.sessions.length === 1 ? 'session' : 'sessions'}`}
+        />
         {session && progress ? (
           <>
             <Glass style={styles.todayCard}>

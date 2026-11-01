@@ -50,9 +50,7 @@ export function logsFor(state: GymState, date: string, sessionId: string): SetLo
 }
 
 export function isSetDone(state: GymState, date: string, sessionId: string, exerciseId: string, set: number): boolean {
-  return state.logs.some(
-    (l) => l.date === date && l.sessionId === sessionId && l.exerciseId === exerciseId && l.set === set,
-  );
+  return state.logs.some((l) => l.date === date && l.sessionId === sessionId && l.exerciseId === exerciseId && l.set === set);
 }
 
 export function sessionProgress(state: GymState, date: string, session: Session): { done: number; total: number } {
@@ -65,7 +63,11 @@ export function sessionProgress(state: GymState, date: string, session: Session)
 }
 
 /** The most recent earlier workout for an exercise (matched by name, so it survives plan edits). */
-export function lastTime(state: GymState, exerciseName: string, before: string): { date: string; weight: number; reps: number } | undefined {
+export function lastTime(
+  state: GymState,
+  exerciseName: string,
+  before: string,
+): { date: string; weight: number; reps: number } | undefined {
   const key = exerciseName.trim().toLowerCase();
   const past = state.logs.filter((l) => l.date < before && l.exerciseName.trim().toLowerCase() === key);
   if (past.length === 0) return undefined;
@@ -82,16 +84,8 @@ export function workingWeight(state: GymState, date: string, session: Session, e
   return lastTime(state, exercise.name, date)?.weight ?? exercise.weight;
 }
 
-export function toggleSet(
-  state: GymState,
-  date: string,
-  session: Session,
-  exercise: PlanExercise,
-  set: number,
-  weight: number,
-): GymState {
-  const match = (l: SetLog) =>
-    l.date === date && l.sessionId === session.id && l.exerciseId === exercise.id && l.set === set;
+export function toggleSet(state: GymState, date: string, session: Session, exercise: PlanExercise, set: number, weight: number): GymState {
+  const match = (l: SetLog) => l.date === date && l.sessionId === session.id && l.exerciseId === exercise.id && l.set === set;
   if (state.logs.some(match)) return { ...state, logs: state.logs.filter((l) => !match(l)) };
   const log: SetLog = {
     date,
@@ -109,9 +103,7 @@ export function toggleSet(
 export function setTodaysWeight(state: GymState, date: string, sessionId: string, exerciseId: string, weight: number): GymState {
   return {
     ...state,
-    logs: state.logs.map((l) =>
-      l.date === date && l.sessionId === sessionId && l.exerciseId === exerciseId ? { ...l, weight } : l,
-    ),
+    logs: state.logs.map((l) => (l.date === date && l.sessionId === sessionId && l.exerciseId === exerciseId ? { ...l, weight } : l)),
   };
 }
 

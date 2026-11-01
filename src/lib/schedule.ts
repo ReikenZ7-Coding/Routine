@@ -1,9 +1,6 @@
 // Pure date + repeat logic. No React Native imports so it can be unit tested with plain Node.
 
-export type Repeat =
-  | { kind: 'once' }
-  | { kind: 'everyNDays'; n: number }
-  | { kind: 'weekdays'; days: number[] }; // 0 = Sunday ... 6 = Saturday
+export type Repeat = { kind: 'once' } | { kind: 'everyNDays'; n: number } | { kind: 'weekdays'; days: number[] }; // 0 = Sunday ... 6 = Saturday
 
 export interface GroceryItem {
   id: string;
@@ -110,7 +107,10 @@ export function describeRepeat(r: Repeat): string {
       return `Every ${r.n} days`;
     case 'weekdays':
       if (r.days.length === 7) return 'Every day';
-      return [...r.days].sort().map((d) => WEEKDAY_SHORT[d]).join(', ');
+      return [...r.days]
+        .sort()
+        .map((d) => WEEKDAY_SHORT[d])
+        .join(', ');
   }
 }
 

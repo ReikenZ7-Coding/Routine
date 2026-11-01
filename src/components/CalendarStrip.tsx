@@ -37,7 +37,12 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
   return (
     <View style={styles.wrap}>
       <View style={styles.nav}>
-        <Pressable accessibilityRole="button" onPress={() => shift(-1)} hitSlop={14} accessibilityLabel={expanded ? 'Previous month' : 'Previous week'}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => shift(-1)}
+          hitSlop={14}
+          accessibilityLabel={expanded ? 'Previous month' : 'Previous week'}
+        >
           <Ionicons name="chevron-back" size={18} color={colors.muted} />
         </Pressable>
         <View style={styles.letters}>
@@ -47,7 +52,12 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
             </Text>
           ))}
         </View>
-        <Pressable accessibilityRole="button" onPress={() => shift(1)} hitSlop={14} accessibilityLabel={expanded ? 'Next month' : 'Next week'}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => shift(1)}
+          hitSlop={14}
+          accessibilityLabel={expanded ? 'Next month' : 'Next week'}
+        >
           <Ionicons name="chevron-forward" size={18} color={colors.muted} />
         </Pressable>
       </View>
@@ -61,7 +71,8 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
             const marks = marksFor(date);
             const mood = moodFor?.(date);
             return (
-              <Pressable accessibilityRole="button"
+              <Pressable
+                accessibilityRole="button"
                 key={date}
                 style={styles.day}
                 onPress={() => onSelect(date)}
@@ -91,20 +102,20 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-  wrap: { marginTop: 20, gap: 2 },
-  nav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  letters: { flex: 1, flexDirection: 'row' },
-  letter: { ...type.label, flex: 1, textAlign: 'center', letterSpacing: 0 },
-  week: { flexDirection: 'row', marginHorizontal: 22 },
-  day: { flex: 1, alignItems: 'center', paddingVertical: 4, gap: 4 },
-  num: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  numSelected: { backgroundColor: colors.primary },
-  numToday: { borderWidth: 1.5, borderColor: colors.text },
-  numText: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
-  numTextSelected: { color: colors.onPrimary },
-  past: { color: colors.faint },
-  dots: { flexDirection: 'row', gap: 3, height: 5 },
-  mood: { position: 'absolute', top: 0, right: 2, fontSize: 10 },
-  dot: { width: 5, height: 5, borderRadius: 2.5 },
-  busyDot: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.muted },
-});
+    wrap: { marginTop: 20, gap: 2 },
+    nav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    letters: { flex: 1, flexDirection: 'row' },
+    letter: { ...type.label, flex: 1, textAlign: 'center', letterSpacing: 0 },
+    week: { flexDirection: 'row', marginHorizontal: 22 },
+    day: { flex: 1, alignItems: 'center', paddingVertical: 4, gap: 4 },
+    num: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    numSelected: { backgroundColor: colors.primary },
+    numToday: { borderWidth: 1.5, borderColor: colors.text },
+    numText: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
+    numTextSelected: { color: colors.onPrimary },
+    past: { color: colors.faint },
+    dots: { flexDirection: 'row', gap: 3, height: 5 },
+    mood: { position: 'absolute', top: 0, right: 2, fontSize: 10 },
+    dot: { width: 5, height: 5, borderRadius: 2.5 },
+    busyDot: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.muted },
+  });

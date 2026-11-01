@@ -1,17 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Session } from '../lib/gym';
 import { WEEKDAY_SHORT } from '../lib/schedule';
 import { newId } from '../lib/store';
@@ -61,11 +50,9 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
     );
   }, [visible, session]);
 
-  const updateRow = (id: string, changes: Partial<Row>) =>
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...changes } : r)));
+  const updateRow = (id: string, changes: Partial<Row>) => setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...changes } : r)));
 
-  const toggleDay = (d: number) =>
-    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   function save() {
     const trimmed = name.trim();
@@ -105,7 +92,13 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
             <Text style={styles.heading}>{session ? 'Edit session' : 'New session'}</Text>
 
             <Text style={styles.label}>Name</Text>
-            <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="e.g. Push day" placeholderTextColor={colors.faint} />
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="e.g. Push day"
+              placeholderTextColor={colors.faint}
+            />
 
             <Text style={styles.label}>Which days?</Text>
             <View style={styles.chips}>
@@ -131,7 +124,8 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
                   style={[styles.input, styles.nameCol]}
                   value={r.name}
                   onChangeText={(v) => updateRow(r.id, { name: v })}
-                  placeholder="Exercise" placeholderTextColor={colors.faint}
+                  placeholder="Exercise"
+                  placeholderTextColor={colors.faint}
                 />
                 <TextInput
                   style={[styles.input, styles.num]}
@@ -152,10 +146,12 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
                   value={r.weight}
                   onChangeText={(v) => updateRow(r.id, { weight: v })}
                   keyboardType="decimal-pad"
-                  placeholder="0" placeholderTextColor={colors.faint}
+                  placeholder="0"
+                  placeholderTextColor={colors.faint}
                   maxLength={5}
                 />
-                <Pressable accessibilityRole="button"
+                <Pressable
+                  accessibilityRole="button"
                   onPress={() => setRows((prev) => prev.filter((x) => x.id !== r.id))}
                   hitSlop={8}
                   accessibilityLabel={`Remove ${r.name || 'exercise'}`}
@@ -186,45 +182,46 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
 
 const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-  sheet: {
-    backgroundColor: colors.sheet,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: 20,
-    paddingBottom: 32,
-    maxHeight: '92%',
-  },
-  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-  label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-  note: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 8 },
-  input: {
-    backgroundColor: colors.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    fontFamily: fonts.body, fontSize: 15,
-    color: colors.text,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  colHead: { width: 48, fontFamily: fonts.body, fontSize: 12, color: colors.muted, textAlign: 'center' },
-  nameCol: { flex: 1, width: undefined, minWidth: 0, textAlign: 'left' },
-  removeSpace: { width: 22 },
-  exRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  num: { width: 48, textAlign: 'center', paddingHorizontal: 4 },
-  addRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10 },
-  addRowText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 15 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-  deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
-});
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
+    sheet: {
+      backgroundColor: colors.sheet,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      padding: 20,
+      paddingBottom: 32,
+      maxHeight: '92%',
+    },
+    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
+    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
+    note: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 8 },
+    input: {
+      backgroundColor: colors.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 9,
+      fontFamily: fonts.body,
+      fontSize: 15,
+      color: colors.text,
+    },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    headerRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+    colHead: { width: 48, fontFamily: fonts.body, fontSize: 12, color: colors.muted, textAlign: 'center' },
+    nameCol: { flex: 1, width: undefined, minWidth: 0, textAlign: 'left' },
+    removeSpace: { width: 22 },
+    exRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+    num: { width: 48, textAlign: 'center', paddingHorizontal: 4 },
+    addRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10 },
+    addRowText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 15 },
+    saveButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  });

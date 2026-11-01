@@ -43,3 +43,20 @@ export function weekStats(routines: Routine[], gym: GymState, chinese: ChineseSt
       .slice(0, 3),
   };
 }
+
+/**
+ * Days in a row where every planned routine got done, counting back from today.
+ * Today only counts once it's complete; a day with nothing planned neither adds nor breaks.
+ */
+export function dayStreak(routines: Routine[], today: string): number {
+  const repeating = routines.filter((r) => r.repeat.kind !== 'once');
+  let n = 0;
+  let day = today;
+  for (let i = 0; i < 366; i++, day = addDays(day, -1)) {
+    const planned = repeating.filter((r) => isScheduled(r, day) && !isSkipped(r, day));
+    if (planned.length === 0) continue;
+    if (planned.every((r) => isDoneOn(r, day))) n++;
+    else if (day !== today) break;
+  }
+  return n;
+}

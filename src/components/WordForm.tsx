@@ -1,16 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { Word } from '../lib/chinese';
 import { type Theme, useStyles, useTheme } from '../theme';
 
@@ -71,7 +60,8 @@ export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
               style={[styles.input, styles.hanzi]}
               value={hanzi}
               onChangeText={setHanzi}
-              placeholder="水" placeholderTextColor={colors.faint}
+              placeholder="水"
+              placeholderTextColor={colors.faint}
               autoFocus={!word}
             />
             <Text style={styles.label}>Pinyin (optional)</Text>
@@ -79,11 +69,18 @@ export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
               style={styles.input}
               value={pinyin}
               onChangeText={setPinyin}
-              placeholder="shuǐ" placeholderTextColor={colors.faint}
+              placeholder="shuǐ"
+              placeholderTextColor={colors.faint}
               autoCapitalize="none"
             />
             <Text style={styles.label}>Meaning</Text>
-            <TextInput style={styles.input} value={meaning} onChangeText={setMeaning} placeholder="water" placeholderTextColor={colors.faint} />
+            <TextInput
+              style={styles.input}
+              value={meaning}
+              onChangeText={setMeaning}
+              placeholder="water"
+              placeholderTextColor={colors.faint}
+            />
 
             <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
               <Text style={styles.saveText}>{word ? 'Save' : 'Add word'}</Text>
@@ -102,36 +99,37 @@ export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
 
 const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-  sheet: {
-    backgroundColor: colors.sheet,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: 20,
-    paddingBottom: 32,
-    maxHeight: '90%',
-  },
-  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-  label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-  input: {
-    backgroundColor: colors.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontFamily: fonts.body, fontSize: 16,
-    color: colors.text,
-  },
-  hanzi: { fontFamily: fonts.body, fontSize: 24 },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-  deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
-});
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
+    sheet: {
+      backgroundColor: colors.sheet,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      padding: 20,
+      paddingBottom: 32,
+      maxHeight: '90%',
+    },
+    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
+    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
+    input: {
+      backgroundColor: colors.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontFamily: fonts.body,
+      fontSize: 16,
+      color: colors.text,
+    },
+    hanzi: { fontFamily: fonts.body, fontSize: 24 },
+    saveButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  });

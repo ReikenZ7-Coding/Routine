@@ -32,12 +32,7 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
         {s.days.map((d) => (
           <View key={d.date} style={styles.barCol}>
             <View style={styles.barTrack}>
-              <View
-                style={[
-                  styles.barFill,
-                  { height: `${Math.round((d.share ?? 0) * 100)}%`, backgroundColor: kinds.routines.color },
-                ]}
-              />
+              <View style={[styles.barFill, { height: `${Math.round((d.share ?? 0) * 100)}%`, backgroundColor: kinds.routines.color }]} />
             </View>
             <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
           </View>
@@ -45,9 +40,7 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
       </View>
 
       {s.gymVolume > 0 && (
-        <Text style={[type.small, styles.gap]}>
-          You moved {Math.round(s.gymVolume).toLocaleString('en')} kg at the gym this week.
-        </Text>
+        <Text style={[type.small, styles.gap]}>You moved {Math.round(s.gymVolume).toLocaleString('en')} kg at the gym this week.</Text>
       )}
 
       <Section title="Best streaks" dot={kinds.routines.color}>
@@ -103,26 +96,33 @@ function Tile({ value, label, color }: { value: string; label: string; color: st
 
 const makeStyles = ({ colors, fonts, radius }: Theme) =>
   StyleSheet.create({
-  flex: { flex: 1 },
-  gap: { marginTop: 12 },
-  tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  tile: {
-    flex: 1,
-    backgroundColor: colors.card,
-    borderRadius: radius,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    padding: 12,
-    gap: 2,
-  },
-  tileValue: { fontFamily: fonts.display, fontSize: 26 },
-  bars: { flexDirection: 'row', gap: 8, height: 90, marginTop: 16 },
-  barCol: { flex: 1, alignItems: 'center', gap: 6 },
-  barTrack: { flex: 1, width: '100%', borderRadius: 6, backgroundColor: colors.primarySoft, justifyContent: 'flex-end', overflow: 'hidden' },
-  barFill: { width: '100%', borderRadius: 6 },
-  barLabel: { fontFamily: fonts.mono, fontSize: 12, color: colors.muted },
-  barToday: { color: colors.text, fontFamily: fonts.monoMedium },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
-  num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text },
-  empty: { padding: 16, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
-});
+    flex: { flex: 1 },
+    gap: { marginTop: 12 },
+    tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
+    tile: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderRadius: radius,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      padding: 12,
+      gap: 2,
+    },
+    tileValue: { fontFamily: fonts.display, fontSize: 26 },
+    bars: { flexDirection: 'row', gap: 8, height: 90, marginTop: 16 },
+    barCol: { flex: 1, alignItems: 'center', gap: 6 },
+    barTrack: {
+      flex: 1,
+      width: '100%',
+      borderRadius: 6,
+      backgroundColor: colors.primarySoft,
+      justifyContent: 'flex-end',
+      overflow: 'hidden',
+    },
+    barFill: { width: '100%', borderRadius: 6 },
+    barLabel: { fontFamily: fonts.mono, fontSize: 12, color: colors.muted },
+    barToday: { color: colors.text, fontFamily: fonts.monoMedium },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
+    num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text },
+    empty: { padding: 16, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+  });

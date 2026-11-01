@@ -1,14 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  type GroceryItem,
-  addDays,
-  describeRepeat,
-  markBought,
-  needsBuying,
-  nextDue,
-  unmarkBought,
-} from '../src/lib/schedule.ts';
+import { type GroceryItem, addDays, describeRepeat, markBought, needsBuying, nextDue, unmarkBought } from '../src/lib/schedule.ts';
 
 const today = '2026-10-29'; // a Thursday
 

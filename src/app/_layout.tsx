@@ -80,7 +80,7 @@ function ThemedApp() {
   const { colors, fonts, glass } = theme;
   const insets = useSafeAreaInsets();
   const barBottom = glass ? insets.bottom + 10 : 0;
-  const barHeight = glass ? 72 : 56 + insets.bottom;
+  const barHeight = glass ? 72 : 60 + insets.bottom;
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -97,14 +97,17 @@ function ThemedApp() {
             </ScreenFrame>
           )}
           screenOptions={{
-            tabBarActiveTintColor: colors.text,
+            tabBarActiveTintColor: glass ? colors.text : colors.accent,
             tabBarInactiveTintColor: colors.muted,
             tabBarStyle: {
               backgroundColor: colors.tabBar,
               borderTopColor: colors.border,
               borderTopWidth: StyleSheet.hairlineWidth,
               elevation: 0,
+              height: 60 + insets.bottom,
+              paddingTop: 6,
             },
+            tabBarItemStyle: { minHeight: 48 },
             tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 12 },
             headerStyle: { backgroundColor: colors.gradient[0] },
             headerShadowVisible: false,
@@ -120,7 +123,7 @@ function ThemedApp() {
               name={t.name}
               options={{
                 title: t.title,
-                headerShown: !glass && (t.name === 'gym' || t.name === 'chinese'),
+                headerShown: false,
                 tabBarIcon: ({ color, size, focused }) => (
                   <Ionicons name={focused ? t.iconActive : t.icon} color={color as string} size={size - 2} />
                 ),

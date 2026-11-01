@@ -69,27 +69,27 @@ export function CheckRow({ title, subtitle, done, tint: tintProp, meta, disabled
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 13,
-    paddingHorizontal: 16,
-  },
-  pressed: { backgroundColor: colors.primarySoft },
-  box: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: colors.faint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boxDisabled: { borderStyle: 'dashed' },
-  text: { flex: 1, gap: 1 },
-  doneTitle: { color: colors.faint, textDecorationLine: 'line-through' },
-  skippedTitle: { textDecorationLine: 'none' },
-  count: { fontFamily: fonts.monoMedium, fontSize: 12 },
-  meta: { ...type.small, fontFamily: type.num.fontFamily },
-});
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      paddingVertical: 13,
+      paddingHorizontal: 16,
+    },
+    pressed: { backgroundColor: colors.primarySoft },
+    box: {
+      width: 22,
+      height: 22,
+      borderRadius: 7,
+      borderWidth: 1.5,
+      borderColor: colors.faint,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    boxDisabled: { borderStyle: 'dashed' },
+    text: { flex: 1, gap: 1 },
+    doneTitle: { color: colors.faint, textDecorationLine: 'line-through' },
+    skippedTitle: { textDecorationLine: 'none' },
+    count: { fontFamily: fonts.monoMedium, fontSize: 12 },
+    meta: { ...type.small, fontFamily: type.num.fontFamily },
+  });

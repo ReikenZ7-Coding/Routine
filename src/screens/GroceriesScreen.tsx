@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { CheckRow } from '../components/CheckRow';
 import { GroceryForm } from '../components/GroceryForm';
@@ -27,7 +27,7 @@ function subtitle(item: GroceryItem): string {
   return [item.quantity, describeRepeat(item.repeat)].filter(Boolean).join(' · ');
 }
 
-export default function GroceriesScreen({ query = '' }: { query?: string }) {
+export default function GroceriesScreen({ query = '', header }: { query?: string; header?: ReactNode }) {
   const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const fabBottom = useFabBottom();
@@ -67,14 +67,14 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
             <Ionicons name="cart-outline" size={40} color={kinds.groceries.color} />
             <Text style={styles.welcomeTitle}>Your grocery routine</Text>
             <Text style={styles.welcomeText}>
-              Add the things you buy regularly and how often. They come back on your list when it's time to buy them
-              again.
+              Add the things you buy regularly and how often. They come back on your list when it's time to buy them again.
             </Text>
             <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => addGroceries(STARTER_STAPLES)}>
               <Text style={styles.primaryText}>Start with common staples</Text>
@@ -89,7 +89,13 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
               title={`To buy · ${toBuy.length}`}
               right={
                 toBuy.length > 0 ? (
-                  <Pressable accessibilityRole="button" onPress={share} hitSlop={8} accessibilityLabel="Share shopping list" style={styles.shareLink}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={share}
+                    hitSlop={8}
+                    accessibilityLabel="Share shopping list"
+                    style={styles.shareLink}
+                  >
                     <Ionicons name="share-outline" size={14} color={colors.text} />
                     <Text style={type.link}>Share</Text>
                   </Pressable>
@@ -143,7 +149,8 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
                 {later.map(({ item, due }, i) => (
                   <View key={item.id}>
                     {i > 0 && <Divider />}
-                    <Pressable accessibilityRole="button"
+                    <Pressable
+                      accessibilityRole="button"
                       style={({ pressed }) => [styles.laterRow, pressed && styles.pressed]}
                       onPress={() => openEdit(item)}
                     >
@@ -164,7 +171,12 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
       </ScrollView>
 
       {all.length > 0 && (
-        <Pressable accessibilityRole="button" style={[styles.fab, { bottom: fabBottom }]} onPress={openNew} accessibilityLabel="Add grocery item">
+        <Pressable
+          accessibilityRole="button"
+          style={[styles.fab, { bottom: fabBottom }]}
+          onPress={openNew}
+          accessibilityLabel="Add grocery item"
+        >
           <Ionicons name="add" size={30} color={colors.onPrimary} />
         </Pressable>
       )}
@@ -193,54 +205,54 @@ export default function GroceriesScreen({ query = '' }: { query?: string }) {
 
 const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
   StyleSheet.create({
-  screen: { flex: 1 },
-  shareLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  content: { padding: 16, paddingBottom: 170 },
-  welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
-  welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
-  welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
-  primaryButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-  secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
-  secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
-  emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
-  aisle: {
-    fontFamily: fonts.monoMedium,
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    color: kinds.groceries.color,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-  },
-  laterRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
-  pressed: { backgroundColor: colors.primarySoft },
-  laterText: { flex: 1 },
-  laterName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-  laterSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-  laterDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
-  hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-  },
-});
+    screen: { flex: 1 },
+    shareLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    content: { padding: 16, paddingBottom: 170 },
+    welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
+    welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
+    welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
+    primaryButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+      paddingVertical: 14,
+      alignSelf: 'stretch',
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
+    secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
+    aisle: {
+      fontFamily: fonts.monoMedium,
+      fontSize: 12,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      color: kinds.groceries.color,
+      paddingHorizontal: 16,
+      paddingTop: 14,
+    },
+    laterRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
+    pressed: { backgroundColor: colors.primarySoft },
+    laterText: { flex: 1 },
+    laterName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+    laterSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+    laterDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
+    hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
+    fab: {
+      position: 'absolute',
+      right: 20,
+      bottom: 24,
+      width: 60,
+      height: 60,
+      borderRadius: 18,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      elevation: 4,
+      shadowColor: '#000',
+      shadowOpacity: 0.2,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 3 },
+    },
+  });

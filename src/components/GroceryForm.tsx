@@ -1,16 +1,5 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NewGroceryItem } from '../lib/store';
 import { Chip } from './Chip';
 import { type GroceryItem, type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
@@ -86,8 +75,7 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
     ]);
   }
 
-  const toggleDay = (d: number) =>
-    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -102,18 +90,31 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Chicken" placeholderTextColor={colors.faint}
+              placeholder="e.g. Chicken"
+              placeholderTextColor={colors.faint}
               autoFocus={!item}
             />
 
             <View style={styles.twoCol}>
               <View style={styles.col}>
                 <Text style={styles.label}>Amount (optional)</Text>
-                <TextInput style={styles.input} value={quantity} onChangeText={setQuantity} placeholder="500 g" placeholderTextColor={colors.faint} />
+                <TextInput
+                  style={styles.input}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  placeholder="500 g"
+                  placeholderTextColor={colors.faint}
+                />
               </View>
               <View style={styles.col}>
                 <Text style={styles.label}>Aisle (optional)</Text>
-                <TextInput style={styles.input} value={aisle} onChangeText={setAisle} placeholder="Meat" placeholderTextColor={colors.faint} />
+                <TextInput
+                  style={styles.input}
+                  value={aisle}
+                  onChangeText={setAisle}
+                  placeholder="Meat"
+                  placeholderTextColor={colors.faint}
+                />
               </View>
             </View>
 
@@ -170,41 +171,42 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
 
 const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-  sheet: {
-    backgroundColor: colors.sheet,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    padding: 20,
-    paddingBottom: 32,
-    maxHeight: '90%',
-  },
-  heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-  label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-  input: {
-    backgroundColor: colors.input,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontFamily: fonts.body, fontSize: 16,
-    color: colors.text,
-  },
-  twoCol: { flexDirection: 'row', gap: 12 },
-  col: { flex: 1 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
-  inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-  smallInput: { width: 64, textAlign: 'center' },
-  saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-  deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-  deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
-});
+    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
+    sheet: {
+      backgroundColor: colors.sheet,
+      borderTopLeftRadius: 22,
+      borderTopRightRadius: 22,
+      padding: 20,
+      paddingBottom: 32,
+      maxHeight: '90%',
+    },
+    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
+    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
+    input: {
+      backgroundColor: colors.input,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontFamily: fonts.body,
+      fontSize: 16,
+      color: colors.text,
+    },
+    twoCol: { flexDirection: 'row', gap: 12 },
+    col: { flex: 1 },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+    inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+    smallInput: { width: 64, textAlign: 'center' },
+    saveButton: {
+      backgroundColor: colors.primary,
+      borderRadius: 999,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+  });

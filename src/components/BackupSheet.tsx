@@ -48,9 +48,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
 
       <Text style={styles.label}>Save a copy</Text>
       <Button label="Export backup" onPress={exportAll} />
-      {shown && (
-        <TextInput style={[styles.input, styles.code]} value={shown} multiline editable={false} selectTextOnFocus />
-      )}
+      {shown && <TextInput style={[styles.input, styles.code]} value={shown} multiline editable={false} selectTextOnFocus />}
 
       <Text style={styles.label}>Restore</Text>
       <TextInput
@@ -70,19 +68,19 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-  label: { ...type.label, marginTop: 22, marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: colors.card,
-    color: colors.text,
-    minHeight: 80,
-    maxHeight: 160,
-    marginTop: 10,
-    textAlignVertical: 'top',
-  },
-  code: { fontFamily: fonts.mono, fontSize: 12 },
-  gap: { marginTop: 4 },
-});
+    label: { ...type.label, marginTop: 22, marginBottom: 8 },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      borderRadius: 10,
+      padding: 12,
+      backgroundColor: colors.card,
+      color: colors.text,
+      minHeight: 80,
+      maxHeight: 160,
+      marginTop: 10,
+      textAlignVertical: 'top',
+    },
+    code: { fontFamily: fonts.mono, fontSize: 12 },
+    gap: { marginTop: 4 },
+  });

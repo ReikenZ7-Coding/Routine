@@ -73,7 +73,8 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
       />
 
       <Section title="More">
-        <Pressable accessibilityRole="button"
+        <Pressable
+          accessibilityRole="button"
           style={styles.row}
           onPress={
             settings.calendarConnected ? () => updateSettings({ calendarConnected: false }) : calendarSupported ? connect : undefined
@@ -109,8 +110,16 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     label: { ...type.label, marginTop: 18, marginBottom: 10 },
-    themes: { flexDirection: 'row', gap: 10 },
-    theme: { flex: 1, padding: 8, borderRadius: radius, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card },
+    themes: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    theme: {
+      width: '47%',
+      flexGrow: 1,
+      padding: 8,
+      borderRadius: radius,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      backgroundColor: colors.card,
+    },
     themeActive: { borderColor: colors.text, borderWidth: 2, padding: 7 },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
     swatchCard: { borderRadius: 8, borderWidth: 1, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
