@@ -424,7 +424,6 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
     emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
     ideaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
     otherRow: { paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
-    pressed: { backgroundColor: colors.primarySoft },
     otherName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
     otherSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
     hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },

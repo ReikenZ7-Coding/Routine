@@ -1,25 +1,18 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Switch, Text, View } from 'react-native';
 import { allowReminders, remindersSupported } from '../lib/reminders';
 import { Ionicons } from '@expo/vector-icons';
 import { ROUTINE_ICONS, type Routine, type TimeOfDay, TIME_LABELS, formatTime, iconFor } from '../lib/routines';
 import { clock, parseClock } from '../lib/timeline';
 import { type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Button } from './Button';
 import { Chip } from './Chip';
+import { Field, FieldError, Input } from './Field';
+import { FadeSwap, Press, SelectFade } from './Motion';
+import { ConfirmDelete, Sheet } from './Sheet';
+
+type Errors = Partial<Record<'name' | 'days' | 'start' | 'remind', string>>;
 
 type RepeatChoice = 'daily' | 'weekdays' | 'everyN' | 'once';
 
@@ -55,7 +48,6 @@ function choiceFor(r: Repeat): RepeatChoice {
 }
 
 export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose }: Props) {
-  const insets = useSafeAreaInsets();
   const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
@@ -71,9 +63,16 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   const [duration, setDuration] = useState(15);
   const [icon, setIcon] = useState<string | undefined>();
   const [pinned, setPinned] = useState(false);
+  const [errors, setErrors] = useState<Errors>({});
+  /** Shown once when notifications are off; the next Save goes ahead without the permission. */
+  const [notice, setNotice] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
+  const clear = (k: keyof Errors) => setErrors((e) => (e[k] ? { ...e, [k]: undefined } : e));
 
   useEffect(() => {
     if (!visible) return;
+    setErrors({});
+    setNotice(undefined);
     const r = routine?.repeat ?? { kind: 'everyNDays', n: 1 };
     setName(routine?.name ?? '');
     setChoice(choiceFor(r));
@@ -95,40 +94,38 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   }, [visible, routine]);
 
   async function save() {
-    if (!name.trim()) {
-      Alert.alert('Add a name', 'What do you want to do regularly?');
-      return;
-    }
-    let repeat: Repeat;
+    const found: Errors = {};
+    if (!name.trim()) found.name = 'Add a name: what do you want to do regularly?';
+    let repeat: Repeat = { kind: 'everyNDays', n: 1 };
     if (choice === 'once') repeat = { kind: 'once' };
-    else if (choice === 'daily') repeat = { kind: 'everyNDays', n: 1 };
     else if (choice === 'everyN') repeat = { kind: 'everyNDays', n: Math.max(2, parseInt(everyN, 10) || 2) };
-    else {
-      if (days.length === 0) {
-        Alert.alert('Pick a day', 'Choose at least one day of the week.');
-        return;
-      }
+    else if (choice === 'weekdays') {
+      if (days.length === 0) found.days = 'Pick at least one day of the week.';
       repeat = { kind: 'weekdays', days: [...days].sort() };
-    }
-    let reminder: RoutineFields['reminder'];
-    if (remind) {
-      reminder = parseTime(remindAt);
-      if (!reminder) {
-        Alert.alert('Check the time', 'Write the reminder time like 07:30 or 20:00.');
-        return;
-      }
-      if (remindersSupported && !(await allowReminders())) {
-        Alert.alert('Notifications are off', 'Allow notifications for Routine in your phone settings to get reminders.');
-      }
     }
     let startAt: string | undefined;
     if (start.trim()) {
       const m = parseClock(start);
-      if (m === undefined) {
-        Alert.alert('Check the start time', 'Write it like 07:30 or 18:00, or leave it empty for anytime.');
+      if (m === undefined) found.start = 'Write the start time like 07:30 or 18:00, or leave it empty for anytime.';
+      else startAt = clock(m);
+    }
+    let reminder: RoutineFields['reminder'];
+    if (remind) {
+      reminder = parseTime(remindAt);
+      if (!reminder) found.remind = 'Write the reminder time like 07:30 or 20:00.';
+    }
+    setErrors(found);
+    if (Object.values(found).some(Boolean)) return;
+    if (remind && remindersSupported && !notice) {
+      setSaving(true);
+      const allowed = await allowReminders().catch(() => false);
+      setSaving(false);
+      if (!allowed) {
+        setNotice(
+          'Notifications are off for Routine, so this reminder can’t ring. Allow them in your phone settings, or tap Save again to keep it anyway.',
+        );
         return;
       }
-      startAt = clock(m);
     }
     const goal = counter ? Math.max(2, parseInt(target, 10) || 2) : undefined;
     const when: TimeOfDay = startAt
@@ -151,248 +148,258 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
     });
   }
 
-  function confirmDelete() {
-    Alert.alert('Delete routine?', `Remove "${routine?.name}" and its history?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: onDelete },
-    ]);
-  }
-
-  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  const toggleDay = (d: number) => {
+    clear('days');
+    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}>
-          <ScrollView keyboardShouldPersistTaps="handled">
-            <Text style={styles.heading}>{routine ? 'Edit routine' : 'New routine'}</Text>
+    <Sheet visible={visible} title={routine ? 'Edit routine' : 'New routine'} onClose={onClose}>
+      <Field label="Name" error={errors.name}>
+        <Input
+          value={name}
+          onChangeText={(t) => {
+            setName(t);
+            clear('name');
+          }}
+          invalid={!!errors.name}
+          placeholder="e.g. Stretch 10 minutes"
+          autoFocus={!routine}
+          accessibilityLabel="Name"
+        />
+      </Field>
 
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Stretch 10 minutes"
-              placeholderTextColor={colors.faint}
-              autoFocus={!routine}
+      <Text style={styles.label}>How often?</Text>
+      <View style={styles.chips}>
+        {(
+          [
+            ['daily', 'Every day'],
+            ['weekdays', 'Certain days'],
+            ['everyN', 'Every few days'],
+            ['once', 'Just once'],
+          ] as const
+        ).map(([key, label]) => (
+          <Chip
+            key={key}
+            label={label}
+            active={choice === key}
+            onPress={() => {
+              setChoice(key);
+              clear('days');
+            }}
+          />
+        ))}
+      </View>
+      {choice === 'everyN' && (
+        <View style={styles.inline}>
+          <Text style={styles.inlineText}>Every</Text>
+          <View style={styles.smallBox}>
+            <Input
+              style={styles.center}
+              value={everyN}
+              onChangeText={setEveryN}
+              keyboardType="number-pad"
+              maxLength={3}
+              accessibilityLabel="Number of days"
             />
-
-            <Text style={styles.label}>How often?</Text>
-            <View style={styles.chips}>
-              {(
-                [
-                  ['daily', 'Every day'],
-                  ['weekdays', 'Certain days'],
-                  ['everyN', 'Every few days'],
-                  ['once', 'Just once'],
-                ] as const
-              ).map(([key, label]) => (
-                <Chip key={key} label={label} active={choice === key} onPress={() => setChoice(key)} />
-              ))}
-            </View>
-            {choice === 'everyN' && (
-              <View style={styles.inline}>
-                <Text style={styles.inlineText}>Every</Text>
-                <TextInput
-                  style={[styles.input, styles.smallInput]}
-                  value={everyN}
-                  onChangeText={setEveryN}
-                  keyboardType="number-pad"
-                  maxLength={3}
-                />
-                <Text style={styles.inlineText}>days</Text>
-              </View>
-            )}
-            {choice === 'weekdays' && (
-              <View style={[styles.chips, styles.gapTop]}>
-                {WEEKDAY_SHORT.map((label, d) => (
-                  <Chip key={label} label={label} active={days.includes(d)} onPress={() => toggleDay(d)} />
-                ))}
-              </View>
-            )}
-
-            <Text style={styles.label}>Start time (leave empty for anytime)</Text>
-            <TextInput
-              style={[styles.input, styles.timeInput]}
-              value={start}
-              onChangeText={setStart}
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
-              placeholder="07:30"
-              placeholderTextColor={colors.faint}
-            />
-            {start.trim() ? (
-              <>
-                <Text style={styles.label}>Takes</Text>
-                <View style={styles.chips}>
-                  {DURATIONS.map((d) => (
-                    <Chip
-                      key={d}
-                      label={d >= 60 ? `${d / 60} h`.replace('1.5 h', '1½ h') : `${d} min`}
-                      active={duration === d}
-                      onPress={() => setDuration(d)}
-                    />
-                  ))}
-                </View>
-              </>
-            ) : (
-              <>
-                <Text style={styles.label}>Roughly when?</Text>
-                <View style={styles.chips}>
-                  {(Object.keys(TIME_LABELS) as TimeOfDay[]).map((t) => (
-                    <Chip key={t} label={TIME_LABELS[t]} active={time === t} onPress={() => setTime(t)} />
-                  ))}
-                </View>
-              </>
-            )}
-
-            <Text style={styles.label}>Icon</Text>
-            <View style={styles.icons}>
-              {ROUTINE_ICONS.map((ic) => {
-                const active = (icon ?? iconFor({ name, icon })) === ic;
-                return (
-                  <Pressable
-                    accessibilityRole="button"
-                    key={ic}
-                    style={[styles.iconChoice, active && { backgroundColor: kinds.routines.color, borderColor: kinds.routines.color }]}
-                    onPress={() => setIcon(ic)}
-                    accessibilityLabel={`Icon ${ic}`}
-                    accessibilityState={{ selected: active }}
-                  >
-                    <Ionicons name={ic} size={18} color={active ? colors.onKind : colors.text} />
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.switchRow}>
-              <View style={styles.flex}>
-                <Text style={styles.switchTitle}>Shortcut on Today</Text>
-                <Text style={styles.switchSub}>A one-tap button at the top of your day</Text>
-              </View>
-              <Switch value={pinned} onValueChange={setPinned} trackColor={{ true: kinds.routines.color }} />
-            </View>
-
-            <View style={styles.switchRow}>
-              <View style={styles.flex}>
-                <Text style={styles.switchTitle}>Count it</Text>
-                <Text style={styles.switchSub}>Tap +1 each time, like glasses of water</Text>
-              </View>
-              <Switch value={counter} onValueChange={setCounter} trackColor={{ true: kinds.routines.color }} />
-            </View>
-            {counter && (
-              <View style={styles.inline}>
-                <Text style={styles.inlineText}>Goal</Text>
-                <TextInput
-                  style={[styles.input, styles.smallInput]}
-                  value={target}
-                  onChangeText={setTarget}
-                  keyboardType="number-pad"
-                  maxLength={3}
-                />
-                <Text style={styles.inlineText}>times a day</Text>
-              </View>
-            )}
-
-            <View style={styles.switchRow}>
-              <View style={styles.flex}>
-                <Text style={styles.switchTitle}>Remind me</Text>
-                <Text style={styles.switchSub}>
-                  {remindersSupported ? 'A notification on the days it’s due' : 'Works in the Android app'}
-                </Text>
-              </View>
-              <Switch value={remind} onValueChange={setRemind} trackColor={{ true: kinds.routines.color }} />
-            </View>
-            {remind && (
-              <View style={styles.inline}>
-                <Text style={styles.inlineText}>At</Text>
-                <TextInput
-                  style={[styles.input, styles.timeInput]}
-                  value={remindAt}
-                  onChangeText={setRemindAt}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={5}
-                  placeholder="08:00"
-                  placeholderTextColor={colors.faint}
-                />
-              </View>
-            )}
-
-            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
-              <Text style={styles.saveText}>{routine ? 'Save' : 'Add routine'}</Text>
-            </Pressable>
-            {routine && onSkip && (
-              <Pressable accessibilityRole="button" style={styles.skipButton} onPress={onSkip}>
-                <Text style={styles.skipText}>{skippedToday ? 'Undo skip' : 'Skip today (keeps your streak)'}</Text>
-              </Pressable>
-            )}
-            {routine && onDelete && (
-              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
-                <Text style={styles.deleteText}>Delete routine</Text>
-              </Pressable>
-            )}
-          </ScrollView>
+          </View>
+          <Text style={styles.inlineText}>days</Text>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      )}
+      {choice === 'weekdays' && (
+        <>
+          <View style={[styles.chips, styles.gapTop]}>
+            {WEEKDAY_SHORT.map((label, d) => (
+              <Chip key={label} label={label} active={days.includes(d)} onPress={() => toggleDay(d)} />
+            ))}
+          </View>
+          <FieldError message={errors.days} />
+        </>
+      )}
+
+      <Field label="Start time (leave empty for anytime)" error={errors.start}>
+        <View style={styles.timeBox}>
+          <Input
+            style={styles.center}
+            value={start}
+            onChangeText={(t) => {
+              setStart(t);
+              clear('start');
+            }}
+            invalid={!!errors.start}
+            keyboardType="numbers-and-punctuation"
+            maxLength={5}
+            placeholder="07:30"
+            accessibilityLabel="Start time"
+          />
+        </View>
+      </Field>
+      {start.trim() ? (
+        <>
+          <Text style={styles.label}>Takes</Text>
+          <View style={styles.chips}>
+            {DURATIONS.map((d) => (
+              <Chip
+                key={d}
+                label={d >= 60 ? `${d / 60} h`.replace('1.5 h', '1½ h') : `${d} min`}
+                active={duration === d}
+                onPress={() => setDuration(d)}
+              />
+            ))}
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={styles.label}>Roughly when?</Text>
+          <View style={styles.chips}>
+            {(Object.keys(TIME_LABELS) as TimeOfDay[]).map((t) => (
+              <Chip key={t} label={TIME_LABELS[t]} active={time === t} onPress={() => setTime(t)} />
+            ))}
+          </View>
+        </>
+      )}
+
+      <Text style={styles.label}>Icon</Text>
+      <View style={styles.icons}>
+        {ROUTINE_ICONS.map((ic) => {
+          const active = (icon ?? iconFor({ name, icon })) === ic;
+          return (
+            <Press
+              key={ic}
+              style={styles.iconChoice}
+              overlay={colors.material.pressFill}
+              onPress={() => setIcon(ic)}
+              accessibilityLabel={`Icon ${ic}`}
+              accessibilityState={{ selected: active }}
+            >
+              <SelectFade on={active} color={kinds.routines.color} radius={22} bleed={1} />
+              <FadeSwap
+                on={active}
+                off={<Ionicons name={ic} size={18} color={colors.text} />}
+                onContent={<Ionicons name={ic} size={18} color={colors.onKind} />}
+              />
+            </Press>
+          );
+        })}
+      </View>
+
+      <View style={styles.switchRow}>
+        <View style={styles.flex}>
+          <Text style={styles.switchTitle}>Shortcut on Today</Text>
+          <Text style={styles.switchSub}>A one-tap button at the top of your day</Text>
+        </View>
+        <Switch
+          value={pinned}
+          onValueChange={setPinned}
+          trackColor={{ true: kinds.routines.color }}
+          accessibilityLabel="Shortcut on Today"
+        />
+      </View>
+
+      <View style={styles.switchRow}>
+        <View style={styles.flex}>
+          <Text style={styles.switchTitle}>Count it</Text>
+          <Text style={styles.switchSub}>Tap +1 each time, like glasses of water</Text>
+        </View>
+        <Switch value={counter} onValueChange={setCounter} trackColor={{ true: kinds.routines.color }} accessibilityLabel="Count it" />
+      </View>
+      {counter && (
+        <View style={styles.inline}>
+          <Text style={styles.inlineText}>Goal</Text>
+          <View style={styles.smallBox}>
+            <Input
+              style={styles.center}
+              value={target}
+              onChangeText={setTarget}
+              keyboardType="number-pad"
+              maxLength={3}
+              accessibilityLabel="Goal per day"
+            />
+          </View>
+          <Text style={styles.inlineText}>times a day</Text>
+        </View>
+      )}
+
+      <View style={styles.switchRow}>
+        <View style={styles.flex}>
+          <Text style={styles.switchTitle}>Remind me</Text>
+          <Text style={styles.switchSub}>{remindersSupported ? 'A notification on the days it’s due' : 'Works in the Android app'}</Text>
+        </View>
+        <Switch
+          value={remind}
+          onValueChange={(v) => {
+            setRemind(v);
+            clear('remind');
+            setNotice(undefined);
+          }}
+          trackColor={{ true: kinds.routines.color }}
+          accessibilityLabel="Remind me"
+        />
+      </View>
+      {remind && (
+        <>
+          <View style={styles.inline}>
+            <Text style={styles.inlineText}>At</Text>
+            <View style={styles.timeBox}>
+              <Input
+                style={styles.center}
+                value={remindAt}
+                onChangeText={(t) => {
+                  setRemindAt(t);
+                  clear('remind');
+                }}
+                invalid={!!errors.remind}
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
+                placeholder="08:00"
+                accessibilityLabel="Reminder time"
+              />
+            </View>
+          </View>
+          <FieldError message={errors.remind ?? notice} />
+        </>
+      )}
+
+      <Button label={routine ? 'Save' : 'Add routine'} onPress={save} busy={saving} style={styles.save} />
+      {routine && onSkip && (
+        <Button
+          label={skippedToday ? 'Undo skip' : 'Skip today (keeps your streak)'}
+          variant="secondary"
+          onPress={onSkip}
+          style={styles.skip}
+        />
+      )}
+      {routine && onDelete && (
+        <ConfirmDelete label="Delete routine" question={`Delete “${routine.name}” and its history?`} onConfirm={onDelete} />
+      )}
+    </Sheet>
   );
 }
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-    sheet: {
-      backgroundColor: colors.sheet,
-      borderTopLeftRadius: 22,
-      borderTopRightRadius: 22,
-      padding: 20,
-      paddingBottom: 32,
-      maxHeight: '90%',
-    },
-    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-    input: {
-      backgroundColor: colors.input,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      fontFamily: fonts.body,
-      fontSize: 16,
-      color: colors.text,
-    },
+    label: { ...type.label, marginTop: 18, marginBottom: 8 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     gapTop: { marginTop: 12 },
     inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
     inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-    smallInput: { width: 64, textAlign: 'center' },
+    smallBox: { width: 72 },
+    timeBox: { width: 96 },
+    center: { textAlign: 'center', fontVariant: ['tabular-nums'] },
     icons: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     iconChoice: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       borderWidth: 1,
-      borderColor: colors.border,
+      borderColor: colors.controlBorder,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    timeInput: { width: 84, textAlign: 'center', fontFamily: fonts.mono },
     flex: { flex: 1 },
-    switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 },
+    switchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, minHeight: 48 },
     switchTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
-    switchSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
-    skipButton: { paddingVertical: 14, alignItems: 'center', marginTop: 10, borderRadius: 999, borderWidth: 1, borderColor: colors.border },
-    skipText: { color: colors.text, fontFamily: fonts.bodyMedium, fontSize: 15 },
-    saveButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 999,
-      paddingVertical: 14,
-      alignItems: 'center',
-      marginTop: 24,
-    },
-    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+    switchSub: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 1 },
+    save: { marginTop: 24 },
+    skip: { marginTop: 10 },
   });

@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Segmented } from './Hub';
+import { FadeSwap, Press, SelectFade } from './Motion';
+import { Sheet } from './Sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUNDS, useSounds } from '../lib/sounds';
 import { SceneArt } from './Art';
@@ -8,25 +10,12 @@ import { Glass, WorldFrame } from './Glass';
 import { MINI_HEIGHT, useBar } from './glass/chrome';
 import { type Theme, useStyles, useTheme } from '../theme';
 
-/** Art for a sound: a soft gradient tile with its icon. */
-export function SoundArt({ icon, size, id }: { icon: string; size: number; id?: string }) {
-  const { kinds, glass } = useTheme();
-  if (glass) {
-    return (
-      <View style={{ width: size, height: size, borderRadius: size * 0.22, overflow: 'hidden' }}>
-        <SceneArt width={size} height={size} variant={id} />
-      </View>
-    );
-  }
+/** Art for a sound: the look's own scene for it (rain, waves, focus), cropped to a rounded tile. */
+export function SoundArt({ size, id }: { icon?: string; size: number; id?: string }) {
   return (
-    <LinearGradient
-      colors={[kinds.routines.color, kinds.chinese.color, kinds.gym.color]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={{ width: size, height: size, borderRadius: size * 0.22, alignItems: 'center', justifyContent: 'center', opacity: 0.92 }}
-    >
-      <Ionicons name={icon as 'rainy'} size={size * 0.38} color="#FFFFFF" />
-    </LinearGradient>
+    <View style={{ width: size, height: size, borderRadius: size * 0.22, overflow: 'hidden' }}>
+      <SceneArt width={size} height={size} variant={id} />
+    </View>
   );
 }
 
@@ -63,12 +52,10 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
 
 /** Full "now playing" sheet with the sound list. */
 export function NowPlaying() {
-  const { colors, type } = useTheme();
+  const { colors, type, radii, glass } = useTheme();
   const styles = useStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   const s = useSounds();
   const pct = Math.min(1, s.position / s.length);
-  const glass = useTheme().glass;
 
   if (glass) {
     return (
@@ -85,89 +72,76 @@ export function NowPlaying() {
   }
 
   return (
-    <Modal
-      visible={s.sheetOpen}
-      animationType="slide"
-      transparent
-      statusBarTranslucent
-      navigationBarTranslucent
-      onRequestClose={() => s.setSheetOpen(false)}
-    >
-      <View style={styles.backdrop}>
-        <Pressable
-          accessibilityRole="button"
-          style={StyleSheet.absoluteFill}
-          onPress={() => s.setSheetOpen(false)}
-          accessibilityLabel="Close"
-        />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + 28 }]}>
-          <View style={styles.topRow}>
-            <Pressable accessibilityRole="button" onPress={() => s.setSheetOpen(false)} hitSlop={10} accessibilityLabel="Close player">
-              <Ionicons name="chevron-down" size={24} color={colors.text} />
-            </Pressable>
-            <View style={styles.center}>
-              <Text style={styles.eyebrow}>Now playing</Text>
-              <Text style={type.small}>Focus sounds · loops forever</Text>
-            </View>
-            <View style={styles.spacer} />
-          </View>
-
-          <View style={styles.art}>
-            <SoundArt icon={s.current.icon} id={s.current.id} size={240} />
-          </View>
-          <Text style={styles.name}>{s.current.name}</Text>
-          <Text style={type.small}>{s.current.subtitle}</Text>
-
-          <View style={styles.track}>
-            <View style={[styles.fill, { flex: pct }]} />
-            <View style={styles.knob} />
-            <View style={{ flex: 1 - pct }} />
-          </View>
-          <View style={styles.times}>
-            <Text style={styles.time}>{sec(s.position)}</Text>
-            <Text style={styles.time}>{sec(s.length)}</Text>
-          </View>
-
-          <View style={styles.controls}>
-            <Pressable accessibilityRole="button" onPress={() => s.skip(-1)} hitSlop={10} accessibilityLabel="Previous sound">
-              <Ionicons name="play-skip-back" size={26} color={colors.text} />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              style={styles.bigButton}
-              onPress={s.toggle}
-              accessibilityLabel={s.playing ? 'Pause' : 'Play'}
-            >
-              <Ionicons name={s.playing ? 'pause' : 'play'} size={30} color={colors.onPrimary} />
-            </Pressable>
-            <Pressable accessibilityRole="button" onPress={() => s.skip(1)} hitSlop={10} accessibilityLabel="Next sound">
-              <Ionicons name="play-skip-forward" size={26} color={colors.text} />
-            </Pressable>
-          </View>
-
-          <View style={styles.list}>
-            {SOUNDS.map((x) => {
-              const active = x.id === s.current.id;
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  key={x.id}
-                  style={[styles.item, active && styles.itemActive]}
-                  onPress={() => s.play(x.id)}
-                >
-                  <SoundArt icon={x.icon} id={x.id} size={44} />
-                  <View style={styles.flex}>
-                    <Text style={type.bodyMedium}>{x.name}</Text>
-                    <Text style={type.small}>{x.subtitle}</Text>
-                  </View>
-                  {active && s.playing ? <Ionicons name="volume-medium" size={18} color={colors.text} /> : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+    <Sheet visible={s.sheetOpen} title="Now playing" onClose={() => s.setSheetOpen(false)}>
+      <Text style={type.small}>Focus sounds · loops until you stop</Text>
+      <View style={styles.art}>
+        <SoundArt id={s.current.id} size={220} />
       </View>
-    </Modal>
+      <Text style={styles.name}>{s.current.name}</Text>
+      <Text style={type.small}>{s.current.subtitle}</Text>
+
+      <View
+        style={styles.track}
+        accessibilityRole="progressbar"
+        accessibilityLabel="Loop progress"
+        accessibilityValue={{ min: 0, max: Math.round(s.length), now: Math.round(s.position) }}
+      >
+        <View style={styles.rail} />
+        <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+        <View style={[styles.knob, { left: `${pct * 100}%` }]} />
+      </View>
+      <View style={styles.times}>
+        <Text style={styles.time}>{sec(s.position)}</Text>
+        <Text style={styles.time}>{sec(s.length)}</Text>
+      </View>
+
+      <View style={styles.controls}>
+        <Press style={styles.side} overlay={colors.material.pressFill} onPress={() => s.skip(-1)} accessibilityLabel="Previous sound">
+          <Ionicons name="play-skip-back" size={24} color={colors.text} />
+        </Press>
+        <Press
+          style={styles.bigButton}
+          overlay={colors.material.pressFill}
+          haptic
+          onPress={s.toggle}
+          accessibilityLabel={s.playing ? 'Pause' : 'Play'}
+        >
+          <Ionicons
+            name={s.playing ? 'pause' : 'play'}
+            size={30}
+            color={colors.onPrimary}
+            style={s.playing ? undefined : styles.playNudge}
+          />
+        </Press>
+        <Press style={styles.side} overlay={colors.material.pressFill} onPress={() => s.skip(1)} accessibilityLabel="Next sound">
+          <Ionicons name="play-skip-forward" size={24} color={colors.text} />
+        </Press>
+      </View>
+
+      <View style={styles.list}>
+        {SOUNDS.map((x) => {
+          const active = x.id === s.current.id;
+          return (
+            <Press
+              key={x.id}
+              style={styles.item}
+              overlay={colors.material.pressFill}
+              onPress={() => s.play(x.id)}
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`Play ${x.name}, ${x.subtitle}`}
+            >
+              <SelectFade on={active} radius={radii.inset} style={styles.itemActive} />
+              <SoundArt id={x.id} size={44} />
+              <View style={styles.flex}>
+                <Text style={type.bodyMedium}>{x.name}</Text>
+                <Text style={type.small}>{x.subtitle}</Text>
+              </View>
+              <FadeSwap on={active && s.playing} off={null} onContent={<Ionicons name="volume-medium" size={18} color={colors.text} />} />
+            </Press>
+          );
+        })}
+      </View>
+    </Sheet>
   );
 }
 
@@ -188,7 +162,7 @@ function GlassPlayer() {
   // Artwork fills the width but leaves room for the controls on short phones.
   const art = Math.min(width - (stone ? 64 : 72), height * 0.42);
   const close = () => s.setSheetOpen(false);
-  const iconColor = stone ? colors.text : '#FFFFFF';
+  const iconColor = colors.text;
 
   return (
     <View style={styles.root}>
@@ -201,9 +175,9 @@ function GlassPlayer() {
                 <Ionicons name="chevron-back" size={20} color={iconColor} />
               </Glass>
             ) : (
-              <Pressable onPress={close} style={styles.round} accessibilityRole="button" accessibilityLabel="Close player">
+              <Press onPress={close} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel="Close player">
                 <Ionicons name="chevron-down" size={26} color={iconColor} />
-              </Pressable>
+              </Press>
             )}
             <View style={styles.topCenter}>
               <Text style={styles.topTitle}>Now Playing</Text>
@@ -214,9 +188,14 @@ function GlassPlayer() {
                 <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={18} color={iconColor} />
               </Glass>
             ) : (
-              <Pressable onPress={s.cycleTimer} style={styles.round} accessibilityRole="button" accessibilityLabel={timerLabel(s.timer)}>
+              <Press
+                onPress={s.cycleTimer}
+                style={styles.round}
+                overlay={colors.material.pressFill}
+                accessibilityLabel={timerLabel(s.timer)}
+              >
                 <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={20} color={iconColor} />
-              </Pressable>
+              </Press>
             )}
           </View>
 
@@ -269,44 +248,34 @@ function GlassPlayer() {
           <View style={styles.controls}>
             <Control stone={stone} icon="shuffle" label="Shuffle to another sound" onPress={s.shuffle} small />
             <Control stone={stone} icon="play-skip-back" label="Previous sound" onPress={() => s.skip(-1)} />
-            <Pressable
+            <Press
               onPress={s.toggle}
               style={[styles.big, stone ? styles.bigStone : styles.bigLavender]}
-              accessibilityRole="button"
+              overlay={colors.material.pressFill}
+              haptic
               accessibilityLabel={s.playing ? 'Pause' : 'Play'}
             >
               <Ionicons
                 name={s.playing ? 'pause' : 'play'}
                 size={30}
-                color={stone ? colors.onPrimary : colors.onPrimary}
+                color={colors.onPrimary}
                 style={s.playing ? undefined : styles.playNudge}
               />
-            </Pressable>
+            </Press>
             <Control stone={stone} icon="play-skip-forward" label="Next sound" onPress={() => s.skip(1)} />
             <Control stone={stone} icon={s.timer ? 'moon' : 'moon-outline'} label={timerLabel(s.timer)} onPress={s.cycleTimer} small />
           </View>
 
           <View style={styles.flex} />
-          <Glass radius={24} style={styles.picker}>
-            {SOUNDS.map((x) => {
-              const active = x.id === s.current.id;
-              return (
-                <Pressable
-                  key={x.id}
-                  onPress={() => s.play(x.id)}
-                  style={[styles.pick, active && styles.pickActive]}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Play ${x.name}`}
-                >
-                  <Ionicons name={x.icon} size={20} color={active ? colors.onSelected : colors.text} />
-                  <Text style={[styles.pickText, active && styles.pickTextActive]} numberOfLines={1}>
-                    {x.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </Glass>
+          <View style={styles.picker}>
+            <Segmented
+              stacked
+              accessibilityLabel="Sound"
+              options={SOUNDS.map((x) => ({ key: x.id, label: x.name, icon: x.icon }))}
+              value={s.current.id}
+              onChange={(id) => s.play(id)}
+            />
+          </View>
         </View>
       </WorldFrame>
     </View>
@@ -332,16 +301,16 @@ function Control({
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
-  const glyph = <Ionicons name={icon as 'shuffle'} size={small ? 18 : 22} color={stone ? colors.text : '#FFFFFF'} />;
+  const glyph = <Ionicons name={icon as 'shuffle'} size={small ? 18 : 22} color={colors.text} />;
   // Stone sets each control in its own glass circle; Lavender keeps them bare and bright.
   return stone ? (
     <Glass tier="control" radius={26} style={styles.control} onPress={onPress} accessibilityLabel={label}>
       {glyph}
     </Glass>
   ) : (
-    <Pressable onPress={onPress} style={styles.control} accessibilityRole="button" accessibilityLabel={label}>
+    <Press onPress={onPress} style={styles.control} overlay={colors.material.pressFill} accessibilityLabel={label}>
       {glyph}
-    </Pressable>
+    </Press>
   );
 }
 
@@ -351,7 +320,7 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     body: { flex: 1, paddingHorizontal: 24 },
     flex: { flex: 1 },
     top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    round: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     topCenter: { flex: 1, alignItems: 'center' },
     topTitle: { fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold, fontSize: 16, color: colors.text },
     topSub: { marginTop: 2, fontFamily: fonts.body, fontSize: 13, color: colors.muted },
@@ -387,25 +356,21 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
       height: 14,
       marginLeft: -7,
       borderRadius: 7,
-      backgroundColor: name === 'stone' ? colors.accent : '#FFFFFF',
+      backgroundColor: name === 'stone' ? colors.accent : colors.text,
       boxShadow: `0px 0px 10px ${colors.accent}`,
     },
     times: { flexDirection: 'row', justifyContent: 'space-between' },
     time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
-    control: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+    control: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
     big: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
     bigLavender: { backgroundColor: colors.primary, boxShadow: `0px 8px 28px ${colors.glow}` },
     bigStone: { backgroundColor: colors.primary, boxShadow: '0px 8px 24px rgba(230,214,179,0.35)' },
     playNudge: { marginLeft: 4 },
-    picker: { flexDirection: 'row', padding: 6, gap: 6, marginTop: 20 },
-    pick: { flex: 1, minHeight: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 4 },
-    pickActive: { backgroundColor: colors.selected },
-    pickText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-    pickTextActive: { color: colors.onSelected },
+    picker: { marginTop: 20 },
   });
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     mini: {
@@ -437,43 +402,34 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-    sheet: { backgroundColor: colors.sheet, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '95%' },
-    topRow: { flexDirection: 'row', alignItems: 'center' },
-    center: { flex: 1, alignItems: 'center' },
-    spacer: { width: 24 },
-    eyebrow: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text },
-    art: { alignItems: 'center', marginVertical: 22 },
-    name: { fontFamily: fonts.display, fontSize: 26, color: colors.text },
-    track: { flexDirection: 'row', alignItems: 'center', height: 14, marginTop: 18 },
-    fill: { height: 4, borderRadius: 2, backgroundColor: colors.accent },
-    knob: {
-      width: 12,
-      height: 12,
-      borderRadius: 6,
-      backgroundColor: colors.accent,
-      marginLeft: -2,
-      boxShadow: `0px 0px 10px ${colors.accent}`,
-    },
+    art: { alignItems: 'center', marginVertical: 20 },
+    name: { ...type.sheetTitle },
+    track: { height: 24, justifyContent: 'center', marginTop: 16 },
+    rail: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: colors.track },
+    fill: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: colors.accent },
+    knob: { position: 'absolute', width: 14, height: 14, marginLeft: -7, borderRadius: 7, backgroundColor: colors.accent },
     times: { flexDirection: 'row', justifyContent: 'space-between' },
-    time: { fontFamily: fonts.mono, fontSize: 12, color: colors.muted },
-    controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 44, marginTop: 12 },
+    time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
+    controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 32, marginTop: 12 },
+    side: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
     bigButton: {
       width: 72,
       height: 72,
       borderRadius: 36,
       backgroundColor: colors.primary,
-      shadowColor: colors.glow,
-      shadowOpacity: 0.9,
-      shadowRadius: 22,
-      shadowOffset: { width: 0, height: 4 },
-      elevation: 10,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: colors.material.control.shadow,
       alignItems: 'center',
       justifyContent: 'center',
     },
+    playNudge: { marginLeft: 4 },
     list: { marginTop: 20, gap: 6 },
-    item: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, borderRadius: 16 },
-    itemActive: { backgroundColor: colors.primarySoft },
+    item: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, minHeight: 60, borderRadius: radii.inset },
+    itemActive: {
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.controlBorder,
+    },
   });
 
 /** Where floating buttons sit: clear of the tab bar and, once a sound has started, the mini player. */

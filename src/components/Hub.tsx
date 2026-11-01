@@ -3,10 +3,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import { GlassScroll } from './Glass';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Glass, GlassScroll } from './Glass';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import {
   type Routine,
   countOn,
@@ -21,9 +21,7 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Micro, Press, useReduceMotion } from './Motion';
-
-const EASE_IN_OUT = Easing.bezier(0.77, 0, 0.175, 1);
+import { EASE_OUT, FADE, FadeSwap, Micro, Press, SelectFade, useReduceMotion } from './Motion';
 
 function tick() {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
@@ -32,64 +30,115 @@ function tick() {
 export interface SegmentOption<K extends string> {
   key: K;
   label: string;
-  icon: string;
+  icon?: string;
   count?: number;
 }
 
-/** Two or three choices in a trough; the filled pill glides to the chosen one. */
+const SLIDE = { duration: 220, easing: EASE_OUT };
+const BLINK = { duration: 120, easing: EASE_OUT, ...FADE };
+
+/**
+ * Two to four choices in a glass trough. A childless drop slides to the chosen one (220ms ease-out) while the
+ * labels crossfade to the selected ink; under reduced motion the drop fades out and back in at its new place.
+ * Inside glass the trough is an inset; on the bare world it is its own control glass.
+ */
 export function Segmented<K extends string>({
   options,
   value,
   onChange,
+  accessibilityLabel,
+  stacked,
 }: {
   options: SegmentOption<K>[];
   value: K;
   onChange: (k: K) => void;
+  /** Names the group for screen readers, e.g. "Daily target". */
+  accessibilityLabel?: string;
+  /** Icon above the label in a taller, rounder-cornered trough (the sound picker). */
+  stacked?: boolean;
 }) {
-  const { colors } = useTheme();
+  const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const [width, setWidth] = useState(0);
   const x = useSharedValue(0);
+  const shown = useSharedValue(1);
+  const placed = useRef(false);
   const reduced = useReduceMotion();
   const index = Math.max(
     0,
     options.findIndex((o) => o.key === value),
   );
-  const slot = width ? (width - 8) / options.length : 0;
+  const slot = width ? width / options.length : 0;
   useEffect(() => {
     if (!slot) return;
-    const to = 4 + index * slot;
-    x.set(reduced || x.get() === 0 ? to : withTiming(to, { duration: 260, easing: EASE_IN_OUT }));
-  }, [index, slot, reduced, x]);
-  const pill = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
+    const to = index * slot;
+    if (!placed.current) {
+      placed.current = true;
+      x.set(to);
+    } else if (reduced) {
+      shown.set(
+        withTiming(0, BLINK, (done) => {
+          'worklet';
+          if (!done) return;
+          x.set(to);
+          shown.set(withTiming(1, BLINK));
+        }),
+      );
+    } else {
+      x.set(withTiming(to, SLIDE));
+    }
+  }, [index, slot, reduced, x, shown]);
+  const drop = useAnimatedStyle(() => ({ opacity: shown.get(), transform: [{ translateX: x.get() }] }));
   return (
-    <View style={styles.trough} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} accessibilityRole="tablist">
-      {slot > 0 && <Animated.View style={[styles.pill, { width: slot }, pill]} pointerEvents="none" />}
-      {options.map((o) => {
-        const active = o.key === value;
-        return (
-          <Press
-            key={o.key}
-            outerStyle={styles.flex}
-            style={styles.segment}
-            onPress={() => {
-              if (active) return;
-              tick();
-              onChange(o.key);
-            }}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`${o.label}${o.count !== undefined ? `, ${o.count}` : ''}`}
-          >
-            <Ionicons name={o.icon as 'sunny'} size={16} color={active ? colors.onSelected : colors.muted} />
-            <Text style={[styles.segmentText, active && styles.segmentTextActive]} numberOfLines={1}>
-              {o.label}
-            </Text>
-            {o.count !== undefined && <Text style={[styles.segmentCount, active && styles.segmentTextActive]}>{o.count}</Text>}
-          </Press>
-        );
-      })}
-    </View>
+    <Glass tier="control" radius={stacked ? radii.control : radii.pill} style={styles.trough}>
+      <View
+        style={[styles.segments, stacked && styles.stackedSegments]}
+        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        accessibilityRole="tablist"
+        accessibilityLabel={accessibilityLabel}
+      >
+        {slot > 0 && (
+          <Animated.View
+            style={[styles.drop, { width: slot }, stacked && { borderRadius: Math.max(0, radii.control - 4) }, drop]}
+            pointerEvents="none"
+          />
+        )}
+        {options.map((o) => {
+          const active = o.key === value;
+          const content = (color: string, countColor: string) => (
+            <View style={[styles.segmentInner, stacked && styles.stackedInner]}>
+              {o.icon ? <Ionicons name={o.icon as 'sunny'} size={stacked ? 20 : 16} color={color} /> : null}
+              <Text style={[styles.segmentText, { color }]} numberOfLines={1}>
+                {o.label}
+              </Text>
+              {o.count !== undefined && <Text style={[styles.segmentCount, { color: countColor }]}>{o.count}</Text>}
+            </View>
+          );
+          return (
+            <Press
+              key={o.key}
+              outerStyle={styles.flex}
+              style={[styles.segment, stacked && styles.stackedSegment]}
+              onPress={() => {
+                if (active) return;
+                tick();
+                onChange(o.key);
+              }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${o.label}${o.count !== undefined ? `, ${o.count}` : ''}`}
+            >
+              <FadeSwap
+                on={active}
+                duration={220}
+                off={content(colors.muted, colors.muted)}
+                onContent={content(colors.onPrimary, colors.onPrimary)}
+              />
+            </Press>
+          );
+        })}
+      </View>
+    </Glass>
   );
 }
 
@@ -99,7 +148,8 @@ export interface FilterOption<K extends string> {
   icon?: string;
 }
 
-/** A captioned row of chips that scrolls sideways; the chosen chip fills with the accent. */
+/** A captioned row of chips that scrolls sideways; the chosen chip fills with the accent (a 150ms fade). The
+ *  row ends in a 24px clear margin so the last chip never stops mid-word at the edge. */
 export function FilterRow<K extends string>({
   caption,
   options,
@@ -111,7 +161,7 @@ export function FilterRow<K extends string>({
   value: K;
   onChange: (k: K) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
   return (
     <View style={styles.filter}>
@@ -119,11 +169,19 @@ export function FilterRow<K extends string>({
       <GlassScroll horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
         {options.map((o) => {
           const active = o.key === value;
+          const content = (color: string) => (
+            <View style={styles.chipInner}>
+              {o.icon ? <Ionicons name={o.icon as 'sunny'} size={14} color={color} /> : null}
+              <Text style={[styles.chipText, { color }]}>{o.label}</Text>
+            </View>
+          );
           return (
             <Press
               key={o.key}
-              style={[styles.chip, active && styles.chipActive]}
+              style={styles.chip}
+              overlay={colors.material.pressFill}
               onPress={() => {
+                if (active) return;
                 tick();
                 onChange(o.key);
               }}
@@ -131,8 +189,8 @@ export function FilterRow<K extends string>({
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${caption}: ${o.label}`}
             >
-              {o.icon ? <Ionicons name={o.icon as 'sunny'} size={14} color={active ? colors.onSelected : colors.muted} /> : null}
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{o.label}</Text>
+              <SelectFade on={active} radius={radii.pill} bleed={1} style={styles.chosen} />
+              <FadeSwap on={active} off={content(colors.text)} onContent={content(colors.onPrimary)} />
             </Press>
           );
         })}
@@ -277,45 +335,44 @@ export function RoutineCard({
 const makeStyles = ({ colors, fonts, radius, dark }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    trough: {
-      flexDirection: 'row',
-      backgroundColor: dark ? 'rgba(6,27,23,0.6)' : colors.chip,
-      borderRadius: 999,
-      padding: 4,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      minHeight: 52,
-    },
-    pill: {
+    trough: { padding: 4 },
+    segments: { flexDirection: 'row', minHeight: 44 },
+    drop: {
       position: 'absolute',
-      top: 4,
-      bottom: 4,
+      top: 0,
+      bottom: 0,
       left: 0,
       borderRadius: 999,
-      backgroundColor: colors.selected,
-      boxShadow: dark ? '0px 4px 14px rgba(94,208,168,0.35)' : '0px 3px 10px rgba(20,22,18,0.18)',
+      backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      borderWidth: 1,
+      borderColor: colors.material.drop.rimSide,
+      borderTopColor: colors.material.drop.rim,
+      boxShadow: colors.material.control.shadow,
     },
-    segment: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44 },
-    segmentText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
-    segmentTextActive: { color: colors.onSelected },
-    segmentCount: { fontFamily: fonts.monoMedium, fontSize: 12, color: colors.faint },
+    segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
+    segmentInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 6 },
+    stackedSegments: { minHeight: 56 },
+    stackedSegment: { minHeight: 56, borderRadius: 18 },
+    stackedInner: { flexDirection: 'column', gap: 4 },
+    segmentText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
+    segmentCount: { fontFamily: fonts.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
     filter: { gap: 6 },
     chipScroll: { marginHorizontal: -16 },
-    chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
+    chips: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 40 },
     chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
       minHeight: 44,
       paddingHorizontal: 14,
+      justifyContent: 'center',
       borderRadius: 999,
-      backgroundColor: colors.chip,
+      backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
-      borderColor: colors.cardBorder,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
     },
-    chipActive: { backgroundColor: colors.selected, borderColor: colors.selected },
-    chipText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
-    chipTextActive: { color: colors.onSelected },
+    chipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    chosen: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
+    chipText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
     hubHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 24, marginBottom: 12 },
     hubBar: { width: 3, height: 20, borderRadius: 2 },
     hubIcon: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },

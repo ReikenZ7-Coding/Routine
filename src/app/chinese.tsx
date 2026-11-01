@@ -11,12 +11,14 @@ import { friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
+import { Segmented } from '../components/Hub';
+import { Press } from '../components/Motion';
 
 const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
 
 export default function ChineseScreen() {
-  const { kinds } = useTheme();
+  const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, chinese, updateChinese } = useStore();
   const [queue, setQueue] = useState<string[] | null>(null);
@@ -116,12 +118,13 @@ export default function ChineseScreen() {
           ))}
           {log.minutes > 0 && <Chip label="Undo 5" active={false} onPress={() => updateChinese((c) => addMinutes(c, today, -5))} />}
         </View>
-        <Text style={styles.small}>Daily target:</Text>
-        <View style={styles.chips}>
-          {TARGETS.map((t) => (
-            <Chip key={t} label={`${t} min`} active={chinese.target === t} onPress={() => updateChinese((c) => ({ ...c, target: t }))} />
-          ))}
-        </View>
+        <Text style={styles.small}>Daily target</Text>
+        <Segmented
+          accessibilityLabel="Daily target"
+          options={TARGETS.map((t) => ({ key: String(t), label: `${t} min` }))}
+          value={String(chinese.target)}
+          onChange={(k) => updateChinese((c) => ({ ...c, target: Number(k) }))}
+        />
       </Glass>
 
       <FocusTimer onLog={(m) => updateChinese((c) => addMinutes(c, today, m))} />
@@ -178,10 +181,11 @@ export default function ChineseScreen() {
             .map((w, i) => (
               <View key={w.id}>
                 {i > 0 && <Divider />}
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [styles.wordRow, pressed && styles.pressed]}
+                <Press
+                  style={styles.wordRow}
+                  overlay={colors.material.pressFill}
                   onPress={() => openWord(w)}
+                  accessibilityLabel={`${w.hanzi}, ${w.pinyin ? `${w.pinyin}, ` : ''}${w.meaning}. Edit word`}
                 >
                   <Text style={styles.wordHanzi}>{w.hanzi}</Text>
                   <View style={styles.flex}>
@@ -189,7 +193,7 @@ export default function ChineseScreen() {
                     <Text style={styles.wordMeaning}>{w.meaning}</Text>
                   </View>
                   <Text style={styles.wordDue}>{w.due <= today ? 'Due' : friendlyDate(w.due, today)}</Text>
-                </Pressable>
+                </Press>
               </View>
             ))}
         </Section>
@@ -287,8 +291,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
     secondaryButton: { paddingVertical: 14, alignItems: 'center' },
     secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
     link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
-    wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 14 },
-    pressed: { backgroundColor: colors.primarySoft },
+    wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingVertical: 10, paddingHorizontal: 14 },
     wordHanzi: { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
     wordPinyin: { fontFamily: fonts.body, fontSize: 14, color: colors.text },
     wordMeaning: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },

@@ -39,7 +39,7 @@ import { GlassLens } from './GlassLens';
 import { LightCatch } from './light';
 import { CAN_LIVE_BLUR, LiveBlur } from './LiveBlur';
 import { Sheen } from './Sheen';
-import { useGlassPlacement } from './useGlassPlacement';
+import { type GlassAnchor, useGlassPlacement } from './useGlassPlacement';
 
 export type GlassTier = 'hero' | 'pane' | 'control' | 'inset' | 'sheet' | 'chrome';
 
@@ -142,6 +142,8 @@ export interface GlassProps {
   sheen?: boolean;
   /** Only the top corners round, and there is no bottom rim (sheets, docked chrome). */
   topOnly?: boolean;
+  /** A known resting place in window coordinates (sheets), used instead of measuring the surface. */
+  anchor?: GlassAnchor;
   onPress?: () => void;
   onLongPress?: () => void;
   disabled?: boolean;
@@ -172,6 +174,7 @@ export function Glass({
   bloom,
   sheen,
   topOnly: topOnlyProp,
+  anchor,
   onPress,
   onLongPress,
   disabled,
@@ -195,7 +198,7 @@ export function Glass({
   const topOnly = topOnlyProp ?? tier === 'sheet';
   const interactive = !!(onPress || onLongPress);
   const lensed = LENSED[tier];
-  const { ref, onLayout, placement, restY } = useGlassPlacement(lensed);
+  const { ref, onLayout, placement, restY } = useGlassPlacement(lensed, anchor);
   const [box, setBox] = useState({ w: MIN_TARGET, h: MIN_TARGET });
 
   const scale = useSharedValue(1);

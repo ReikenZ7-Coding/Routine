@@ -5,6 +5,7 @@ import { formatWeight } from '../lib/gym';
 import { WEEKDAY_SHORT, friendlyDate, parseKey } from '../lib/schedule';
 import { useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { Glass } from './Glass';
 import { Divider, Section } from './Section';
 import { Sheet } from './Sheet';
 
@@ -13,7 +14,7 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
   const { kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const { today, routines, gym, chinese } = useStore();
-  if (!visible) return null;
+  // Always built (it is cheap), so the sheet keeps its content while it slides away.
   const s = weekStats(routines, gym, chinese, today);
   const pct = s.routinesPlanned ? Math.round((100 * s.routinesDone) / s.routinesPlanned) : null;
   const prs = personalRecords(gym.logs).slice(0, 5);
@@ -87,27 +88,19 @@ function Tile({ value, label, color }: { value: string; label: string; color: st
   const { type } = useTheme();
   const styles = useStyles(makeStyles);
   return (
-    <View style={styles.tile}>
+    <Glass style={styles.tile}>
       <Text style={[styles.tileValue, { color }]}>{value}</Text>
       <Text style={type.small}>{label}</Text>
-    </View>
+    </Glass>
   );
 }
 
-const makeStyles = ({ colors, fonts, radius }: Theme) =>
+const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     gap: { marginTop: 12 },
     tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
-    tile: {
-      flex: 1,
-      backgroundColor: colors.card,
-      borderRadius: radius,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      padding: 12,
-      gap: 2,
-    },
+    tile: { flex: 1, padding: 12, gap: 2 },
     tileValue: { fontFamily: fonts.display, fontSize: 26 },
     bars: { flexDirection: 'row', gap: 8, height: 90, marginTop: 16 },
     barCol: { flex: 1, alignItems: 'center', gap: 6 },

@@ -59,24 +59,12 @@ export default function LibraryScreen() {
         <View style={[styles.top, { paddingTop: insets.top + 16 }]}>
           <Text style={type.title}>My Library</Text>
           {search}
-          <View style={styles.pills}>
-            {shelves.map(([key, label, count]) => {
-              const active = shelf === key;
-              return (
-                <Pressable
-                  key={key}
-                  style={[styles.pill, active && styles.pillActive]}
-                  onPress={() => setShelf(key)}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                >
-                  <Text style={[styles.pillText, active && styles.pillTextActive]}>
-                    {label} <Text style={styles.pillCount}>{count}</Text>
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Segmented
+            accessibilityLabel="Shelf"
+            options={shelves.map(([key, label, count]) => ({ key, label, count }))}
+            value={shelf}
+            onChange={setShelf}
+          />
         </View>
         {shelf === 'routines' ? <RoutinesScreen query={query} /> : <GroceriesScreen query={query} />}
       </View>
@@ -150,19 +138,5 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       paddingHorizontal: 14,
     },
     searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text, height: 48 },
-    pills: { flexDirection: 'row', gap: 8 },
     clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -12 },
-    pill: {
-      paddingHorizontal: 18,
-      minHeight: 44,
-      justifyContent: 'center',
-      borderRadius: 999,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      backgroundColor: colors.card,
-    },
-    pillActive: { backgroundColor: colors.selected, borderColor: colors.selected },
-    pillText: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.text },
-    pillTextActive: { color: colors.onSelected },
-    pillCount: { fontFamily: fonts.mono, fontSize: 13, opacity: 0.7 },
   });

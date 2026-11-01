@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { FadeSwap, Press, SelectFade } from './Motion';
 
 interface Props {
   title: string;
@@ -25,30 +25,32 @@ export function CheckRow({ title, subtitle, done, tint: tintProp, meta, disabled
   const tint = tintProp ?? colors.text;
   const styles = useStyles(makeStyles);
   const partial = !done && !!count && count.value > 0;
-  const press = () => {
-    if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
-    onToggle();
-  };
+  const mark = partial ? (
+    <Text style={[styles.count, { color: tint }]}>{count.value}</Text>
+  ) : skipped ? (
+    <Ionicons name="remove" size={14} color={colors.faint} />
+  ) : null;
   return (
-    <Pressable
-      onPress={press}
+    <Press
+      onPress={onToggle}
       onLongPress={onLongPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+      haptic
+      overlay={colors.material.pressFill}
+      style={styles.row}
       accessibilityRole="checkbox"
       accessibilityState={{ checked: done, disabled }}
+      accessibilityLabel={title}
+      accessibilityHint={onLongPress ? 'Long press to edit' : undefined}
     >
-      <View
-        style={[
-          styles.box,
-          done && { backgroundColor: tint, borderColor: tint },
-          partial && { borderColor: tint },
-          (skipped || (disabled && !done)) && styles.boxDisabled,
-        ]}
-      >
-        {done && <Ionicons name="checkmark" size={16} color={colors.onKind} />}
-        {partial && <Text style={[styles.count, { color: tint }]}>{count.value}</Text>}
-        {skipped && <Ionicons name="remove" size={14} color={colors.faint} />}
+      <View style={[styles.box, partial && { borderColor: tint }, (skipped || (disabled && !done)) && styles.boxDisabled]}>
+        <SelectFade on={done} color={tint} radius={7} bleed={1.5} />
+        <FadeSwap
+          on={done}
+          style={StyleSheet.absoluteFill}
+          off={mark}
+          onContent={<Ionicons name="checkmark" size={16} color={colors.onKind} />}
+        />
       </View>
       <View style={styles.text}>
         <Text style={[type.bodyMedium, (done || skipped) && styles.doneTitle, skipped && styles.skippedTitle]} numberOfLines={2}>
@@ -63,7 +65,7 @@ export function CheckRow({ title, subtitle, done, tint: tintProp, meta, disabled
       ) : meta ? (
         <Text style={styles.meta}>{meta}</Text>
       ) : null}
-    </Pressable>
+    </Press>
   );
 }
 
@@ -76,7 +78,6 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
       paddingVertical: 13,
       paddingHorizontal: 16,
     },
-    pressed: { backgroundColor: colors.primarySoft },
     box: {
       width: 22,
       height: 22,

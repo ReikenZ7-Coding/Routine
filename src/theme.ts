@@ -62,7 +62,10 @@ export interface GlassMaterial {
   /** Done and skipped rows sink back into the world. */
   receded: { body: [string, string]; shadow: string };
   /** Bottom sheets: thick glass, with an optional top light band [colour, height in px]. */
-  sheet: { body: [string, string]; rimTop: string; band?: [string, number] };
+  sheet: { body: [string, string]; rimTop: string; band?: [string, number]; grip: string };
+  /** The tab bar's drop (the glass under the current tab): its fill top to bottom, its top rim and side rims,
+   *  an optional offset shadow, and the ink of the current tab's icon and label. */
+  drop: { fill: [string, string]; rim: string; rimSide: string; shadow?: string; ink: string };
   /** The moving light: one clock period, the layers it moves (named in assets/art/looks.json), and how
    *  strongly glass catches it as it passes behind. */
   light: { period: number; layers: string[]; catch: number };
@@ -246,6 +249,14 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
           body: ['rgba(76,58,188,0.84)', 'rgba(40,26,130,0.93)'],
           rimTop: 'rgba(255,255,255,0.60)',
           band: ['rgba(255,255,255,0.14)', 120],
+          grip: 'rgba(255,255,255,0.50)',
+        },
+        drop: {
+          fill: ['rgba(255,255,255,0.30)', 'rgba(255,255,255,0.14)'],
+          rim: 'rgba(255,255,255,0.70)',
+          rimSide: 'rgba(255,255,255,0.22)',
+          shadow: '0px 4px 12px -2px rgba(36,16,130,0.40)',
+          ink: '#FFFFFF',
         },
         light: { period: 90000, layers: ['lavender-orb-pink', 'lavender-orb-blue'], catch: 0.45 },
         bloom: 'radial-gradient(60% 60% at 30% 20%, rgba(214,190,255,0.07), transparent 70%)',
@@ -336,7 +347,14 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         control: { body: ['rgba(255,246,226,0.06)', 'rgba(30,29,22,0.50)'], shadow: STONE_PANE },
         inset: { fill: 'rgba(255,246,226,0.06)', border: 'rgba(255,247,228,0.08)', borderTop: 'rgba(255,247,228,0.16)' },
         receded: { body: ['rgba(40,38,29,0.30)', 'rgba(18,18,13,0.40)'], shadow: '0px 1px 2px rgba(14,13,8,0.14)' },
-        sheet: { body: ['rgba(58,57,48,0.90)', 'rgba(38,38,31,0.96)'], rimTop: 'rgba(255,247,228,0.40)' },
+        sheet: { body: ['rgba(58,57,48,0.90)', 'rgba(38,38,31,0.96)'], rimTop: 'rgba(255,247,228,0.40)', grip: 'rgba(255,247,228,0.32)' },
+        drop: {
+          fill: ['rgba(255,246,226,0.14)', 'rgba(255,246,226,0.08)'],
+          rim: 'rgba(255,247,228,0.45)',
+          rimSide: 'rgba(255,247,228,0.08)',
+          shadow: '2px 6px 14px -6px rgba(14,13,8,0.45)',
+          ink: '#FFFBE9',
+        },
         light: { period: 22000, layers: ['stone-light-beam'], catch: 0.7 },
       },
     },
@@ -426,6 +444,13 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
           body: ['rgba(252,252,249,0.96)', 'rgba(246,246,242,0.98)'],
           rimTop: '#FFFFFF',
           band: ['rgba(255,255,255,0.9)', 80],
+          grip: 'rgba(20,22,18,0.18)',
+        },
+        drop: {
+          fill: ['rgba(26,28,25,0.08)', 'rgba(26,28,25,0.06)'],
+          rim: 'rgba(255,255,255,0.90)',
+          rimSide: 'rgba(26,28,25,0.05)',
+          ink: '#131512',
         },
         light: { period: 30000, layers: ['paper-light-sun', 'paper-mist'], catch: 0.5 },
       },
@@ -513,7 +538,13 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         control: { body: ['rgba(30,88,74,0.44)', 'rgba(8,32,26,0.70)'], shadow: PINE_PANE },
         inset: { fill: 'rgba(214,240,228,0.05)', border: 'rgba(214,240,228,0.10)', borderTop: 'rgba(214,240,228,0.18)' },
         receded: { body: ['rgba(26,80,66,0.30)', 'rgba(6,26,22,0.46)'], shadow: 'none' },
-        sheet: { body: ['rgba(20,66,58,0.94)', 'rgba(10,38,33,0.97)'], rimTop: 'rgba(168,240,212,0.24)' },
+        sheet: { body: ['rgba(20,66,58,0.94)', 'rgba(10,38,33,0.97)'], rimTop: 'rgba(168,240,212,0.24)', grip: 'rgba(124,227,188,0.45)' },
+        drop: {
+          fill: ['rgba(124,227,188,0.18)', 'rgba(124,227,188,0.12)'],
+          rim: 'rgba(124,227,188,0.50)',
+          rimSide: 'rgba(124,227,188,0.22)',
+          ink: '#7CE3BC',
+        },
         light: { period: 16000, layers: ['pine-light-moon'], catch: 0.6 },
         bloom: 'radial-gradient(60% 60% at 70% 100%, rgba(124,227,188,0.1), transparent 70%)',
       },

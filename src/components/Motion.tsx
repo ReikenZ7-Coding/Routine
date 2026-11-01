@@ -1,7 +1,11 @@
-// Small animated building blocks for the page looks. Everything runs on the UI thread (Reanimated):
-// press feedback is a CSS transition, rings and bars tween a shared value, and the collapse is a layout transition.
+// Small animated building blocks shared by every look. Everything runs on the UI thread (Reanimated), with
+// transform and opacity only (the childless absolute fills of bars excepted): press feedback squeezes and fades
+// a pressed layer, selection fades a layer in, rings and bars tween a shared value, and the collapse is a
+// layout transition. Opacity fades keep running under reduced motion (a crossfade is the reduced form of
+// motion, never a 0ms cut); transforms stop.
 import { Ionicons } from '@expo/vector-icons';
-import { type ReactNode, useEffect, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Platform,
@@ -27,6 +31,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnUI } from 'react-native-worklets';
 import Svg, { Circle } from 'react-native-svg';
 import { type Theme, useStyles } from '../theme';
 
@@ -73,14 +78,24 @@ interface PressProps {
   /** Lets the pressable itself take space in its parent, e.g. `{ flex: 1 }` in a row. */
   outerStyle?: StyleProp<ViewStyle>;
   hitSlop?: number;
+  /** A colour that fades in over the surface while it is pressed (under the content, 120ms in, 160ms out). */
+  overlay?: string;
+  /** A light selection tick of haptics when pressed (Android). */
+  haptic?: boolean;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   accessibilityRole?: AccessibilityRole;
   accessibilityState?: AccessibilityState;
   children: ReactNode;
 }
 
-/** Press feedback: a 3% squeeze in 120ms, from press-in, so the tap feels answered before the finger lifts.
- *  On Android a keyboard or D-pad focus draws a 2px ring in the text colour (the web uses :focus-visible). */
+const PRESS_IN = { duration: 120, easing: EASE_OUT };
+const PRESS_OUT = { duration: 160, easing: EASE_OUT };
+
+/** Press feedback: a 3% squeeze in 120ms from press-in, so the tap feels answered before the finger lifts, and
+ *  optionally a pressed colour that fades in under the content. Under reduced motion the squeeze is skipped and
+ *  the fade stays. On Android a keyboard or D-pad focus draws a 2px ring in the text colour (the web uses
+ *  :focus-visible). */
 export function Press({
   onPress,
   onLongPress,
@@ -88,47 +103,159 @@ export function Press({
   style,
   outerStyle,
   hitSlop,
+  overlay,
+  haptic,
   accessibilityLabel,
+  accessibilityHint,
   accessibilityRole = 'button',
   accessibilityState,
   children,
 }: PressProps) {
   const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
   const focus = useSharedValue(0);
   const reduced = useReduceMotion();
   const ringColor = useStyles(ringColorOf);
-  const squeeze = (to: number) => {
-    if (!reduced) scale.set(withTiming(to, { duration: 120, easing: EASE_OUT }));
-  };
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: pressed.get() }));
   const ring = useAnimatedStyle(() => ({ opacity: focus.get() }));
-  const radius = StyleSheet.flatten(style)?.borderRadius;
+  const flat = StyleSheet.flatten(style) ?? {};
+  const radius = flat.borderRadius;
+  // Absolute layers sit inside the border; they bleed over it so a pressed or focused pill keeps its shape.
+  const bleed = -(flat.borderWidth ?? 0);
+  const pressIn = () => {
+    if (!reduced) scale.set(withTiming(0.97, PRESS_IN));
+    if (overlay) pressed.set(withTiming(1, { ...PRESS_IN, ...FADE }));
+  };
+  const pressOut = () => {
+    scale.set(withTiming(1, PRESS_OUT));
+    if (overlay) pressed.set(withTiming(0, { ...PRESS_OUT, ...FADE }));
+  };
+  const press = onPress
+    ? () => {
+        if (haptic && Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }
+    : undefined;
+  const longPress = onLongPress
+    ? () => {
+        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        onLongPress();
+      }
+    : undefined;
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={press}
+      onLongPress={longPress}
+      delayLongPress={400}
       disabled={disabled}
-      onPressIn={() => squeeze(0.97)}
-      onPressOut={() => squeeze(1)}
-      onFocus={FOCUS_RING ? () => focus.set(withTiming(1, { duration: 120, easing: EASE_OUT, ...FADE })) : undefined}
-      onBlur={FOCUS_RING ? () => focus.set(withTiming(0, { duration: 160, easing: EASE_OUT, ...FADE })) : undefined}
+      onPressIn={pressIn}
+      onPressOut={pressOut}
+      onFocus={FOCUS_RING ? () => focus.set(withTiming(1, { ...PRESS_IN, ...FADE })) : undefined}
+      onBlur={FOCUS_RING ? () => focus.set(withTiming(0, { ...PRESS_OUT, ...FADE })) : undefined}
       style={outerStyle}
       hitSlop={hitSlop}
       pressRetentionOffset={16}
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       accessibilityRole={accessibilityRole}
-      accessibilityState={accessibilityState}
+      accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
     >
       <Animated.View style={[style, animated]}>
+        {overlay ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.layer,
+              { top: bleed, left: bleed, right: bleed, bottom: bleed, borderRadius: radius, backgroundColor: overlay },
+              overlayStyle,
+            ]}
+          />
+        ) : null}
         {children}
         {FOCUS_RING && (
           <Animated.View
             pointerEvents="none"
-            style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 2, borderColor: ringColor }, ring]}
+            style={[
+              styles.layer,
+              { top: bleed, left: bleed, right: bleed, bottom: bleed, borderRadius: radius, borderWidth: 2, borderColor: ringColor },
+              ring,
+            ]}
           />
         )}
       </Animated.View>
     </Pressable>
+  );
+}
+
+const SELECT = { duration: 150, easing: EASE_OUT, ...FADE };
+
+/**
+ * The selected state as a layer: an absolute, childless fill (or ring) that fades in over 150ms when `on`
+ * turns true and out when it turns false, so a selection never changes in a single frame. Put it first among
+ * the surface's children so it lies under the content. `bleed` covers the surface's own border.
+ */
+export function SelectFade({
+  on,
+  color,
+  radius,
+  bleed = 0,
+  style,
+}: {
+  on: boolean;
+  color?: string;
+  radius?: number;
+  bleed?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const v = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    v.set(withTiming(on ? 1 : 0, SELECT));
+  }, [on, v]);
+  const fade = useAnimatedStyle(() => ({ opacity: v.get() }));
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.layer,
+        { top: -bleed, left: -bleed, right: -bleed, bottom: -bleed, borderRadius: radius, backgroundColor: color },
+        style,
+        fade,
+      ]}
+    />
+  );
+}
+
+/**
+ * Two versions of the same content, crossfaded when `on` changes (a label's colour, an outline icon becoming a
+ * filled one). The `off` version lays out the space; the `on` version is laid over it.
+ */
+export function FadeSwap({
+  on,
+  off,
+  onContent,
+  duration = 150,
+  style,
+}: {
+  on: boolean;
+  off: ReactNode;
+  onContent: ReactNode;
+  duration?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const v = useSharedValue(on ? 1 : 0);
+  useEffect(() => {
+    v.set(withTiming(on ? 1 : 0, { duration, easing: EASE_OUT, ...FADE }));
+  }, [on, v, duration]);
+  const offStyle = useAnimatedStyle(() => ({ opacity: 1 - v.get() }));
+  const onStyle = useAnimatedStyle(() => ({ opacity: v.get() }));
+  return (
+    <View style={style}>
+      <Animated.View style={[styles.swap, offStyle]}>{off}</Animated.View>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.swap, onStyle]}>
+        {onContent}
+      </Animated.View>
+    </View>
   );
 }
 
@@ -153,7 +280,8 @@ export function Pop({ done, style, children }: { done: boolean; style?: StylePro
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-/** A progress ring that fills with an ease-out whenever its value changes. */
+/** A progress ring that fills with an ease-out whenever its value changes. Under reduced motion the old fill
+ *  crossfades to the new one instead of sweeping. */
 export function Ring({
   size,
   stroke,
@@ -172,17 +300,26 @@ export function Ring({
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const p = useSharedValue(0);
-  const reduced = useReduceMotion();
   const target = Math.max(0, Math.min(1, progress));
-  useEffect(() => {
-    p.set(reduced ? target : withTiming(target, { duration: 800, easing: EASE_OUT }));
-  }, [target, reduced, p]);
-  const props = useAnimatedProps(() => ({ strokeDashoffset: c * (1 - p.get()) }));
+  const { p, prev, fade } = useProgressTween(target, 800);
+  const props = useAnimatedProps(() => ({ strokeDashoffset: c * (1 - p.get()), strokeOpacity: fade.get() }));
+  const oldProps = useAnimatedProps(() => ({ strokeDashoffset: c * (1 - prev.get()), strokeOpacity: 1 - fade.get() }));
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={`${c} ${c}`}
+          animatedProps={oldProps}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -201,20 +338,48 @@ export function Ring({
   );
 }
 
-/** A slim progress bar; the fill is absolute and childless, so animating its width costs no layout. */
-export function Bar({ progress, color, track, height = 6 }: { progress: number; color: string; track: string; height?: number }) {
+/**
+ * The value a progress fill shows. With motion it eases to each new target. Under reduced motion it never
+ * sweeps: the new fill is set at once but invisible, and crossfades in over 150ms while the old one fades out.
+ */
+function useProgressTween(target: number, duration: number) {
   const p = useSharedValue(0);
+  const prev = useSharedValue(0);
+  const fade = useSharedValue(1);
   const reduced = useReduceMotion();
-  const target = Math.max(0, Math.min(1, progress));
+  const first = useRef(true);
   useEffect(() => {
-    p.set(reduced ? target : withTiming(target, { duration: 600, easing: EASE_OUT }));
-  }, [target, reduced, p]);
-  const fill = useAnimatedStyle(() => ({ width: `${p.get() * 100}%` }));
+    if (!reduced) {
+      fade.set(1);
+      p.set(withTiming(target, { duration, easing: EASE_OUT }));
+    } else if (first.current) {
+      p.set(target);
+    } else {
+      scheduleOnUI(() => {
+        'worklet';
+        // The fill on screen right now becomes the old layer; the new one fades in over it.
+        prev.set(fade.get() >= 0.5 ? p.get() : prev.get());
+        p.set(target);
+        fade.set(0);
+        fade.set(withTiming(1, SELECT));
+      });
+    }
+    first.current = false;
+  }, [target, reduced, duration, p, prev, fade]);
+  return { p, prev, fade };
+}
+
+/** A slim progress bar; the fills are absolute and childless, so animating their width costs no layout. */
+export function Bar({ progress, color, track, height = 6 }: { progress: number; color: string; track: string; height?: number }) {
+  const target = Math.max(0, Math.min(1, progress));
+  const { p, prev, fade } = useProgressTween(target, 600);
+  const fill = useAnimatedStyle(() => ({ width: `${p.get() * 100}%`, opacity: fade.get() }));
+  const old = useAnimatedStyle(() => ({ width: `${prev.get() * 100}%`, opacity: 1 - fade.get() }));
+  const bar = { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: height / 2, backgroundColor: color } as const;
   return (
     <View style={{ height, borderRadius: height / 2, backgroundColor: track, overflow: 'hidden' }}>
-      <Animated.View
-        style={[{ position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: height / 2, backgroundColor: color }, fill]}
-      />
+      <Animated.View style={[bar, old]} />
+      <Animated.View style={[bar, fill]} />
     </View>
   );
 }
@@ -232,14 +397,23 @@ export function Collapse({ open, children }: { open: boolean; children: ReactNod
   );
 }
 
-/** A chevron that turns to point the way the content will go. */
+/** A chevron that turns to point the way the content will go (under reduced motion, it crossfades instead). */
 export function Chevron({ open, color, size = 20 }: { open: boolean; color: string; size?: number }) {
   const turn = useSharedValue(open ? 0 : 180);
   const reduced = useReduceMotion();
   useEffect(() => {
-    turn.set(reduced ? (open ? 0 : 180) : withTiming(open ? 0 : 180, { duration: 220, easing: EASE_OUT }));
+    if (!reduced) turn.set(withTiming(open ? 0 : 180, { duration: 220, easing: EASE_OUT }));
   }, [open, reduced, turn]);
   const animated = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.get()}deg` }] }));
+  if (reduced) {
+    return (
+      <FadeSwap
+        on={open}
+        off={<Ionicons name="chevron-down" size={size} color={color} />}
+        onContent={<Ionicons name="chevron-up" size={size} color={color} />}
+      />
+    );
+  }
   return (
     <Animated.View style={animated}>
       <Ionicons name="chevron-up" size={size} color={color} />
@@ -252,6 +426,11 @@ export function Micro({ children, color }: { children: ReactNode; color?: string
   const styles = useStyles(makeStyles);
   return <Text style={[styles.micro, color ? { color } : null]}>{children}</Text>;
 }
+
+const styles = StyleSheet.create({
+  layer: { position: 'absolute' },
+  swap: { alignItems: 'center', justifyContent: 'center' },
+});
 
 const makeStyles = ({ colors, fonts }: Theme) =>
   StyleSheet.create({

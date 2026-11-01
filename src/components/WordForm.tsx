@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet } from 'react-native';
 import type { Word } from '../lib/chinese';
-import { type Theme, useStyles, useTheme } from '../theme';
+import { type Theme, useStyles } from '../theme';
+import { Button } from './Button';
+import { Field, Input } from './Field';
+import { ConfirmDelete, Sheet } from './Sheet';
 
 export interface WordFields {
   hanzi: string;
@@ -20,118 +22,70 @@ interface Props {
 }
 
 export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
-  const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [hanzi, setHanzi] = useState('');
   const [pinyin, setPinyin] = useState('');
   const [meaning, setMeaning] = useState('');
+  const [errors, setErrors] = useState<{ hanzi?: string; meaning?: string }>({});
 
   useEffect(() => {
     if (!visible) return;
+    setErrors({});
     setHanzi(word?.hanzi ?? '');
     setPinyin(word?.pinyin ?? '');
     setMeaning(word?.meaning ?? '');
   }, [visible, word]);
 
   function save() {
-    if (!hanzi.trim() || !meaning.trim()) {
-      Alert.alert('Almost there', 'Add the characters and what they mean.');
-      return;
-    }
+    const found = {
+      hanzi: hanzi.trim() ? undefined : 'Add the characters.',
+      meaning: meaning.trim() ? undefined : 'Add what it means.',
+    };
+    setErrors(found);
+    if (found.hanzi || found.meaning) return;
     onSave({ hanzi: hanzi.trim(), pinyin: pinyin.trim(), meaning: meaning.trim() });
   }
 
-  function confirmDelete() {
-    Alert.alert('Delete word?', `Remove ${word?.hanzi} from your list?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: onDelete },
-    ]);
-  }
-
   return (
-    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}>
-          <ScrollView keyboardShouldPersistTaps="handled">
-            <Text style={styles.heading}>{word ? 'Edit word' : 'New word'}</Text>
+    <Sheet visible={visible} title={word ? 'Edit word' : 'New word'} onClose={onClose}>
+      <Field label="Characters" error={errors.hanzi}>
+        <Input
+          style={styles.hanzi}
+          value={hanzi}
+          onChangeText={(t) => {
+            setHanzi(t);
+            setErrors((e) => ({ ...e, hanzi: undefined }));
+          }}
+          invalid={!!errors.hanzi}
+          placeholder="水"
+          autoFocus={!word}
+          accessibilityLabel="Characters"
+        />
+      </Field>
+      <Field label="Pinyin (optional)">
+        <Input value={pinyin} onChangeText={setPinyin} placeholder="shuǐ" autoCapitalize="none" accessibilityLabel="Pinyin" />
+      </Field>
+      <Field label="Meaning" error={errors.meaning}>
+        <Input
+          value={meaning}
+          onChangeText={(t) => {
+            setMeaning(t);
+            setErrors((e) => ({ ...e, meaning: undefined }));
+          }}
+          invalid={!!errors.meaning}
+          placeholder="water"
+          accessibilityLabel="Meaning"
+        />
+      </Field>
 
-            <Text style={styles.label}>Characters</Text>
-            <TextInput
-              style={[styles.input, styles.hanzi]}
-              value={hanzi}
-              onChangeText={setHanzi}
-              placeholder="水"
-              placeholderTextColor={colors.faint}
-              autoFocus={!word}
-            />
-            <Text style={styles.label}>Pinyin (optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={pinyin}
-              onChangeText={setPinyin}
-              placeholder="shuǐ"
-              placeholderTextColor={colors.faint}
-              autoCapitalize="none"
-            />
-            <Text style={styles.label}>Meaning</Text>
-            <TextInput
-              style={styles.input}
-              value={meaning}
-              onChangeText={setMeaning}
-              placeholder="water"
-              placeholderTextColor={colors.faint}
-            />
-
-            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
-              <Text style={styles.saveText}>{word ? 'Save' : 'Add word'}</Text>
-            </Pressable>
-            {word && onDelete && (
-              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
-                <Text style={styles.deleteText}>Delete word</Text>
-              </Pressable>
-            )}
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      <Button label={word ? 'Save' : 'Add word'} onPress={save} style={styles.save} />
+      {word && onDelete && <ConfirmDelete label="Delete word" question={`Remove ${word.hanzi} from your list?`} onConfirm={onDelete} />}
+    </Sheet>
   );
 }
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ fonts }: Theme) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-    sheet: {
-      backgroundColor: colors.sheet,
-      borderTopLeftRadius: 22,
-      borderTopRightRadius: 22,
-      padding: 20,
-      paddingBottom: 32,
-      maxHeight: '90%',
-    },
-    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-    input: {
-      backgroundColor: colors.input,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      fontFamily: fonts.body,
-      fontSize: 16,
-      color: colors.text,
-    },
     hanzi: { fontFamily: fonts.body, fontSize: 24 },
-    saveButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 999,
-      paddingVertical: 14,
-      alignItems: 'center',
-      marginTop: 24,
-    },
-    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+    save: { marginTop: 24 },
   });

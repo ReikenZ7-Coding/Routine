@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Chip } from './Chip';
+import { Glass } from './Glass';
+import { Segmented } from './Hub';
+import { Press } from './Motion';
 
 const LENGTHS = [15, 25];
 
@@ -54,14 +56,17 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
   const total = run ? run.end - run.start : length * 60000;
 
   return (
-    <View style={styles.card}>
+    <Glass style={styles.card}>
       <View style={styles.row}>
         <Text style={type.label}>Focus session</Text>
         {!run && (
-          <View style={styles.chips}>
-            {LENGTHS.map((m) => (
-              <Chip key={m} label={`${m} min`} active={length === m} onPress={() => setLength(m)} />
-            ))}
+          <View style={styles.lengths}>
+            <Segmented
+              accessibilityLabel="Session length"
+              options={LENGTHS.map((m) => ({ key: String(m), label: `${m} min` }))}
+              value={String(length)}
+              onChange={(k) => setLength(Number(k))}
+            />
           </View>
         )}
       </View>
@@ -70,19 +75,20 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
           {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}
         </Text>
         {run ? (
-          <Pressable
-            accessibilityRole="button"
+          <Press
             style={[styles.btn, styles.stop]}
+            overlay={colors.material.pressFill}
             onPress={() => stop(false)}
             accessibilityLabel="Stop and log"
           >
             <Ionicons name="stop" size={16} color={colors.text} />
             <Text style={styles.stopText}>Stop & log</Text>
-          </Pressable>
+          </Press>
         ) : (
-          <Pressable
-            accessibilityRole="button"
+          <Press
             style={styles.btn}
+            overlay={colors.material.pressFill}
+            haptic
             onPress={() => {
               const start = Date.now();
               setNow(start);
@@ -92,7 +98,7 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
           >
             <Ionicons name="play" size={16} color={colors.onKind} />
             <Text style={styles.btnText}>Start</Text>
-          </Pressable>
+          </Press>
         )}
       </View>
       <View style={styles.track}>
@@ -101,23 +107,15 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
       <Text style={type.small}>
         {run ? 'Phone down, books open. Minutes are logged for you.' : 'Minutes are added to today when it ends.'}
       </Text>
-    </View>
+    </Glass>
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts }: Theme) =>
   StyleSheet.create({
-    card: {
-      backgroundColor: colors.card,
-      borderRadius: radius,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      padding: 16,
-      marginTop: 12,
-      gap: 10,
-    },
+    card: { padding: 16, marginTop: 12, gap: 10 },
+    lengths: { width: 188 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    chips: { flexDirection: 'row', gap: 6 },
     clock: { fontFamily: fonts.monoMedium, fontSize: 40, color: colors.text, letterSpacing: -1 },
     btn: {
       flexDirection: 'row',
@@ -126,10 +124,15 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
       backgroundColor: kinds.chinese.color,
       borderRadius: 999,
       paddingHorizontal: 18,
-      paddingVertical: 11,
+      minHeight: 44,
     },
     btnText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onKind },
-    stop: { backgroundColor: colors.primarySoft },
+    stop: {
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
     stopText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
     track: { height: 3, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
     fill: { height: 3, backgroundColor: kinds.chinese.color },

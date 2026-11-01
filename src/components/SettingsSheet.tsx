@@ -1,16 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { calendarSupported, connectPhoneCalendar } from '../lib/deviceCalendar';
 import { useStore } from '../lib/store';
 import { THEME_OPTIONS, type Theme, themeFor, useStyles, useTheme } from '../theme';
+import { Field, Input } from './Field';
+import { FadeSwap, Press, SelectFade } from './Motion';
 import { Divider, Section } from './Section';
 import { Sheet } from './Sheet';
 
 /** Look, name, phone calendar and backup. */
 export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean; onClose: () => void; onBackup: () => void }) {
-  const { colors, type } = useTheme();
+  const { colors, type, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const { settings, updateSettings } = useStore();
   const [name, setName] = useState(settings.name);
@@ -31,14 +33,18 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
           const t = themeFor(o.name);
           const active = settings.theme === o.name;
           return (
-            <Pressable
+            <Press
               key={o.name}
-              style={[styles.theme, active && styles.themeActive]}
+              outerStyle={styles.themeSlot}
+              style={styles.theme}
+              overlay={colors.material.pressFill}
+              haptic
               onPress={() => updateSettings({ theme: o.name })}
               accessibilityRole="radio"
               accessibilityState={{ checked: active }}
-              accessibilityLabel={`${o.label} look`}
+              accessibilityLabel={`${o.label} look. ${o.description}`}
             >
+              <SelectFade on={active} radius={radii.inset} bleed={1} style={styles.themeRing} />
               <LinearGradient colors={t.colors.gradient} style={styles.swatch}>
                 <View style={[styles.swatchCard, { backgroundColor: t.colors.card, borderColor: t.colors.cardBorder }]}>
                   <View style={[styles.swatchDot, { backgroundColor: t.kinds.routines.color }]} />
@@ -50,35 +56,39 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
               <Text style={styles.themeDesc} numberOfLines={2}>
                 {o.description}
               </Text>
-              {active && (
-                <View style={styles.check}>
-                  <Ionicons name="checkmark" size={12} color={colors.onPrimary} />
-                </View>
-              )}
-            </Pressable>
+              <View style={styles.check} pointerEvents="none">
+                <SelectFade on={active} radius={12} color={colors.selected} />
+                <FadeSwap
+                  on={active}
+                  style={StyleSheet.absoluteFill}
+                  off={null}
+                  onContent={<Ionicons name="checkmark" size={14} color={colors.onSelected} />}
+                />
+              </View>
+            </Press>
           );
         })}
       </View>
 
-      <Text style={styles.label}>Your name</Text>
-      <TextInput
-        style={styles.input}
-        value={name}
-        onChangeText={setName}
-        onBlur={saveName}
-        onSubmitEditing={saveName}
-        placeholder="For the morning greeting"
-        placeholderTextColor={colors.faint}
-        autoCapitalize="words"
-      />
+      <Field label="Your name">
+        <Input
+          value={name}
+          onChangeText={setName}
+          onBlur={saveName}
+          onSubmitEditing={saveName}
+          placeholder="For the morning greeting"
+          autoCapitalize="words"
+          accessibilityLabel="Your name"
+        />
+      </Field>
 
       <Section title="More">
-        <Pressable
-          accessibilityRole="button"
+        <Press
           style={styles.row}
-          onPress={
-            settings.calendarConnected ? () => updateSettings({ calendarConnected: false }) : calendarSupported ? connect : undefined
-          }
+          overlay={colors.material.pressFill}
+          disabled={!settings.calendarConnected && !calendarSupported}
+          onPress={settings.calendarConnected ? () => updateSettings({ calendarConnected: false }) : connect}
+          accessibilityLabel={settings.calendarConnected ? 'Phone calendar, connected. Hide events' : 'Phone calendar'}
         >
           <Ionicons name="calendar-outline" size={20} color={colors.text} />
           <View style={styles.flex}>
@@ -91,64 +101,43 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
                   : 'Available in the Android app.'}
             </Text>
           </View>
-        </Pressable>
+        </Press>
         <Divider inset={50} />
-        <Pressable accessibilityRole="button" style={styles.row} onPress={onBackup}>
+        <Press style={styles.row} overlay={colors.material.pressFill} onPress={onBackup} accessibilityLabel="Backup and restore">
           <Ionicons name="archive-outline" size={20} color={colors.text} />
           <View style={styles.flex}>
             <Text style={type.bodyMedium}>Backup and restore</Text>
             <Text style={type.small}>Keep a copy, or move to a new phone.</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.faint} />
-        </Pressable>
+        </Press>
       </Section>
     </Sheet>
   );
 }
 
-const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    label: { ...type.label, marginTop: 18, marginBottom: 10 },
+    label: { ...type.label, marginTop: 12, marginBottom: 10 },
     themes: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    themeSlot: { width: '47%', flexGrow: 1 },
     theme: {
-      width: '47%',
-      flexGrow: 1,
       padding: 8,
-      borderRadius: radius,
+      borderRadius: radii.inset,
       borderWidth: 1,
-      borderColor: colors.cardBorder,
-      backgroundColor: colors.card,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+      backgroundColor: colors.material.inset.fill,
     },
-    themeActive: { borderColor: colors.text, borderWidth: 2, padding: 7 },
+    themeRing: { borderWidth: 2, borderColor: colors.text },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
     swatchCard: { borderRadius: 8, borderWidth: 1, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
     swatchDot: { width: 10, height: 10, borderRadius: 5 },
     swatchLine: { flex: 1, height: 4, borderRadius: 2, opacity: 0.8 },
     swatchButton: { alignSelf: 'flex-end', width: 22, height: 22, borderRadius: 11 },
     themeName: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text, marginTop: 8 },
-    themeDesc: { fontFamily: fonts.body, fontSize: 12, lineHeight: 14, color: colors.muted, marginTop: 2 },
-    check: {
-      position: 'absolute',
-      top: 4,
-      right: 4,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      backgroundColor: colors.input,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
-      fontFamily: fonts.body,
-      fontSize: 16,
-      color: colors.text,
-    },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: 16 },
+    themeDesc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
+    check: { position: 'absolute', top: 14, right: 14, width: 24, height: 24 },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingVertical: 14, paddingHorizontal: 16 },
   });

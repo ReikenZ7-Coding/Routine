@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { MOODS, setEntry } from '../lib/journal';
 import { useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { FadeSwap, Press, SelectFade } from './Motion';
 import { Section } from './Section';
 
 /** A mood and a short note for a day. */
 export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
-  const { colors } = useTheme();
+  const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const { journal, updateJournal } = useStore();
   const entry = journal[date] ?? {};
@@ -24,17 +25,24 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
         {MOODS.map((m) => {
           const active = entry.mood === m.value;
           return (
-            <Pressable
-              accessibilityRole="button"
+            <Press
               key={m.value}
-              style={[styles.mood, active && styles.moodActive]}
+              outerStyle={styles.moodSlot}
+              style={styles.mood}
+              overlay={colors.material.pressFill}
+              haptic
               onPress={() => updateJournal((j) => setEntry(j, date, { mood: active ? undefined : m.value }))}
               accessibilityLabel={m.label}
               accessibilityState={{ selected: active }}
             >
-              <Text style={[styles.face, !active && entry.mood ? styles.faceDim : null]}>{m.face}</Text>
-              <Text style={[styles.moodLabel, active && styles.moodLabelActive]}>{m.label}</Text>
-            </Pressable>
+              <SelectFade on={active} radius={radii.inset} style={styles.moodFill} />
+              <Text style={styles.face}>{m.face}</Text>
+              <FadeSwap
+                on={active}
+                off={<Text style={styles.moodLabel}>{m.label}</Text>}
+                onContent={<Text style={[styles.moodLabel, styles.moodLabelActive]}>{m.label}</Text>}
+              />
+            </Press>
           );
         })}
       </View>
@@ -52,15 +60,23 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
   );
 }
 
-const makeStyles = ({ colors, fonts, type }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
-    moods: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingTop: 12 },
-    mood: { flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 12, gap: 2 },
-    moodActive: { backgroundColor: colors.primarySoft },
+    moods: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, paddingHorizontal: 10, paddingTop: 12 },
+    moodSlot: { flex: 1 },
+    mood: {
+      minHeight: 56,
+      minWidth: 52,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 6,
+      borderRadius: radii.inset,
+      gap: 2,
+    },
+    moodFill: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     face: { fontSize: 24 },
-    faceDim: { opacity: 0.35 },
-    moodLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-    moodLabelActive: { color: colors.text, fontFamily: fonts.bodyMedium },
+    moodLabel: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    moodLabelActive: { color: colors.onPrimary, fontFamily: fonts.bodyMedium },
     note: {
       ...type.body,
       marginHorizontal: 16,

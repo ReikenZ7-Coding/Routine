@@ -9,6 +9,7 @@ import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListTe
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
+import { Press } from '../components/Motion';
 
 const NO_AISLE = 'Other';
 
@@ -149,17 +150,18 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
                 {later.map(({ item, due }, i) => (
                   <View key={item.id}>
                     {i > 0 && <Divider />}
-                    <Pressable
-                      accessibilityRole="button"
-                      style={({ pressed }) => [styles.laterRow, pressed && styles.pressed]}
+                    <Press
+                      style={styles.laterRow}
+                      overlay={colors.material.pressFill}
                       onPress={() => openEdit(item)}
+                      accessibilityLabel={`${item.name}, ${subtitle(item)}. Edit item`}
                     >
                       <View style={styles.laterText}>
                         <Text style={styles.laterName}>{item.name}</Text>
                         <Text style={styles.laterSub}>{subtitle(item)}</Text>
                       </View>
                       {due && <Text style={styles.laterDue}>{friendlyDate(due, today)}</Text>}
-                    </Pressable>
+                    </Press>
                   </View>
                 ))}
               </Section>
@@ -233,7 +235,6 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
       paddingTop: 14,
     },
     laterRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
-    pressed: { backgroundColor: colors.primarySoft },
     laterText: { flex: 1 },
     laterName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
     laterSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },

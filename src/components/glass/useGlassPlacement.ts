@@ -4,7 +4,7 @@
 // move a surface for a few hundred ms), so the lens always ends up aligned.
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { LayoutChangeEvent, View } from 'react-native';
-import { measure, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
+import { measure, type SharedValue, useAnimatedRef, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 import { useGlassScroll } from './GlassScroll';
 import { type Placement, useFrame } from './light';
@@ -13,7 +13,14 @@ import { type Placement, useFrame } from './light';
 const SETTLE_LAYOUT = 720;
 const SETTLE_CHANGE = 340;
 
-export function useGlassPlacement(enabled: boolean) {
+/** A surface whose place is known without measuring (a sheet: its resting top from onLayout). Its position in
+ *  window coordinates at rest; any motion is fed through the GlassScrollContext instead. */
+export interface GlassAnchor {
+  x: SharedValue<number>;
+  y: SharedValue<number>;
+}
+
+export function useGlassPlacement(enabled: boolean, anchor?: GlassAnchor) {
   const ref = useAnimatedRef<View>();
   const frame = useFrame();
   const { scrollX, scrollY } = useGlassScroll();
@@ -41,12 +48,12 @@ export function useGlassPlacement(enabled: boolean) {
 
   const settle = useCallback(
     (after: number) => {
-      if (!enabled) return;
+      if (!enabled || anchor) return;
       measureNow();
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(measureNow, after);
     },
-    [enabled, measureNow],
+    [enabled, anchor, measureNow],
   );
 
   useEffect(() => frame.subscribe(() => settle(SETTLE_CHANGE)), [frame, settle]);
@@ -68,6 +75,11 @@ export function useGlassPlacement(enabled: boolean) {
     [w, h, settle],
   );
 
-  const placement = useMemo<Placement>(() => ({ baseX, baseY, w, h, scrollX, scrollY }), [baseX, baseY, w, h, scrollX, scrollY]);
+  const ax = anchor?.x;
+  const ay = anchor?.y;
+  const placement = useMemo<Placement>(
+    () => ({ baseX: ax ?? baseX, baseY: ay ?? baseY, w, h, scrollX, scrollY }),
+    [ax, ay, baseX, baseY, w, h, scrollX, scrollY],
+  );
   return { ref, onLayout, placement, restY };
 }

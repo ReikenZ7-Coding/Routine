@@ -15,8 +15,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Easing, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ambience } from '../components/Art';
 import { ActiveBlurTargetContext, LightRoot, WorldFrame } from '../components/Glass';
 import { useBar } from '../components/glass/chrome';
 import type { BlurTarget } from '../components/glass/targets';
@@ -37,6 +38,17 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 const CHROME_BLURS_CONTENT = false;
 
 type IconName = keyof typeof Ionicons.glyphMap;
+
+/**
+ * Switching tabs crossfades the screens over 180ms with the house ease-out (never a 0ms cut, and never the
+ * sideways 'shift', which is motion reduced-motion users asked to lose; the fade stays for them). The navigator
+ * runs it with React Native's native driver. Both screens paint the same world, and the root paints it too, so
+ * only the content changes while they fade.
+ */
+const TAB_FADE = {
+  animation: 'fade',
+  transitionSpec: { animation: 'timing', config: { duration: 180, easing: Easing.bezier(0.23, 1, 0.32, 1) } },
+} as const;
 
 const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
   { name: 'index', title: 'Today', icon: 'today-outline', iconActive: 'today' },
@@ -105,6 +117,8 @@ function Shell() {
     <ActiveBlurTargetContext.Provider value={target}>
       <View style={styles.root}>
         <LinearGradient colors={colors.gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
+        {/* The world under the screens: while two screens crossfade, what shows through them is the same world. */}
+        <Ambience />
         <StatusBar style={colors.statusBar} />
         <ReminderSync />
         <Tabs
@@ -122,6 +136,7 @@ function Shell() {
             headerTintColor: colors.text,
             headerTitleStyle: { fontFamily: fonts.display, fontSize: 26, color: colors.text },
             sceneStyle: { backgroundColor: 'transparent' },
+            ...TAB_FADE,
           }}
         >
           {TABS.map((t) => (

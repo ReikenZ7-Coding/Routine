@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GlassScroll } from '../components/Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassHome } from '../components/GlassHome';
 import { BackupSheet } from '../components/BackupSheet';
 import { CalendarStrip } from '../components/CalendarStrip';
+import { Button } from '../components/Button';
 import { DayNote } from '../components/DayNote';
+import { Field, Input } from '../components/Field';
 import { GroceryForm } from '../components/GroceryForm';
 import { RoutineForm } from '../components/RoutineForm';
 import { SettingsSheet } from '../components/SettingsSheet';
@@ -27,6 +29,7 @@ import { useSounds } from '../lib/sounds';
 import { dayStreak } from '../lib/stats';
 import { newId, useStore } from '../lib/store';
 import { type TimedEntry, clock, timedRoutines, upNext } from '../lib/timeline';
+import { Press } from '../components/Motion';
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
 
@@ -79,6 +82,7 @@ export default function TodayScreen() {
   const [panel, setPanel] = useState<Panel>(null);
   const [editing, setEditing] = useState<Routine | undefined>();
   const [todo, setTodo] = useState('');
+  const [todoError, setTodoError] = useState<string | undefined>();
   const [now, setNow] = useState(minutesNow());
 
   useEffect(() => setSelected(today), [today]);
@@ -167,13 +171,16 @@ export default function TodayScreen() {
     setEditing(r);
     setPanel('routine');
   };
-  const close = () => setPanel(null);
+  const close = () => {
+    setTodoError(undefined);
+    setPanel(null);
+  };
   const live = editing && routines.find((r) => r.id === editing.id);
   const pinned = routines.filter((r) => r.pinned);
 
   const addTodo = () => {
     const title = todo.trim();
-    if (!title) return;
+    if (!title) return setTodoError('Write what you want to do first.');
     updateInbox((items) => [{ id: newId(), title, date: selected, createdAt: new Date().toISOString() }, ...items]);
     setTodo('');
     close();
@@ -417,14 +424,16 @@ export default function TodayScreen() {
 
       {/* The glass looks add from the quick-add bar and the hero card, so they skip the floating button. */}
       {!theme.glass && (
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.fab, { bottom: fabBottom }]}
+        <Press
+          outerStyle={[styles.fabSpot, { bottom: fabBottom }]}
+          style={styles.fab}
+          overlay={colors.material.pressFill}
+          haptic
           onPress={() => setPanel('add')}
           accessibilityLabel="Quick add"
         >
           <Ionicons name="add" size={30} color={colors.onPrimary} />
-        </Pressable>
+        </Press>
       )}
 
       <Sheet visible={panel === 'add'} title="Add" onClose={close}>
@@ -442,36 +451,45 @@ export default function TodayScreen() {
             ['word', 'language', 'Chinese word', 'A new flashcard to practise', kinds.chinese.color],
           ] as const
         ).map(([key, icon, title, sub, color]) => (
-          <Pressable
-            accessibilityRole="button"
+          <Press
             key={key}
-            style={({ pressed }) => [styles.addRow, pressed && styles.pressed]}
+            style={styles.addRow}
+            overlay={colors.material.pressFill}
             onPress={() => (key === 'routine' ? edit() : setPanel(key))}
+            accessibilityLabel={`${title}. ${sub}`}
           >
             <View style={[styles.addIcon, { backgroundColor: color }]}>
-              <Ionicons name={icon} size={18} color="#FFFFFF" />
+              <Ionicons name={icon} size={18} color={colors.onKind} />
             </View>
             <View style={styles.flex}>
               <Text style={type.bodyMedium}>{title}</Text>
               <Text style={type.small}>{sub}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.faint} />
-          </Pressable>
+          </Press>
         ))}
       </Sheet>
       <Sheet visible={panel === 'todo'} title="New to-do" onClose={close}>
-        <TextInput
-          style={styles.todoInput}
-          value={todo}
-          onChangeText={setTodo}
-          onSubmitEditing={addTodo}
-          placeholder="Call Mum, book the dentist…"
-          placeholderTextColor={colors.faint}
-          autoFocus
+        <Field label={`To-do for ${isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}`} error={todoError}>
+          <Input
+            value={todo}
+            onChangeText={(t) => {
+              setTodo(t);
+              setTodoError(undefined);
+            }}
+            onSubmitEditing={addTodo}
+            invalid={!!todoError}
+            placeholder="Call Mum, book the dentist…"
+            autoFocus
+            returnKeyType="done"
+            accessibilityLabel="New to-do"
+          />
+        </Field>
+        <Button
+          label={`Add for ${isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}`}
+          onPress={addTodo}
+          style={styles.saveButton}
         />
-        <Pressable accessibilityRole="button" style={styles.saveButton} onPress={addTodo}>
-          <Text style={type.button}>Add for {isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}</Text>
-        </Pressable>
       </Sheet>
       <RoutineForm
         visible={panel === 'routine'}
@@ -524,7 +542,7 @@ export default function TodayScreen() {
   );
 }
 
-const makeStyles = ({ colors, fonts, type, glass }: Theme) =>
+const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
   StyleSheet.create({
     content: { paddingHorizontal: 16, paddingBottom: 170 },
     loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -548,9 +566,8 @@ const makeStyles = ({ colors, fonts, type, glass }: Theme) =>
       backgroundColor: glass ? colors.card : colors.chip,
     },
     todayButtonText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
+    fabSpot: { position: 'absolute', right: 20 },
     fab: {
-      position: 'absolute',
-      right: 20,
       width: 60,
       height: 60,
       borderRadius: 30,
@@ -559,21 +576,16 @@ const makeStyles = ({ colors, fonts, type, glass }: Theme) =>
       justifyContent: 'center',
       boxShadow: '0px 8px 20px rgba(0,0,0,0.22)',
     },
-    pressed: { backgroundColor: colors.primarySoft },
-    addRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 4, borderRadius: 12 },
-    addIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-    todoInput: {
-      marginTop: 14,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      backgroundColor: colors.input,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-      fontFamily: fonts.body,
-      fontSize: 16,
-      color: colors.text,
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      minHeight: 56,
+      paddingVertical: 10,
+      paddingHorizontal: 8,
+      borderRadius: radii.inset,
     },
-    saveButton: { marginTop: 16, backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 14, alignItems: 'center' },
+    addIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+    saveButton: { marginTop: 20 },
     label: type.label,
   });

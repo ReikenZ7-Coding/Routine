@@ -24,6 +24,7 @@ import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
+import { FadeSwap, Press, SelectFade } from '../components/Motion';
 
 const REST_SECONDS = 90;
 const WEIGHT_STEP = 2.5;
@@ -170,38 +171,47 @@ export default function GymScreen() {
                   </View>
                   <View style={styles.exControls}>
                     <View style={styles.stepper}>
-                      <Pressable
-                        accessibilityRole="button"
+                      <Press
                         onPress={() => changeWeight(session, e, -WEIGHT_STEP)}
                         style={styles.stepBtn}
+                        overlay={colors.material.pressFill}
+                        haptic
                         accessibilityLabel={`Lower ${e.name} weight`}
                       >
                         <Ionicons name="remove" size={18} color={colors.text} />
-                      </Pressable>
+                      </Press>
                       <Text style={styles.weight}>{formatWeight(weight)}</Text>
-                      <Pressable
-                        accessibilityRole="button"
+                      <Press
                         onPress={() => changeWeight(session, e, WEIGHT_STEP)}
                         style={styles.stepBtn}
+                        overlay={colors.material.pressFill}
+                        haptic
                         accessibilityLabel={`Raise ${e.name} weight`}
                       >
                         <Ionicons name="add" size={18} color={colors.text} />
-                      </Pressable>
+                      </Press>
                     </View>
                     <View style={styles.sets}>
                       {Array.from({ length: e.sets }, (_, i) => {
                         const done = isSetDone(gym, today, session.id, e.id, i);
                         return (
-                          <Pressable
+                          <Press
                             key={i}
                             onPress={() => tapSet(session, e, i)}
-                            style={[styles.setBubble, done && styles.setDone]}
+                            style={styles.setBubble}
+                            overlay={colors.material.pressFill}
+                            haptic
                             accessibilityRole="checkbox"
                             accessibilityState={{ checked: done }}
                             accessibilityLabel={`${e.name} set ${i + 1}`}
                           >
-                            <Text style={[styles.setText, done && styles.setTextDone]}>{done ? e.reps : i + 1}</Text>
-                          </Pressable>
+                            <SelectFade on={done} color={kinds.gym.color} radius={22} bleed={1.5} />
+                            <FadeSwap
+                              on={done}
+                              off={<Text style={styles.setText}>{i + 1}</Text>}
+                              onContent={<Text style={[styles.setText, styles.setTextDone]}>{e.reps}</Text>}
+                            />
+                          </Press>
                         );
                       })}
                     </View>
@@ -236,16 +246,19 @@ export default function GymScreen() {
             return (
               <View key={d}>
                 {i > 0 && <Divider />}
-                <Pressable
-                  accessibilityRole="button"
-                  style={({ pressed }) => [styles.planRow, pressed && s && styles.pressed]}
+                <Press
+                  style={styles.planRow}
+                  overlay={colors.material.pressFill}
                   onPress={() => s && openSession(s)}
                   disabled={!s}
+                  accessibilityLabel={
+                    s ? `${WEEKDAY_SHORT[d]}, ${s.name}, ${s.exercises.length} exercises. Edit session` : `${WEEKDAY_SHORT[d]}, rest`
+                  }
                 >
                   <Text style={styles.planDay}>{WEEKDAY_SHORT[d]}</Text>
                   <Text style={[styles.planName, !s && styles.rest]}>{s ? s.name : 'Rest'}</Text>
                   {s && <Text style={styles.planCount}>{s.exercises.length} exercises</Text>}
-                </Pressable>
+                </Press>
               </View>
             );
           })}
@@ -360,25 +373,23 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
       borderColor: colors.border,
       borderRadius: 10,
     },
-    stepBtn: { paddingHorizontal: 10, paddingVertical: 8 },
+    stepBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     weight: { minWidth: 84, textAlign: 'center', fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
     sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
     setBubble: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       borderWidth: 1.5,
-      borderColor: colors.border,
+      borderColor: colors.controlBorder,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    setDone: { backgroundColor: kinds.gym.color, borderColor: kinds.gym.color },
     setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted },
     setTextDone: { color: colors.onKind },
     hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 14 },
     link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
-    planRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },
-    pressed: { backgroundColor: colors.primarySoft },
+    planRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingVertical: 12, paddingHorizontal: 14 },
     planDay: { width: 52, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
     planName: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
     rest: { color: colors.muted },

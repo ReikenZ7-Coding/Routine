@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
 import type { NewGroceryItem } from '../lib/store';
+import { Button } from './Button';
 import { Chip } from './Chip';
+import { Field, FieldError, Input } from './Field';
+import { ConfirmDelete, Sheet } from './Sheet';
 import { type GroceryItem, type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
-import { type Theme, useStyles, useTheme } from '../theme';
+import { type Theme, useStyles } from '../theme';
 
 type RepeatChoice = 'once' | 'daily' | 'everyN' | 'weekdays';
 
@@ -24,8 +26,6 @@ function choiceFor(r: Repeat): RepeatChoice {
 }
 
 export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props) {
-  const insets = useSafeAreaInsets();
-  const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -33,9 +33,11 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
   const [choice, setChoice] = useState<RepeatChoice>('daily');
   const [everyN, setEveryN] = useState('3');
   const [days, setDays] = useState<number[]>([]);
+  const [errors, setErrors] = useState<{ name?: string; days?: string }>({});
 
   useEffect(() => {
     if (!visible) return;
+    setErrors({});
     setName(item?.name ?? '');
     setQuantity(item?.quantity ?? '');
     setAisle(item?.aisle ?? '');
@@ -47,21 +49,16 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
 
   function save() {
     const trimmed = name.trim();
-    if (!trimmed) {
-      Alert.alert('Add a name', 'What do you need to buy?');
-      return;
-    }
+    const found: { name?: string; days?: string } = {};
+    if (!trimmed) found.name = 'Add a name: what do you need to buy?';
+    if (choice === 'weekdays' && days.length === 0) found.days = 'Pick at least one day of the week.';
+    setErrors(found);
+    if (found.name || found.days) return;
     let repeat: Repeat;
     if (choice === 'once') repeat = { kind: 'once' };
     else if (choice === 'daily') repeat = { kind: 'everyNDays', n: 1 };
     else if (choice === 'everyN') repeat = { kind: 'everyNDays', n: Math.max(2, parseInt(everyN, 10) || 2) };
-    else {
-      if (days.length === 0) {
-        Alert.alert('Pick a day', 'Choose at least one day of the week.');
-        return;
-      }
-      repeat = { kind: 'weekdays', days: [...days].sort() };
-    }
+    else repeat = { kind: 'weekdays', days: [...days].sort() };
     onSave({
       name: trimmed,
       quantity: quantity.trim() || undefined,
@@ -70,145 +67,104 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
     });
   }
 
-  function confirmDelete() {
-    Alert.alert('Delete item?', `Remove "${item?.name}" from your groceries?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: onDelete },
-    ]);
-  }
-
-  const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  const toggleDay = (d: number) => {
+    setErrors((e) => ({ ...e, days: undefined }));
+    setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
+  };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}>
-          <ScrollView keyboardShouldPersistTaps="handled">
-            <Text style={styles.heading}>{item ? 'Edit item' : 'New item'}</Text>
+    <Sheet visible={visible} title={item ? 'Edit item' : 'New item'} onClose={onClose}>
+      <Field label="Name" error={errors.name}>
+        <Input
+          value={name}
+          onChangeText={(t) => {
+            setName(t);
+            setErrors((e) => ({ ...e, name: undefined }));
+          }}
+          invalid={!!errors.name}
+          placeholder="e.g. Chicken"
+          autoFocus={!item}
+          accessibilityLabel="Name"
+        />
+      </Field>
 
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-              placeholder="e.g. Chicken"
-              placeholderTextColor={colors.faint}
-              autoFocus={!item}
+      <View style={styles.twoCol}>
+        <Field label="Amount (optional)" style={styles.col}>
+          <Input value={quantity} onChangeText={setQuantity} placeholder="500 g" accessibilityLabel="Amount" />
+        </Field>
+        <Field label="Aisle (optional)" style={styles.col}>
+          <Input value={aisle} onChangeText={setAisle} placeholder="Meat" accessibilityLabel="Aisle" />
+        </Field>
+      </View>
+
+      <Text style={styles.label}>How often?</Text>
+      <View style={styles.chips}>
+        {(
+          [
+            ['daily', 'Every day'],
+            ['everyN', 'Every few days'],
+            ['weekdays', 'Certain days'],
+            ['once', 'Just once'],
+          ] as const
+        ).map(([key, label]) => (
+          <Chip
+            key={key}
+            label={label}
+            active={choice === key}
+            onPress={() => {
+              setChoice(key);
+              setErrors((e) => ({ ...e, days: undefined }));
+            }}
+          />
+        ))}
+      </View>
+
+      {choice === 'everyN' && (
+        <View style={styles.inline}>
+          <Text style={styles.inlineText}>Every</Text>
+          <View style={styles.smallBox}>
+            <Input
+              style={styles.center}
+              value={everyN}
+              onChangeText={setEveryN}
+              keyboardType="number-pad"
+              maxLength={3}
+              accessibilityLabel="Number of days"
             />
-
-            <View style={styles.twoCol}>
-              <View style={styles.col}>
-                <Text style={styles.label}>Amount (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={quantity}
-                  onChangeText={setQuantity}
-                  placeholder="500 g"
-                  placeholderTextColor={colors.faint}
-                />
-              </View>
-              <View style={styles.col}>
-                <Text style={styles.label}>Aisle (optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={aisle}
-                  onChangeText={setAisle}
-                  placeholder="Meat"
-                  placeholderTextColor={colors.faint}
-                />
-              </View>
-            </View>
-
-            <Text style={styles.label}>How often?</Text>
-            <View style={styles.chips}>
-              {(
-                [
-                  ['daily', 'Every day'],
-                  ['everyN', 'Every few days'],
-                  ['weekdays', 'Certain days'],
-                  ['once', 'Just once'],
-                ] as const
-              ).map(([key, label]) => (
-                <Chip key={key} label={label} active={choice === key} onPress={() => setChoice(key)} />
-              ))}
-            </View>
-
-            {choice === 'everyN' && (
-              <View style={styles.inline}>
-                <Text style={styles.inlineText}>Every</Text>
-                <TextInput
-                  style={[styles.input, styles.smallInput]}
-                  value={everyN}
-                  onChangeText={setEveryN}
-                  keyboardType="number-pad"
-                  maxLength={3}
-                />
-                <Text style={styles.inlineText}>days</Text>
-              </View>
-            )}
-
-            {choice === 'weekdays' && (
-              <View style={styles.chips}>
-                {WEEKDAY_SHORT.map((label, d) => (
-                  <Chip key={label} label={label} active={days.includes(d)} onPress={() => toggleDay(d)} />
-                ))}
-              </View>
-            )}
-
-            <Pressable accessibilityRole="button" style={styles.saveButton} onPress={save}>
-              <Text style={styles.saveText}>{item ? 'Save' : 'Add to list'}</Text>
-            </Pressable>
-            {item && onDelete && (
-              <Pressable accessibilityRole="button" style={styles.deleteButton} onPress={confirmDelete}>
-                <Text style={styles.deleteText}>Delete item</Text>
-              </Pressable>
-            )}
-          </ScrollView>
+          </View>
+          <Text style={styles.inlineText}>days</Text>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      )}
+
+      {choice === 'weekdays' && (
+        <>
+          <View style={[styles.chips, styles.gapTop]}>
+            {WEEKDAY_SHORT.map((label, d) => (
+              <Chip key={label} label={label} active={days.includes(d)} onPress={() => toggleDay(d)} />
+            ))}
+          </View>
+          <FieldError message={errors.days} />
+        </>
+      )}
+
+      <Button label={item ? 'Save' : 'Add to list'} onPress={save} style={styles.save} />
+      {item && onDelete && (
+        <ConfirmDelete label="Delete item" question={`Remove “${item.name}” from your groceries?`} onConfirm={onDelete} />
+      )}
+    </Sheet>
   );
 }
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: colors.backdrop },
-    sheet: {
-      backgroundColor: colors.sheet,
-      borderTopLeftRadius: 22,
-      borderTopRightRadius: 22,
-      padding: 20,
-      paddingBottom: 32,
-      maxHeight: '90%',
-    },
-    heading: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 8 },
-    label: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 14, marginBottom: 6 },
-    input: {
-      backgroundColor: colors.input,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      fontFamily: fonts.body,
-      fontSize: 16,
-      color: colors.text,
-    },
+    label: { ...type.label, marginTop: 18, marginBottom: 8 },
     twoCol: { flexDirection: 'row', gap: 12 },
     col: { flex: 1 },
     chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+    gapTop: { marginTop: 12 },
     inline: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
     inlineText: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-    smallInput: { width: 64, textAlign: 'center' },
-    saveButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 999,
-      paddingVertical: 14,
-      alignItems: 'center',
-      marginTop: 24,
-    },
-    saveText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-    deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
-    deleteText: { color: colors.danger, fontFamily: fonts.bodyMedium, fontSize: 15 },
+    smallBox: { width: 72 },
+    center: { textAlign: 'center', fontVariant: ['tabular-nums'] },
+    save: { marginTop: 24 },
   });
