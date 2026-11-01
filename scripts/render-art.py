@@ -185,7 +185,7 @@ def light_png(name, w, h, color, alpha):
 def lavender_backdrop():
     """A lit periwinkle world. A pale periwinkle wash pours in from the top left; a rose pool glows on the
     right, an azure pool on the left, lilac and blue pools lower down, with soft bokeh (clear of the side
-    gutters, so no disc sits half hidden at a pane's edge) and star specks. The light lives in hue, not
+    gutters, so no disc sits half hidden at a pane's edge). No star specks: between panes they read as stray UI dots. The light lives in hue, not
     brightness: luminance_budget keeps the world, as the lens sees it, inside what white type on the frost
     needs (scripts/check-contrast.py), and lifts the dimmer pools up toward that budget so the floor never
     sinks into navy."""
@@ -200,7 +200,6 @@ def lavender_backdrop():
     glow(img, W * 1.0, H * 0.97, W * 0.55, hexc(k['blue2_c']), k['blue2'])
     img = bokeh(img, 14, 30, 90, (214, 220, 255), k['bokeh'], 10, gutter=16 / 400)
     img = luminance_budget(img, k['cap'], k['cap_top'], k['top_end'], floor=k['floor'])
-    img = bokeh(img, 60, 2, 6, (255, 255, 255), 0.5, 1.0, gutter=16 / 400)
     return grain(img, 0.014)
 
 
