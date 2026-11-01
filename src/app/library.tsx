@@ -144,6 +144,7 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
     hub: { gap: 14, paddingTop: 4 },
     label: { ...type.label, marginBottom: 8 },
     search: { flexDirection: 'row', minHeight: 50, alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 3 },
-    searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text, minHeight: 48 },
+    // Positioned, so on the web it paints above the glass's absolute layers (a static input sits under them).
+    searchInput: { flex: 1, position: 'relative', fontFamily: fonts.body, fontSize: 16, color: colors.text, minHeight: 48 },
     clear: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   });

@@ -8,14 +8,28 @@ import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { CheckRow } from '../components/CheckRow';
 import { GroceryForm } from '../components/GroceryForm';
-import { Divider, NoMatch, Section } from '../components/Section';
+import { Divider, HintPane, NoMatch, Section } from '../components/Section';
 import { STARTER_STAPLES, useStore } from '../lib/store';
 import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListText, needsBuying, nextDue } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
-import { Press } from '../components/Motion';
+import { Enter, Press } from '../components/Motion';
 
 const NO_AISLE = 'Other';
+
+type IconName = keyof typeof Ionicons.glyphMap;
+/** An aisle's glyph on Lavender's aisle panes; anything unknown gets a basket. */
+const AISLE_ICONS: [RegExp, IconName][] = [
+  [/dairy|milk|cheese|egg/i, 'egg-outline'],
+  [/meat|fish|butcher|deli/i, 'restaurant-outline'],
+  [/produce|fruit|veg|green/i, 'leaf-outline'],
+  [/pantry|dry|tin|can|grain/i, 'cube-outline'],
+  [/bake|bread/i, 'pizza-outline'],
+  [/frozen|freez/i, 'snow-outline'],
+  [/drink|beverage|juice/i, 'wine-outline'],
+  [/clean|house|home/i, 'home-outline'],
+];
+const aisleIcon = (aisle: string): IconName => AISLE_ICONS.find(([re]) => re.test(aisle))?.[1] ?? 'basket-outline';
 
 function byAisle(items: GroceryItem[]): [string, GroceryItem[]][] {
   const groups = new Map<string, GroceryItem[]>();
@@ -41,8 +55,10 @@ export default function GroceriesScreen({
   header?: ReactNode;
   onClearQuery?: () => void;
 }) {
-  const { colors, kinds } = useTheme();
+  const { colors, kinds, name, type } = useTheme();
   const styles = useStyles(makeStyles);
+  // Lavender gives every aisle its own pane, so the list reads as a stack of small glass cards.
+  const panes = name === 'lavender';
   const [copied, setCopied] = useState(false);
   const contentBottom = useContentBottom(true);
   const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
@@ -98,44 +114,89 @@ export default function GroceriesScreen({
           <NoMatch query={query} onClear={onClearQuery} />
         ) : (
           <>
-            <Section
-              enter={0}
-              title={`To buy · ${toBuy.length}`}
-              footer={toBuy.length > 0 ? 'Tap to tick off. Press and hold an item to edit it.' : undefined}
-              right={
-                toBuy.length > 0 ? (
+            {panes && toBuy.length > 0 ? (
+              <Enter index={0}>
+                <View style={styles.paneHead}>
+                  <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
+                    {`To buy · ${toBuy.length}`}
+                  </Text>
                   <ActionChip
                     icon={copied ? 'checkmark' : 'share-outline'}
                     label={copied ? 'Copied' : 'Share'}
                     onPress={share}
                     accessibilityLabel={copied ? 'List copied to the clipboard' : 'Share shopping list'}
                   />
-                ) : undefined
-              }
-            >
-              {toBuy.length === 0 ? (
-                <Text style={styles.emptyText}>You're all stocked up.</Text>
-              ) : (
-                byAisle(toBuy).map(([aisle, items]) => (
-                  <View key={aisle}>
-                    <Text style={styles.aisle}>{aisle}</Text>
-                    {items.map((g, i) => (
-                      <View key={g.id}>
-                        {i > 0 && <Divider />}
-                        <CheckRow
-                          tint={kinds.groceries.color}
-                          title={g.name}
-                          subtitle={subtitle(g)}
-                          done={false}
-                          onToggle={() => toggleBought(g.id)}
-                          onLongPress={() => openEdit(g)}
-                        />
+                </View>
+                <View style={styles.aislePanes}>
+                  {byAisle(toBuy).map(([aisle, items]) => (
+                    <Glass key={aisle}>
+                      <View style={styles.aisleHead}>
+                        <View style={styles.aisleTile}>
+                          <Ionicons name={aisleIcon(aisle)} size={18} color={colors.text} />
+                        </View>
+                        <Text style={styles.aisleName} accessibilityRole="header">
+                          {aisle}
+                        </Text>
+                        <Text style={styles.aisleCount}>{items.length}</Text>
                       </View>
-                    ))}
-                  </View>
-                ))
-              )}
-            </Section>
+                      {items.map((g, i) => (
+                        <View key={g.id}>
+                          {i > 0 && <Divider />}
+                          <CheckRow
+                            tint={kinds.groceries.color}
+                            title={g.name}
+                            subtitle={subtitle(g)}
+                            done={false}
+                            onToggle={() => toggleBought(g.id)}
+                            onLongPress={() => openEdit(g)}
+                          />
+                        </View>
+                      ))}
+                    </Glass>
+                  ))}
+                  <HintPane>Tap to tick off. Press and hold an item to edit it.</HintPane>
+                </View>
+              </Enter>
+            ) : (
+              <Section
+                enter={0}
+                title={`To buy · ${toBuy.length}`}
+                footer={toBuy.length > 0 ? 'Tap to tick off. Press and hold an item to edit it.' : undefined}
+                right={
+                  toBuy.length > 0 ? (
+                    <ActionChip
+                      icon={copied ? 'checkmark' : 'share-outline'}
+                      label={copied ? 'Copied' : 'Share'}
+                      onPress={share}
+                      accessibilityLabel={copied ? 'List copied to the clipboard' : 'Share shopping list'}
+                    />
+                  ) : undefined
+                }
+              >
+                {toBuy.length === 0 ? (
+                  <Text style={styles.emptyText}>You're all stocked up.</Text>
+                ) : (
+                  byAisle(toBuy).map(([aisle, items]) => (
+                    <View key={aisle}>
+                      <Text style={styles.aisle}>{aisle}</Text>
+                      {items.map((g, i) => (
+                        <View key={g.id}>
+                          {i > 0 && <Divider />}
+                          <CheckRow
+                            tint={kinds.groceries.color}
+                            title={g.name}
+                            subtitle={subtitle(g)}
+                            done={false}
+                            onToggle={() => toggleBought(g.id)}
+                            onLongPress={() => openEdit(g)}
+                          />
+                        </View>
+                      ))}
+                    </View>
+                  ))
+                )}
+              </Section>
+            )}
 
             {bought.length > 0 && (
               <Section enter={1} title={`Bought today · ${bought.length}`}>
@@ -214,6 +275,23 @@ const makeStyles = ({ colors, kinds, fonts, type }: Theme) =>
     welcomeButton: { alignSelf: 'stretch', marginTop: 20, marginBottom: 4 },
     emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 16 },
     aisle: { ...type.label, color: kinds.groceries.text, paddingHorizontal: 16, paddingTop: 14 },
+    flex: { flex: 1 },
+    paneHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 10 },
+    aislePanes: { gap: 8 },
+    aisleHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2 },
+    aisleTile: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: kinds.groceries.soft,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    aisleName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, letterSpacing: 0.3, color: colors.text },
+    aisleCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     laterRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 54 },
     laterText: { flex: 1 },
     laterName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },

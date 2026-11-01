@@ -10,8 +10,10 @@ import { Section } from './Section';
 
 /** A mood and a short note for a day. */
 export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
-  const { colors, radii } = useTheme();
+  const { colors, radii, name } = useTheme();
   const styles = useStyles(makeStyles);
+  // Lavender draws each mood as a frosted disc with its name beneath; the chosen disc fills with the done colour.
+  const discs = name === 'lavender';
   const { journal, updateJournal } = useStore();
   const entry = journal[date] ?? {};
   const mood = moodOf(entry.mood);
@@ -33,6 +35,33 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
               <Text style={[styles.moodLabel, { color: label }, active && styles.moodLabelActive]}>{m.label}</Text>
             </View>
           );
+          const choose = () => updateJournal((j) => setEntry(j, date, { mood: active ? undefined : m.value }));
+          if (discs) {
+            return (
+              <Press
+                key={m.value}
+                outerStyle={styles.moodSlot}
+                style={styles.discItem}
+                haptic
+                onPress={choose}
+                accessibilityRole="radio"
+                accessibilityLabel={m.label}
+                accessibilityState={{ checked: active }}
+              >
+                <View style={styles.disc}>
+                  <SelectFade on={active} radius={24} bleed={1} style={styles.discOn} />
+                  <Pop done={active}>
+                    <FadeSwap
+                      on={active}
+                      off={<MoodGlyph curve={m.curve} color={colors.text} />}
+                      onContent={<MoodGlyph curve={m.curve} color={colors.onDone} />}
+                    />
+                  </Pop>
+                </View>
+                <Text style={[styles.moodLabel, styles.discLabel, active && styles.moodLabelActive]}>{m.label}</Text>
+              </Press>
+            );
+          }
           return (
             <Press
               key={m.value}
@@ -40,7 +69,7 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
               style={styles.mood}
               overlay={colors.material.pressFill}
               haptic
-              onPress={() => updateJournal((j) => setEntry(j, date, { mood: active ? undefined : m.value }))}
+              onPress={choose}
               accessibilityRole="radio"
               accessibilityLabel={m.label}
               accessibilityState={{ checked: active }}
@@ -85,6 +114,20 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     moodFill: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     moodLabel: { fontFamily: fonts.body, fontSize: 14, lineHeight: 18 },
     moodLabelActive: { fontFamily: fonts.bodyMedium },
+    discItem: { alignItems: 'center', gap: 6, minHeight: 44, paddingVertical: 2, borderRadius: radii.inset },
+    disc: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundImage: `linear-gradient(180deg, ${colors.material.control.body[0]}, ${colors.material.control.body[1]})`,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    discOn: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
+    discLabel: { color: colors.muted },
     noteField: { marginHorizontal: 16, marginTop: 12, marginBottom: 16 },
     note: { minHeight: 48 },
   });

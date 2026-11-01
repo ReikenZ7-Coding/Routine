@@ -108,20 +108,31 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
   );
 }
 
-const makeStyles = ({ colors, fonts, type }: Theme) =>
+const makeStyles = ({ colors, fonts, type, name }: Theme) =>
   StyleSheet.create({
     card: { padding: 16, marginTop: 12, gap: 12 },
     title: { ...type.sectionTitle, flexShrink: 1 },
     lengths: { width: 164 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    clock: {
-      fontFamily: fonts.monoMedium,
-      fontSize: 40,
-      lineHeight: 48,
-      color: colors.text,
-      letterSpacing: -1,
-      fontVariant: ['tabular-nums'],
-    },
+    // Lavender's clock is a light display numeral, never a typewriter face.
+    clock:
+      name === 'lavender'
+        ? {
+            fontFamily: 'DMSans_300Light',
+            fontSize: 56,
+            lineHeight: 60,
+            color: colors.text,
+            letterSpacing: -1.5,
+            fontVariant: ['tabular-nums'],
+          }
+        : {
+            fontFamily: fonts.monoMedium,
+            fontSize: 40,
+            lineHeight: 48,
+            color: colors.text,
+            letterSpacing: -1,
+            fontVariant: ['tabular-nums'],
+          },
     btn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 18, minHeight: 48 },
     stop: {
       backgroundColor: colors.material.inset.fill,

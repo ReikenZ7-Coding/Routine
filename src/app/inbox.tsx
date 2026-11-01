@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { type ComponentRef, useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { SceneArt } from '../components/Art';
 import { Glass, GlassScroll } from '../components/Glass';
 import { EASE_OUT, FadeSwap, Press, SelectFade } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
@@ -19,8 +20,11 @@ const HIDE = FadeOut.duration(140).easing(EASE_OUT);
 
 /** Quick to-dos: write them down now, put them on a day later. */
 export default function InboxScreen() {
-  const { colors, kinds, type, radii } = useTheme();
+  const { colors, kinds, type, radii, name } = useTheme();
   const styles = useStyles(makeStyles);
+  const { width } = useWindowDimensions();
+  const input = useRef<ComponentRef<typeof TextInput>>(null);
+  const lavender = name === 'lavender';
   const insets = useSafeAreaInsets();
   const { ready, today, inbox, updateInbox } = useStore();
   const contentBottom = useContentBottom();
@@ -33,6 +37,8 @@ export default function InboxScreen() {
   const waiting = inboxOpen(inbox, today).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const planned = inbox.filter((i) => !i.doneOn && i.date && i.date >= today).sort((a, b) => a.date!.localeCompare(b.date!));
   const done = recentlyDone(inbox, today);
+  // Lavender: nothing to sort and nothing planned gets one scene card in place of the empty list.
+  const clearDay = lavender && waiting.length === 0 && planned.length === 0;
 
   const add = () => {
     const title = draft.trim();
@@ -121,6 +127,7 @@ export default function InboxScreen() {
       <Glass tier="control" radius={radii.pill} style={styles.composer}>
         <Ionicons name="add" size={20} color={colors.muted} />
         <TextInput
+          ref={input}
           style={styles.input}
           value={draft}
           onChangeText={setDraft}
@@ -136,21 +143,46 @@ export default function InboxScreen() {
         />
         {draft.trim() ? (
           <Animated.View entering={SHOW} exiting={HIDE}>
-            <Press style={styles.addButton} overlay={colors.material.pressFill} haptic onPress={add} accessibilityLabel="Add to inbox">
-              <Ionicons name="arrow-up" size={20} color={colors.onPrimary} />
+            <Press
+              style={lavender ? styles.addDisc : styles.addButton}
+              overlay={colors.material.pressFill}
+              haptic
+              onPress={add}
+              accessibilityLabel="Add to inbox"
+            >
+              <Ionicons name="arrow-up" size={20} color={lavender ? colors.onNode : colors.onPrimary} />
             </Press>
           </Animated.View>
         ) : null}
       </Glass>
 
-      <Section
-        enter={0}
-        title={`To sort · ${waiting.length}`}
-        dot={kinds.inbox.color}
-        footer={waiting.length > 0 ? 'Tap to tick off. Press and hold to plan it for today or tomorrow.' : undefined}
-      >
-        {waiting.length === 0 ? <Text style={styles.empty}>All clear. New to-dos land here.</Text> : waiting.map(row)}
-      </Section>
+      {clearDay ? (
+        // Nothing to sort and nothing planned: a quiet scene says so, and offers the one thing to do here.
+        <Glass tier="hero" style={styles.clear}>
+          <View style={styles.clearArt}>
+            <SceneArt width={width - 32} height={160} variant="dusk" />
+          </View>
+          <View style={styles.clearBody}>
+            <Text style={styles.clearTitle}>Clear head, clear day</Text>
+            <Text style={type.hint}>Nothing waiting. Write down the next thing on your mind and it lands here.</Text>
+            <Press onPress={() => input.current?.focus()} style={styles.whitePill} haptic accessibilityLabel="Add a to-do">
+              <Ionicons name="add" size={18} color={colors.onNode} />
+              <Text style={styles.whitePillText}>Add a to-do</Text>
+            </Press>
+          </View>
+        </Glass>
+      ) : null}
+
+      {!clearDay && (
+        <Section
+          enter={0}
+          title={`To sort · ${waiting.length}`}
+          dot={kinds.inbox.color}
+          footer={waiting.length > 0 ? 'Tap to tick off. Press and hold to plan it for today or tomorrow.' : undefined}
+        >
+          {waiting.length === 0 ? <Text style={styles.empty}>All clear. New to-dos land here.</Text> : waiting.map(row)}
+        </Section>
+      )}
 
       {planned.length > 0 && (
         <Section enter={1} title="Planned">
@@ -171,8 +203,9 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
     content: { paddingHorizontal: 16 },
     intro: { marginTop: 4 },
     label: { ...type.label, marginTop: 20, marginBottom: 8 },
-    composer: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingRight: 4, minHeight: 52 },
-    input: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text, minHeight: 50 },
+    composer: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingRight: 6, minHeight: 56 },
+    // Positioned, so on the web it paints above the glass's absolute layers (a static input sits under them).
+    input: { flex: 1, position: 'relative', fontFamily: fonts.body, fontSize: 16, color: colors.text, minHeight: 50 },
     addButton: {
       width: 44,
       height: 44,
@@ -182,6 +215,32 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
+    addDisc: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.node,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: colors.material.control.shadow,
+    },
+    clear: { marginTop: 20, padding: 0 },
+    clearArt: { height: 160, overflow: 'hidden' },
+    clearBody: { padding: 18, gap: 6 },
+    clearTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.text },
+    whitePill: {
+      marginTop: 10,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      height: 44,
+      paddingHorizontal: 18,
+      borderRadius: 22,
+      backgroundColor: colors.node,
+      boxShadow: colors.material.control.shadow,
+    },
+    whitePillText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onNode },
     empty: { padding: 16, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingLeft: 52, paddingRight: 16, paddingBottom: 12 },
     action: {

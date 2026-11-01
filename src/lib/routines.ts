@@ -193,9 +193,9 @@ export function formatTime(hour: number, minute: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
-export function routineSubtitle(r: Routine, today: string): string {
+export function routineSubtitle(r: Routine, today: string, withStreak = true): string {
   if (isSkipped(r, today)) return 'Skipped · streak kept';
-  const s = streak(r, today);
+  const s = withStreak ? streak(r, today) : 0;
   return [
     r.start ?? (r.reminder ? formatTime(r.reminder.hour, r.reminder.minute) : TIME_LABELS[r.time]),
     describeRepeat(r.repeat),

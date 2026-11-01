@@ -20,7 +20,15 @@ export function Fab({ icon = 'add', onPress, accessibilityLabel }: { icon?: stri
 
 const makeStyles = ({ colors }: Theme) =>
   StyleSheet.create({
-    fab: { position: 'absolute', right: 20, width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+    fab: {
+      position: 'absolute',
+      right: 20,
+      width: 56,
+      height: 56,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: colors.actionGlow,
+    },
     fill: {
       position: 'absolute',
       top: 0,

@@ -3,13 +3,14 @@
 // Stone follows the meditation home (light greeting with a flower, recommendation card, category tiles).
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { type AccessibilityActionEvent, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { type Kind, type Theme, useStyles, useTheme } from '../theme';
 import { Magnolia, SceneArt } from './Art';
 import { Glass } from './Glass';
 import { alphaOf } from './glass/colour';
-import { Enter, FadeSwap, Pop, Press, SelectFade } from './Motion';
+import { Dim, EASE_OUT, Enter, FadeSwap, Pop, Press, SelectFade, useReduceMotion } from './Motion';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -75,36 +76,41 @@ export function GlassHome(props: Props) {
 }
 
 function LavenderHome(p: Props) {
-  const { colors, kinds } = useTheme();
+  const { colors, radii, kinds: kindColours } = useTheme();
   const styles = useStyles(makeStyles);
   const { width } = useWindowDimensions();
+  const allDone = p.total > 0 && p.done === p.total;
+  const heroW = width - 32;
   return (
     <View>
-      <View style={styles.bar}>
-        <Press onPress={p.onStats} style={styles.iconBtn} overlay={colors.material.pressFill} accessibilityLabel="Your week">
+      <View style={styles.lavTop}>
+        <View style={styles.flex}>
+          <Text style={styles.lavGreet}>{p.greeting}</Text>
+          <Text style={styles.lavName} numberOfLines={1} accessibilityRole="header">
+            {p.name}
+          </Text>
+        </View>
+        <Glass tier="control" radius={22} style={styles.round} onPress={p.onStats} accessibilityLabel="Your week">
           <Ionicons name="stats-chart-outline" size={20} color={colors.text} />
-        </Press>
-        <Press onPress={p.onSettings} style={styles.iconBtn} accessibilityLabel="Settings">
-          <View style={styles.avatar}>
+        </Glass>
+        <Press onPress={p.onSettings} style={styles.avatarBtn} accessibilityLabel="Settings">
+          <View style={styles.lavAvatar}>
             <Text style={styles.avatarText}>{(p.name[0] ?? 'M').toUpperCase()}</Text>
           </View>
         </Press>
       </View>
 
-      <Text style={styles.lavGreet}>{p.greeting}</Text>
-      <Text style={styles.lavName} numberOfLines={1} accessibilityRole="header">
-        {p.name}
-      </Text>
-
       <View style={styles.searchRow}>
-        <Glass tier="control" radius={18} style={styles.search} onPress={p.onAdd} accessibilityLabel="Add a routine, to-do or word">
-          <Ionicons name="add-circle-outline" size={20} color={colors.muted} />
-          <Text style={styles.searchText}>Add a routine, to-do, word…</Text>
+        <Glass tier="control" radius={26} style={styles.lavSearch} onPress={p.onAdd} accessibilityLabel="Add a routine, to-do or word">
+          <Ionicons name="add-circle-outline" size={22} color={colors.muted} />
+          <Text style={styles.searchText} numberOfLines={1}>
+            Add a routine, to-do, word…
+          </Text>
         </Glass>
         <Glass
           tier="control"
-          radius={18}
-          style={styles.filter}
+          radius={26}
+          style={styles.lavFilter}
           onPress={p.onToggleCalendar}
           accessibilityLabel={p.calendarOpen ? 'Hide calendar' : 'Show calendar'}
           accessibilityState={{ expanded: p.calendarOpen }}
@@ -119,25 +125,39 @@ function LavenderHome(p: Props) {
       {p.calendarOpen && <Glass style={styles.calendar}>{p.calendar}</Glass>}
 
       <Enter index={0}>
-        <View style={styles.lavHero}>
-          <View style={StyleSheet.absoluteFill}>
-            <SceneArt width={width - 32} height={200} variant="dusk" />
-          </View>
-          <LinearGradient
-            colors={[alphaOf(colors.backdrop, 0.74), alphaOf(colors.backdrop, 0)]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0.85, y: 0.55 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <Text style={styles.lavHeroTitle} numberOfLines={2}>
-            {p.hero.title}
-          </Text>
-          <Text style={styles.lavHeroMeta} numberOfLines={2}>
-            {p.hero.eyebrow} · {p.hero.meta}
-          </Text>
-          <View style={styles.flex} />
-          <Glass tier="control" radius={22} style={styles.lavPlay} onPress={p.hero.onAction} accessibilityLabel={p.hero.action}>
-            <Ionicons name={p.hero.icon} size={20} color={colors.text} />
+        <View style={styles.heroSlot}>
+          <DoneBloom on={allDone} />
+          <Glass tier="hero" radius={radii.hero} bloom style={styles.lavHero}>
+            <FadeSwap
+              on={allDone}
+              duration={400}
+              style={StyleSheet.absoluteFill}
+              off={<SceneArt width={heroW} height={HERO_H} variant="dusk" />}
+              onContent={<SceneArt width={heroW} height={HERO_H} variant="waves" />}
+            />
+            <LinearGradient
+              colors={[alphaOf(colors.backdrop, 0.78), alphaOf(colors.backdrop, 0)]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0.8, y: 0.6 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <Text style={styles.lavHeroTitle} numberOfLines={2}>
+              {allDone ? 'All done for today' : p.hero.title}
+            </Text>
+            <Text style={styles.lavHeroMeta} numberOfLines={2}>
+              {allDone ? 'Every routine ticked. Enjoy the rest of your day.' : `${p.hero.eyebrow} · ${p.hero.meta}`}
+            </Text>
+            <View style={styles.flex} />
+            {!allDone && (
+              <Press onPress={p.hero.onAction} style={styles.lavPlay} haptic accessibilityLabel={p.hero.action}>
+                <Ionicons
+                  name={p.hero.icon}
+                  size={24}
+                  color={colors.onNode}
+                  style={p.hero.icon === 'play' ? styles.playNudgeBig : undefined}
+                />
+              </Press>
+            )}
           </Glass>
         </View>
       </Enter>
@@ -148,19 +168,19 @@ function LavenderHome(p: Props) {
           <View key={c.label} style={styles.circleItem}>
             <Glass
               tier="control"
-              radius={26}
-              tint={kinds[c.kind].soft}
+              radius={28}
+              tint={alphaOf(kindColours[c.kind].color, 0.36)}
               style={styles.circle}
               onPress={c.onPress}
               accessibilityLabel={c.label}
               accessibilityState={c.active !== undefined ? { selected: c.active } : undefined}
             >
-              <SelectFade on={!!c.active} radius={26} style={styles.circleOn} />
+              <SelectFade on={!!c.active} radius={28} style={styles.doneFill} />
               <Pop done={!!c.active}>
                 <FadeSwap
                   on={!!c.active}
-                  off={<Ionicons name={c.icon} size={22} color={colors.text} />}
-                  onContent={<Ionicons name="checkmark" size={22} color={colors.onPrimary} />}
+                  off={<Ionicons name={c.icon} size={24} color={colors.text} />}
+                  onContent={<Ionicons name="checkmark" size={24} color={colors.onDone} />}
                 />
               </Pop>
             </Glass>
@@ -171,18 +191,22 @@ function LavenderHome(p: Props) {
         ))}
       </View>
 
-      <SectionHead title="Today" action={p.total ? `${p.done}/${p.total} done` : undefined} />
+      <SectionHead title="Today" action={p.total ? `${p.done}/${p.total} done` : undefined} pill />
       <View style={styles.rows}>
         {p.items.length === 0 ? (
-          <Glass radius={18} style={styles.emptyRow} onPress={p.onAdd} accessibilityLabel="Plan your day">
-            <Ionicons name="add-circle-outline" size={20} color={colors.text} />
-            <Text style={styles.rowTitle}>Plan your day: add a routine or a to-do</Text>
+          <Glass style={styles.emptyRow}>
+            <Text style={styles.emptyTitle}>Nothing planned yet</Text>
+            <Text style={styles.rowMeta}>Add a routine or a to-do, and it shows up here at its time.</Text>
+            <Press onPress={p.onAdd} style={styles.whitePill} haptic accessibilityLabel="Add a routine">
+              <Ionicons name="add" size={18} color={colors.onNode} />
+              <Text style={styles.whitePillText}>Add a routine</Text>
+            </Press>
           </Glass>
         ) : (
           p.items.map((it, i) => (
             <Enter key={it.key} index={i + 1}>
               <Glass
-                radius={18}
+                radius={radii.row}
                 style={styles.row}
                 receded={it.done}
                 onPress={it.nav ? it.onPress : it.onLongPress}
@@ -190,9 +214,9 @@ function LavenderHome(p: Props) {
                 accessibilityHint={it.nav ? 'Opens it' : undefined}
                 {...rowActions(it)}
               >
-                <View style={[styles.thumb, { backgroundColor: alphaOf(it.color ?? colors.text, 0.22) }]}>
-                  <Ionicons name={(it.icon ?? 'ellipse-outline') as 'sunny'} size={22} color={colors.text} />
-                </View>
+                <Dim on={it.done} style={[styles.thumb, { backgroundColor: it.color ?? colors.node }]}>
+                  <Ionicons name={(it.icon ?? 'ellipse-outline') as 'sunny'} size={22} color={colors.onKind} />
+                </Dim>
                 <View style={styles.flex}>
                   <Text style={[styles.rowTitle, it.done && styles.rowDone]} numberOfLines={1}>
                     {it.title}
@@ -215,6 +239,33 @@ function LavenderHome(p: Props) {
   );
 }
 
+const HERO_H = 212;
+
+/** The reward when the whole day is ticked: a rose light opens behind the hero once, 600ms ease-out (a fade
+ *  alone under reduced motion). Already done when the screen opens: it is simply there. */
+function DoneBloom({ on }: { on: boolean }) {
+  const styles = useStyles(makeStyles);
+  const reduced = useReduceMotion();
+  const o = useSharedValue(on ? 1 : 0);
+  const s = useSharedValue(1);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const timing = { duration: 600, easing: EASE_OUT, reduceMotion: ReduceMotion.Never };
+    if (on && !reduced) {
+      s.set(0.96);
+      s.set(withTiming(1, timing));
+    }
+    o.set(withTiming(on ? 1 : 0, timing));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on]);
+  const anim = useAnimatedStyle(() => ({ opacity: o.get(), transform: [{ scale: s.get() }] }));
+  return <Animated.View pointerEvents="none" style={[styles.doneBloom, anim]} />;
+}
+
 /** The round tick at a row's end: a play glyph until done, then the look's done fill fades in with a check. */
 function RowCheck({ item: it }: { item: HomeItem }) {
   const { colors, name } = useTheme();
@@ -230,12 +281,12 @@ function RowCheck({ item: it }: { item: HomeItem }) {
       accessibilityState={{ checked: it.done }}
       accessibilityLabel={`Mark ${it.title} done`}
     >
-      <SelectFade on={it.done} radius={22} bleed={1} style={styles.rowButtonDone} />
+      <SelectFade on={it.done} radius={22} bleed={1} style={styles.doneFill} />
       <Pop done={it.done}>
         <FadeSwap
           on={it.done}
           off={<Ionicons name={stone ? 'play-outline' : 'play'} size={14} color={colors.text} style={styles.playNudge} />}
-          onContent={<Ionicons name="checkmark" size={16} color={colors.onPrimary} />}
+          onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />}
         />
       </Pop>
     </Press>
@@ -384,11 +435,11 @@ function StoneHome(p: Props) {
                   <Ionicons name="chevron-forward" size={20} color={colors.muted} style={styles.chevron} />
                 ) : (
                   <View style={styles.stoneRowButton}>
-                    <SelectFade on={it.done} radius={22} bleed={1} style={styles.rowButtonDone} />
+                    <SelectFade on={it.done} radius={22} bleed={1} style={styles.doneFill} />
                     <FadeSwap
                       on={it.done}
                       off={<Ionicons name="play-outline" size={14} color={colors.text} style={styles.playNudge} />}
-                      onContent={<Ionicons name="checkmark" size={16} color={colors.onPrimary} />}
+                      onContent={<Ionicons name="checkmark" size={16} color={colors.onDone} />}
                     />
                   </View>
                 )}
@@ -401,7 +452,7 @@ function StoneHome(p: Props) {
   );
 }
 
-function SectionHead({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+function SectionHead({ title, action, onAction, pill }: { title: string; action?: string; onAction?: () => void; pill?: boolean }) {
   const styles = useStyles(makeStyles);
   return (
     <View style={styles.sectionHead}>
@@ -413,6 +464,10 @@ function SectionHead({ title, action, onAction }: { title: string; action?: stri
           <Press onPress={onAction} style={styles.sectionActionBtn} accessibilityLabel={action}>
             <Text style={styles.sectionAction}>{action}</Text>
           </Press>
+        ) : pill ? (
+          <Glass tier="control" radius={14} style={styles.countPill}>
+            <Text style={styles.countText}>{action}</Text>
+          </Glass>
         ) : (
           <Text style={styles.sectionAction}>{action}</Text>
         )
@@ -425,16 +480,6 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     bar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 44 },
-    avatar: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderWidth: 1.5,
-      borderColor: colors.material.rimTop,
-      backgroundImage: `linear-gradient(160deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
-    },
     avatarText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
     round: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
@@ -445,47 +490,91 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     chevron: { marginRight: 8 },
 
     // Lavender
-    lavGreet: { marginTop: 14, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
-    lavName: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.4 },
-    searchRow: { flexDirection: 'row', gap: 10, marginTop: 16 },
-    search: { flex: 1, height: 48, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 },
-    searchText: { fontFamily: fonts.body, fontSize: 16, color: colors.muted },
-    filter: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-    lavHero: {
-      marginTop: 18,
-      height: 200,
-      borderRadius: radii.hero,
-      overflow: 'hidden',
-      padding: 20,
-      borderWidth: 1,
-      borderColor: colors.material.rimLeft,
-      borderTopColor: colors.material.rimTop,
-      boxShadow: colors.material.shadowHero,
+    lavTop: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 },
+    lavGreet: { fontFamily: fonts.body, fontSize: 16, lineHeight: 21, color: colors.muted },
+    lavName: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.6 },
+    avatarBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    lavAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: colors.litRim,
+      backgroundImage: `linear-gradient(160deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: colors.material.control.shadow,
+    },
+    searchRow: { flexDirection: 'row', gap: 10, marginTop: 18 },
+    lavSearch: { flex: 1, height: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 },
+    searchText: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
+    lavFilter: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
+    heroSlot: { marginTop: 18 },
+    lavHero: { height: HERO_H, padding: 20 },
+    doneBloom: {
+      position: 'absolute',
+      left: -24,
+      right: -24,
+      top: 40,
+      bottom: -48,
+      backgroundImage: `radial-gradient(50% 50% at 50% 55%, ${alphaOf(colors.accent, 0.55)}, ${alphaOf(colors.accent, 0)})`,
     },
     lavHeroTitle: {
       fontFamily: fonts.display,
-      fontSize: 30,
-      lineHeight: 34,
+      fontSize: 32,
+      lineHeight: 36,
       color: colors.text,
-      letterSpacing: -0.5,
-      maxWidth: '72%',
+      letterSpacing: -0.6,
+      maxWidth: '78%',
     },
     lavHeroMeta: { marginTop: 6, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.text, maxWidth: '72%' },
-    lavPlay: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    lavPlay: {
+      width: 52,
+      height: 52,
+      borderRadius: 26,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundImage: `linear-gradient(180deg, ${colors.node}, ${alphaOf(colors.node, 0.82)})`,
+      boxShadow: colors.actionGlow,
+    },
+    playNudgeBig: { marginLeft: 3 },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, minHeight: 44 },
     sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 18, color: colors.text },
     sectionAction: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
+    countPill: { height: 28, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
+    countText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     circles: { flexDirection: 'row', justifyContent: 'space-between' },
-    circleItem: { alignItems: 'center', gap: 8, flex: 1, maxWidth: 72 },
-    circle: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
-    circleOn: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
-    circleLabel: { fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 17, color: colors.text, textAlign: 'center' },
+    circleItem: { alignItems: 'center', gap: 8, width: 72 },
+    circle: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
+    doneFill: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
+    circleLabel: { fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 17, color: colors.muted, textAlign: 'center' },
     rows: { gap: 10, marginTop: 4 },
-    row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 12, minHeight: 64 },
-    emptyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16 },
-    thumb: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+    row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 12, minHeight: 66 },
+    emptyRow: { padding: 18, gap: 6 },
+    emptyTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
+    whitePill: {
+      marginTop: 10,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      height: 44,
+      paddingHorizontal: 18,
+      borderRadius: 22,
+      backgroundColor: colors.node,
+      boxShadow: colors.material.control.shadow,
+    },
+    whitePillText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onNode },
+    thumb: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `inset 0px 1px 0px ${alphaOf(colors.node, 0.6)}`,
+    },
     rowTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
-    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
     rowDone: { fontFamily: fonts.body, color: colors.faint, textDecorationLine: 'line-through' },
     rowButton: {
       width: 44,
@@ -493,11 +582,10 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
       borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.material.inset.fill,
+      backgroundImage: `linear-gradient(180deg, ${colors.material.control.body[0]}, ${colors.material.control.body[1]})`,
       borderWidth: 1,
       borderColor: colors.controlBorder,
     },
-    rowButtonDone: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     playNudge: { marginLeft: 2 },
 
     // Stone

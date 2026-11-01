@@ -160,7 +160,7 @@ export function GlassTabBar({
 /** A 1px line of edge light along the dock's top, brightest in the middle. */
 const edgeLight = (c: string) => `linear-gradient(90deg, ${clearOf(c)}, ${c}, ${clearOf(c)})`;
 
-const makeStyles = ({ colors, fonts }: Theme) => {
+const makeStyles = ({ colors, fonts, name }: Theme) => {
   const d = colors.material.drop;
   return StyleSheet.create({
     flex: { flex: 1 },
@@ -183,6 +183,7 @@ const makeStyles = ({ colors, fonts }: Theme) => {
     tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
     dockTab: { justifyContent: 'flex-start', paddingTop: 10 },
     item: { alignItems: 'center', gap: 3 },
-    label: { fontFamily: fonts.bodyMedium, fontSize: 12 },
+    // Lavender's labels are 13, the caption floor; the other looks keep their tighter 12.
+    label: { fontFamily: fonts.bodyMedium, fontSize: name === 'lavender' ? 13 : 12 },
   });
 };

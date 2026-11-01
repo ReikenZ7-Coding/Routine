@@ -2,13 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Modal, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Segmented } from './Hub';
 import Animated from 'react-native-reanimated';
-import { FadeSwap, rise, Press, SelectFade } from './Motion';
+import { Dim, FadeSwap, rise, Press, SelectFade } from './Motion';
 import { Sheet } from './Sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUNDS, useSounds } from '../lib/sounds';
 import { SceneArt } from './Art';
 import { Glass, WorldFrame } from './Glass';
 import { MINI_HEIGHT, useBar } from './glass/chrome';
+import { alphaOf } from './glass/colour';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 /** Art for a sound: the look's own scene for it (rain, waves, focus), cropped to a rounded tile. */
@@ -239,8 +240,9 @@ function GlassPlayer() {
                 </View>
               </Glass>
             ) : (
-              <View style={[styles.artClip, styles.artGlow, { width: art, height: art, borderRadius: 28 }]}>
-                <SceneArt width={art} height={art} variant={s.current.id} />
+              <View style={[styles.artClip, styles.artGlow, { width: art, height: art, borderRadius: 32 }]}>
+                <FadeSwapScene id={s.current.id} size={art} />
+                <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.artRim]} />
               </View>
             )}
           </View>
@@ -279,7 +281,7 @@ function GlassPlayer() {
               <Ionicons
                 name={s.playing ? 'pause' : 'play'}
                 size={30}
-                color={colors.onPrimary}
+                color={stone ? colors.onPrimary : colors.onNode}
                 style={s.playing ? undefined : styles.playNudge}
               />
             </Press>
@@ -299,6 +301,19 @@ function GlassPlayer() {
           </View>
         </View>
       </WorldFrame>
+    </View>
+  );
+}
+
+/** The sound's art; a new sound's scene fades in over the old one instead of cutting. */
+function FadeSwapScene({ id, size }: { id: string; size: number }) {
+  return (
+    <View style={{ width: size, height: size }}>
+      {SOUNDS.map((x) => (
+        <Dim key={x.id} on={x.id !== id} to={0} style={StyleSheet.absoluteFill}>
+          <SceneArt width={size} height={size} variant={x.id} />
+        </Dim>
+      ))}
     </View>
   );
 }
@@ -348,7 +363,15 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     artWrap: { alignItems: 'center', marginTop: 24 },
     frame: { padding: 8 },
     artClip: { overflow: 'hidden' },
-    artGlow: { boxShadow: colors.material.shadowPane },
+    // Lavender's art is the hero: its rose light spills down into the world below it.
+    artGlow: { boxShadow: `${colors.material.shadowPane}, 0px 24px 56px -10px ${alphaOf(colors.accent, 0.5)}` },
+    artRim: {
+      borderRadius: 32,
+      borderWidth: 1,
+      borderColor: colors.material.rimRight,
+      borderTopColor: colors.material.rimTop,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}`,
+    },
     info: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 28 },
     title: {
       fontFamily: fonts.display,
@@ -375,9 +398,9 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     control: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
     big: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
     bigLavender: {
-      backgroundColor: colors.primary,
-      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
-      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
+      backgroundColor: colors.node,
+      backgroundImage: `linear-gradient(180deg, ${colors.node}, ${alphaOf(colors.node, 0.84)})`,
+      boxShadow: colors.actionGlow,
     },
     bigStone: {
       backgroundColor: colors.primary,

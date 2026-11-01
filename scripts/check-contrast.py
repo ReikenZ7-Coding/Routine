@@ -17,8 +17,8 @@ Glass (pane, control, receded, inset, sheet; each with the tokens it can carry),
 Bare backdrop (titles, section headings, hints): the sharp backdrop with scrim and veil, plus the LightField
   at full strength (every moment of its motion path), averaged over about a glyph (sigma 3 dp) so a
   single star speck doesn't count, in the zones where that text sits.
-Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill
-  and onPrimary on both primary stops 4.5:1; controlBorder against the glass, kind fills and the accent
+Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
+  onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
   against their track 3:1. Pine also checks its canopy slab (text and onSlabMuted).
 """
 import importlib.util
@@ -338,6 +338,10 @@ def gate_look(look, theme, g):
         c, a = col(stop)
         fill = over(region, c, a)
         g.check(look, f'primary stop {i}', 'onPrimary', text_on(fill, colors['onPrimary']), TEXT)
+    for i, stop in enumerate(colors['doneFill']):
+        c, a = col(stop)
+        fill = over(region, c, a)
+        g.check(look, f'done stop {i}', 'onDone', text_on(fill, colors['onDone']), TEXT)
 
     # Bare backdrop: titles, section headings and hints sit straight on the world and its moving light.
     sharp = ra.ambience(load(f'{look}-bg.jpg'), look)

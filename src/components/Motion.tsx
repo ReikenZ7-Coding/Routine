@@ -236,6 +236,17 @@ export function SelectFade({
   );
 }
 
+/** A quieter state for a piece of content (a done row's tile sinks back): its opacity eases to `to` over
+ *  150ms when `on` turns true, and back to 1, so it never changes in a single frame. */
+export function Dim({ on, to = 0.55, style, children }: { on: boolean; to?: number; style?: StyleProp<ViewStyle>; children?: ReactNode }) {
+  const v = useSharedValue(on ? to : 1);
+  useEffect(() => {
+    v.set(withTiming(on ? to : 1, SELECT));
+  }, [on, to, v]);
+  const fade = useAnimatedStyle(() => ({ opacity: v.get() }));
+  return <Animated.View style={[style, fade]}>{children}</Animated.View>;
+}
+
 /**
  * Two versions of the same content, crossfaded when `on` changes (a label's colour, an outline icon becoming a
  * filled one). The `off` version lays out the space; the `on` version is laid over it.

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SceneArt } from '../components/Art';
 import { Button } from '../components/Button';
 import { Divider, Section } from '../components/Section';
 import { PageTitle } from '../components/PageTitle';
@@ -40,7 +41,7 @@ const WEIGHT_STEP = 2.5;
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 export default function GymScreen() {
-  const { colors, kinds, type } = useTheme();
+  const { colors, kinds, type, name } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, gym, updateGym } = useStore();
   const fabBottom = useFabBottom();
@@ -145,14 +146,24 @@ export default function GymScreen() {
           <>
             <Enter index={0}>
               <Glass tier="hero" bloom style={styles.todayCard}>
-                <Text style={styles.sessionName} accessibilityRole="header">
-                  {session.name}
-                </Text>
-                <Text style={styles.progressText}>
-                  {progress.done === progress.total
-                    ? 'Workout complete. Nice work!'
-                    : `Today · ${progress.done} of ${plural(progress.total, 'set')}`}
-                </Text>
+                <View style={styles.sessionHead}>
+                  <View style={styles.flex}>
+                    <Text style={styles.sessionName} accessibilityRole="header">
+                      {session.name}
+                    </Text>
+                    <Text style={styles.progressText}>
+                      {progress.done === progress.total
+                        ? 'Workout complete. Nice work!'
+                        : `Today · ${progress.done} of ${plural(progress.total, 'set')}`}
+                    </Text>
+                  </View>
+                  {name === 'lavender' && (
+                    // Lavender gives the session its own small scene, like the art on a playlist.
+                    <View style={styles.sessionArt}>
+                      <SceneArt width={64} height={64} variant="waves" />
+                    </View>
+                  )}
+                </View>
                 <View style={styles.track}>
                   <Bar progress={progress.done / Math.max(1, progress.total)} color={kinds.gym.color} track={colors.track} height={8} />
                 </View>
@@ -172,7 +183,7 @@ export default function GymScreen() {
                           <Text style={styles.exName}>{e.name}</Text>
                           {isRecord(gym.logs, e.name, today) && (
                             <View style={styles.prBadge}>
-                              <Ionicons name="trophy" size={12} color={kinds.gym.text} />
+                              <Ionicons name="trophy" size={13} color={styles.prText.color} />
                               <Text style={styles.prText}>New best</Text>
                             </View>
                           )}
@@ -335,19 +346,21 @@ export default function GymScreen() {
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme) => {
+  // Lavender's best-ever badge is a solid pastel pill with deep-indigo ink; the other looks keep a soft wash.
+  const solidBadge = name === 'lavender';
+  return StyleSheet.create({
     exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     prBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: kinds.gym.soft,
+      backgroundColor: solidBadge ? kinds.gym.color : kinds.gym.soft,
       borderRadius: 999,
-      paddingHorizontal: 8,
-      paddingVertical: 2,
+      paddingHorizontal: solidBadge ? 10 : 8,
+      paddingVertical: solidBadge ? 3 : 2,
     },
-    prText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: kinds.gym.text },
+    prText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: solidBadge ? colors.onKind : kinds.gym.text },
     historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
     historyPr: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     historyPrText: { fontFamily: fonts.monoMedium, fontSize: 14, color: kinds.gym.text, fontVariant: ['tabular-nums'] },
@@ -379,6 +392,8 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
     planTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
     planSummary: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
     todayCard: { padding: 16 },
+    sessionHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+    sessionArt: { width: 64, height: 64, borderRadius: radii.inset, overflow: 'hidden', boxShadow: colors.material.control.shadow },
     sessionName: { fontFamily: fonts.display, fontSize: 26, lineHeight: 31, color: colors.text },
     cardHint: { marginTop: 12 },
     progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
@@ -392,10 +407,12 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 10,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+      backgroundColor: colors.material.inset.fill,
+      borderRadius: 14,
     },
-    stepBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    stepBtn: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
     weight: {
       minWidth: 84,
       textAlign: 'center',
@@ -437,3 +454,4 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
     timerText: { flex: 1, color: colors.onPrimary, fontFamily: fonts.monoMedium, fontSize: 18, fontVariant: ['tabular-nums'] },
     timerSkip: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 15 },
   });
+};

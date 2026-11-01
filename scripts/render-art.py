@@ -177,27 +177,55 @@ def light_png(name, w, h, color, alpha):
 
 
 def lavender_backdrop():
-    """A luminous lilac-to-indigo world lit from above: periwinkle light behind the hero, a lilac wash on the
-    right, a pink bloom mid-right, violet and blue pools lower down, soft bokeh and star specks. The hues stay
-    saturated and the luminance stays low enough for white type on glass (scripts/check-contrast.py)."""
+    """A lit violet world. A periwinkle wash pours in from the top left; a magenta pool glows
+    on the right, an azure pool on the left, violet and blue pools lower down, and the floor stays violet (no
+    navy band), with soft bokeh and star specks. The light lives in hue, not brightness: luminance_budget keeps
+    the world, as the lens sees it, inside what white type on the frost needs (scripts/check-contrast.py)."""
     reseed('lavender-bg')
     k = LAV
-    img = gradient([(0, hexc('#B8ABFF')), (0.10, hexc(k['g1'])), (0.30, hexc(k['g2'])), (0.60, hexc(k['g3'])), (1, hexc('#2A1782'))], tilt=0.1)
-    glow(img, W * 0.10, H * 0.30, W * 0.85, hexc('#6F7CFF'), k['peri'])
-    glow(img, W * 1.05, H * 0.20, W * 0.65, hexc('#9C6FE6'), k['lilac'])
-    glow(img, W * 0.95, H * 0.48, W * 0.55, hexc(k['pink_c']), k['pink'])
-    glow(img, W * -0.1, H * 0.55, W * 0.6, hexc('#5A62E0'), k['blue'])
-    glow(img, W * 0.15, H * 0.80, W * 0.6, hexc('#8A3FE0'), k['violet'])
-    glow(img, W * 1.0, H * 0.92, W * 0.55, hexc('#4E6CE8'), k['blue2'])
-    img = bokeh(img, 14, 30, 90, (240, 220, 255), k['bokeh'], 10)
+    img = gradient([(0, hexc(k['g0'])), (0.12, hexc(k['g1'])), (0.34, hexc(k['g2'])), (0.66, hexc(k['g3'])), (1, hexc(k['g4']))], tilt=0.12)
+    glow(img, W * 0.0, H * -0.04, W * 0.95, hexc('#9D8BFF'), k['top'])
+    glow(img, W * 1.05, H * 0.17, W * 0.58, hexc('#9A58FF'), k['lilac'])
+    glow(img, W * 1.02, H * 0.45, W * 0.66, hexc(k['pink_c']), k['pink'])
+    glow(img, W * -0.12, H * 0.62, W * 0.66, hexc('#2F5CFF'), k['blue'])
+    glow(img, W * 0.10, H * 0.90, W * 0.66, hexc('#8B2CFF'), k['violet'])
+    glow(img, W * 1.0, H * 0.97, W * 0.55, hexc('#3550FF'), k['blue2'])
+    img = bokeh(img, 14, 30, 90, (226, 200, 255), k['bokeh'], 10)
+    img = luminance_budget(img, k['cap'], k['cap_top'], 0.18)
     img = bokeh(img, 60, 2, 6, (255, 255, 255), 0.5, 1.0)
     return grain(img, 0.014)
 
 
-# Tuned against the contrast gate. The plan's starting world (#8C7EF2 at 0.30, #DCE2FF glow 0.65, pink #FF8AD8
-# 0.55) put white type on glass at about 2:1; these keep the colour and lower the luminance.
-LAV = {'g1': '#6646D8', 'g2': '#4A2CBC', 'g3': '#3B22A4', 'peri': 0.10, 'lilac': 0.16, 'pink_c': '#C53FA6', 'pink': 0.30,
-       'blue': 0.22, 'violet': 0.30, 'blue2': 0.20, 'bokeh': 0.07}
+def to_linear(img):
+    return np.where(img <= 0.04045, img / 12.92, ((img + 0.055) / 1.055) ** 2.4)
+
+
+def to_srgb(lin):
+    lin = np.clip(lin, 0, 1)
+    return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055)
+
+
+def luminance_budget(img, cap, cap_top, top_end):
+    """Keep the world's light inside the budget white type needs: wherever the world, blurred the way the lens
+    sees it, is brighter than `cap` (relative luminance), scale that region's light down in linear light. Hue
+    and chroma survive, so a pool of light stays a pool of colour. Above `top_end` of the height the cap eases
+    up to `cap_top` (the status bar and greeting sit on the bare world, not on glass)."""
+    lin = to_linear(img)
+    h, w = img.shape[:2]
+    lum = (lin * np.array([0.2126, 0.7152, 0.0722])).sum(-1)
+    seen = gblur(lum, 24 * w / LENS_W)
+    t = np.clip(np.linspace(0, 1, h) / top_end, 0, 1)[:, None]
+    limit = cap_top + (cap - cap_top) * (t * t * (3 - 2 * t))
+    gain = gblur(np.clip(limit / np.maximum(seen, 1e-6), 0, 1), 12 * w / LENS_W)
+    return to_srgb(lin * gain[..., None])
+
+
+# Tuned against the contrast gate (white type on the frost at 4.5:1 or better). The plan's starting world
+# (#8C7EF2 at 0.30, #DCE2FF glow 0.65, pink #FF8AD8 0.55) put white type at about 2:1; these keep its hues and
+# move its light into hue rather than brightness.
+LAV = {'g0': '#8F7BFF', 'g1': '#5A3EE0', 'g2': '#4A26C8', 'g3': '#4220B8', 'g4': '#3A1CA8', 'top': 0.30, 'lilac': 0.30,
+       'pink_c': '#E034C8', 'pink': 0.50, 'blue': 0.45, 'violet': 0.40, 'blue2': 0.34, 'bokeh': 0.12,
+       'cap': 0.055, 'cap_top': 0.13}
 
 
 def lavender_lights():
@@ -208,11 +236,11 @@ def lavender_lights():
     # a gaussian orb (sigma 0.17 of the frame width), brought to exactly zero at the square's inscribed circle
     sigma, edge = 0.17 * LENS_W, np.exp(-0.5 * (0.6 / 0.17) ** 2)
     orb = np.clip((np.exp(-0.5 * (d / sigma) ** 2) - edge) / (1 - edge), 0, 1)
-    light_png('lavender-orb-pink', s, s, '#FF9BE0', orb * LAV_ORBS[0])
-    light_png('lavender-orb-blue', s, s, '#9DB2FF', orb * LAV_ORBS[1])
+    light_png('lavender-orb-pink', s, s, '#FF86DC', orb * LAV_ORBS[0])
+    light_png('lavender-orb-blue', s, s, '#8FA8FF', orb * LAV_ORBS[1])
 
 
-LAV_ORBS = (0.17, 0.15)  # centre alphas; the plan started at 0.38 and 0.32
+LAV_ORBS = (0.22, 0.20)  # centre alphas; the plan started at 0.38 and 0.32
 
 
 # ---------------------------------------------------------------------------------------------

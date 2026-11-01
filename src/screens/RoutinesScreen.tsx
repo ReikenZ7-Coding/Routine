@@ -6,7 +6,7 @@ import { Fab } from '../components/Fab';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { HubHeader, RoutineCard } from '../components/Hub';
-import { Enter, FadeSwap, Pop, Press, SelectFade } from '../components/Motion';
+import { Dim, Enter, FadeSwap, Pop, Press, SelectFade } from '../components/Motion';
 import { RoutineForm } from '../components/RoutineForm';
 import { HintPane, NoMatch } from '../components/Section';
 import {
@@ -21,6 +21,7 @@ import {
   isSkipped,
   routineSubtitle,
   sortByTime,
+  streak,
   toggleSkip,
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
@@ -134,7 +135,7 @@ export default function RoutinesScreen({
             ))}
             {others.length > 0 && <Text style={styles.shelfTitle}>Not today</Text>}
             {others.map((r, i) => (
-              <ArtRow key={r.id} routine={r} index={todays.length + i} today={today} onMore={() => open(r)} />
+              <ArtRow key={r.id} routine={r} index={todays.length + i} today={today} quiet onMore={() => open(r)} />
             ))}
             {ideasLeft.length > 0 && <Text style={styles.shelfTitle}>Ideas</Text>}
             {ideasLeft.map((idea) => (
@@ -265,12 +266,15 @@ function ArtRow({
   today,
   onChange,
   onMore,
+  quiet,
 }: {
   routine: Routine;
   index: number;
   today: string;
   onChange?: (r: Routine) => void;
   onMore: () => void;
+  /** Not on today's plan: its tile steps back a little; the words stay at full strength. */
+  quiet?: boolean;
 }) {
   const { colors, kinds, name } = useTheme();
   const styles = useStyles(makeStyles);
@@ -278,6 +282,8 @@ function ArtRow({
   const skipped = isSkipped(r, today);
   const counter = !!r.target && r.target > 1;
   const canTick = !!onChange && !skipped;
+  const days = streak(r, today);
+  const pill = name === 'lavender' && !skipped && days > 1;
   const idle =
     counter && !done ? (
       <Text style={styles.tickText}>+1</Text>
@@ -291,17 +297,27 @@ function ArtRow({
           <SceneArt width={56} height={56} variant={ART[index % ART.length]} />
         </View>
       ) : (
-        <View style={[styles.thumb, styles.tile, { backgroundColor: kinds.routines.soft }]}>
-          <Ionicons name={iconFor(r) as 'sunny'} size={24} color={colors.text} />
-        </View>
+        // Lavender: the kind's pastel tile with a deep-indigo glyph, like the art on a playlist row.
+        <Dim on={done || skipped || !!quiet} to={quiet && !done && !skipped ? 0.85 : 0.55} style={[styles.thumb, styles.tile]}>
+          <Ionicons name={iconFor(r) as 'sunny'} size={24} color={colors.onKind} />
+        </Dim>
       )}
       <View style={styles.flex}>
-        <Text style={[styles.rowTitle, (done || skipped) && styles.rowDone]} numberOfLines={1}>
-          {r.name}
-        </Text>
+        <View style={styles.titleLine}>
+          <Text style={[styles.rowTitle, styles.shrink, (done || skipped) && styles.rowDone]} numberOfLines={1}>
+            {r.name}
+          </Text>
+          {/* Lavender lifts the streak out of the meta line into a small pill, so the schedule never truncates. */}
+          {pill ? (
+            <View style={styles.streakPill} accessibilityLabel={`${days} in a row`}>
+              <Ionicons name="flame" size={12} color={colors.streak} />
+              <Text style={styles.streakText}>{days}</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={styles.rowMeta} numberOfLines={1}>
           {counter ? `${countOn(r, today)} of ${r.target} · ` : ''}
-          {routineSubtitle(r, today)}
+          {routineSubtitle(r, today, !pill)}
         </Text>
       </View>
       {canTick && (
@@ -314,9 +330,9 @@ function ArtRow({
           accessibilityState={counter ? undefined : { checked: done }}
           accessibilityLabel={counter ? `Add one to ${r.name}, ${countOn(r, today)} of ${r.target}` : `Mark ${r.name} done`}
         >
-          <SelectFade on={done} color={kinds.routines.color} radius={22} bleed={1} />
+          <SelectFade on={done} radius={22} bleed={1.5} style={styles.tickDone} />
           <Pop done={done}>
-            <FadeSwap on={done} off={idle} onContent={<Ionicons name="checkmark" size={18} color={colors.onKind} />} />
+            <FadeSwap on={done} off={idle} onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />} />
           </Pop>
         </Press>
       )}
@@ -327,7 +343,7 @@ function ArtRow({
   );
 }
 
-const makeStyles = ({ colors, fonts, type, radius, name }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, type, radius, name }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     shelf: { gap: 10 },
@@ -339,13 +355,34 @@ const makeStyles = ({ colors, fonts, type, radius, name }: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: colors.controlBorder,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+      backgroundColor: colors.material.inset.fill,
     },
     shelfTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text, marginTop: 14, marginBottom: 2 },
     artRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10 },
     thumb: { width: 56, height: 56, borderRadius: 14, overflow: 'hidden' },
-    tile: { alignItems: 'center', justifyContent: 'center' },
+    tile: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: kinds.routines.color,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}`,
+    },
+    titleLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    shrink: { flexShrink: 1 },
+    streakPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      height: 22,
+      paddingHorizontal: 8,
+      borderRadius: 11,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+    },
+    streakText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
+    tickDone: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
     ideaIcon: {
       width: 56,
       height: 56,

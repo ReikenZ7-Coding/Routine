@@ -22,7 +22,8 @@ const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
 
 export default function ChineseScreen() {
-  const { colors, kinds } = useTheme();
+  const { colors, kinds, name } = useTheme();
+  const lavender = name === 'lavender';
   const styles = useStyles(makeStyles);
   const { ready, today, chinese, updateChinese } = useStore();
   const contentBottom = useContentBottom();
@@ -104,7 +105,7 @@ export default function ChineseScreen() {
     <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}>
       <PageTitle title="Chinese" subtitle="Daily practice and flashcards" badge={plural(chinese.words.length, 'word')} />
       <Enter index={0}>
-        <Glass style={styles.todayCard}>
+        <Glass tier={lavender ? 'hero' : 'pane'} bloom={lavender} style={styles.todayCard}>
           <View style={styles.row}>
             <Text style={styles.cardTitle} accessibilityRole="header">
               Today's practice
@@ -160,6 +161,12 @@ export default function ChineseScreen() {
 
       <Enter index={2}>
         <Glass style={styles.reviewCard}>
+          {lavender && (
+            // The word deck's own tile, like the art on a playlist row: one character on the kind's pastel.
+            <View style={styles.deckTile} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <Text style={styles.deckGlyph}>字</Text>
+            </View>
+          )}
           <View style={styles.flex}>
             <Text style={styles.reviewTitle}>
               {chinese.words.length === 0 ? 'Flashcards' : due.length ? `${plural(due.length, 'word')} to review` : 'All caught up'}
@@ -273,8 +280,18 @@ function GradeButton({
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
   StyleSheet.create({
+    deckTile: {
+      width: 56,
+      height: 56,
+      borderRadius: radii.inset,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: kinds.chinese.color,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}`,
+    },
+    deckGlyph: { fontFamily: fonts.body, fontSize: 28, lineHeight: 34, color: colors.onKind },
     flex: { flex: 1 },
     content: { padding: 16 },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
@@ -282,7 +299,14 @@ const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
     cardTitle: { ...type.sectionTitle, flexShrink: 1 },
     streakPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     streak: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
-    minutes: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.text, marginTop: 8, fontVariant: ['tabular-nums'] },
+    minutes: {
+      fontFamily: fonts.display,
+      fontSize: name === 'lavender' ? 40 : 34,
+      lineHeight: name === 'lavender' ? 46 : 40,
+      color: colors.text,
+      marginTop: 8,
+      fontVariant: ['tabular-nums'],
+    },
     minutesOf: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.muted },
     track: { marginTop: 10 },
     small: { ...type.hint, marginTop: 16, marginBottom: 8 },

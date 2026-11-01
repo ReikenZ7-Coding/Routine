@@ -15,7 +15,7 @@ import { Sheet } from './Sheet';
 
 /** "Your week": how the last seven days went, plus best streaks and lifts. */
 export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const { kinds, type } = useTheme();
+  const { kinds, type, name } = useTheme();
   const styles = useStyles(makeStyles);
   const { today, routines, gym, chinese } = useStore();
   // Always built (it is cheap), so the sheet keeps its content while it slides away.
@@ -44,6 +44,7 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
               accessibilityLabel={d.planned ? `${day}, ${d.done} of ${plural(d.planned, 'routine')}` : `${day}, nothing planned`}
             >
               <DayBar share={d.share ?? 0} index={i} shown={visible} />
+              {name === 'lavender' && <View style={[styles.todayDot, d.date !== today && styles.hidden]} />}
               <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
             </View>
           );
@@ -128,19 +129,26 @@ function DayBar({ share, index, shown }: { share: number; index: number; shown: 
   const grow = useAnimatedStyle(() => ({ transform: [{ scaleY: scale.get() }] }));
   return (
     <View style={styles.barTrack}>
-      {target > 0 && <Animated.View style={[styles.barFill, { backgroundColor: kinds.routines.color }, grow]} />}
+      {target > 0 && <Animated.View style={[styles.barFill, { backgroundColor: kinds.routines.color }, styles.barLight, grow]} />}
     </View>
   );
 }
 
-const makeStyles = ({ colors, fonts }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
+  const lavender = name === 'lavender';
+  return StyleSheet.create({
     flex: { flex: 1 },
     gap: { marginTop: 12 },
     tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
     tile: { flex: 1, padding: 12, gap: 2 },
     tileLine: { width: 20, height: 3, borderRadius: 2, marginBottom: 8 },
-    tileValue: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.text, fontVariant: ['tabular-nums'] },
+    tileValue: {
+      fontFamily: fonts.display,
+      fontSize: lavender ? 30 : 26,
+      lineHeight: lavender ? 36 : 32,
+      color: colors.text,
+      fontVariant: ['tabular-nums'],
+    },
     bars: { flexDirection: 'row', gap: 8, height: 96, marginTop: 16 },
     barCol: { flex: 1, alignItems: 'center', gap: 6 },
     barTrack: {
@@ -151,9 +159,14 @@ const makeStyles = ({ colors, fonts }: Theme) =>
       overflow: 'hidden',
     },
     barFill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 6, transformOrigin: 'bottom' },
+    // Lavender's bars are lit from the top: white fading into the routine pastel.
+    barLight: lavender ? { backgroundImage: `linear-gradient(180deg, ${colors.node}, ${kinds.routines.color})` } : {},
+    todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.text, marginBottom: -2 },
+    hidden: { opacity: 0 },
     barLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },
     barToday: { color: colors.text, fontFamily: fonts.monoMedium },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
     num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text, fontVariant: ['tabular-nums'] },
     empty: { padding: 16, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
   });
+};

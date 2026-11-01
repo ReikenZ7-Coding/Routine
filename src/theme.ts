@@ -94,6 +94,11 @@ export interface Palette {
   primaryGradient: [string, string];
   /** Glyphs and numbers drawn on a kind's colour fill. */
   onKind: string;
+  /** A ticked control (a row's done check, the chosen mood, a done category), top to bottom, and its ink. */
+  doneFill: [string, string];
+  onDone: string;
+  /** The shadow under the screen's one primary action (Lavender's play disc and floating button). */
+  actionGlow: string;
   /** Unchecked outlines (checkboxes, rings, set bubbles): at least 3:1 on glass. */
   controlBorder: string;
   /** Progress tracks. */
@@ -145,7 +150,7 @@ export interface Radii {
   pill: number;
 }
 
-const LAVENDER_FLOAT = '0px 18px 40px -8px rgba(36,16,130,0.45), 0px 2px 6px rgba(36,16,130,0.22), 0px 0px 30px rgba(255,140,215,0.20)';
+const LAVENDER_FLOAT = '0px 18px 40px -8px rgba(30,12,120,0.50), 0px 2px 6px rgba(30,12,120,0.24)';
 const STONE_FLOAT = '6px 20px 44px -12px rgba(14,13,8,0.40), 1px 2px 6px rgba(14,13,8,0.20)';
 const STONE_PANE = '4px 14px 30px -10px rgba(14,13,8,0.34), 0px 1px 2px rgba(14,13,8,0.18)';
 const PAPER_FLOAT =
@@ -168,6 +173,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onPrimary: '#FFFFFF',
       primaryGradient: ['#7458E8', '#5638CC'],
       onKind: '#2A1A78',
+      doneFill: ['#FFC4EE', '#FFA6DF'],
+      onDone: '#2A1A78',
+      actionGlow: '0px 10px 26px -6px rgba(255,120,210,0.60), 0px 2px 6px rgba(30,12,120,0.30)',
       controlBorder: 'rgba(255,255,255,0.70)',
       track: 'rgba(24,12,90,0.32)',
       danger: '#FFF8FA',
@@ -189,8 +197,8 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         live: { tint: 'default', intensity: 8, reduction: 0.33, webBlur: 24, webSaturate: 1.6 },
         chromeTint: 'rgba(46,30,150,0.30)',
         lensSaturation: 1.12,
-        base: 'rgba(64,44,178,0.26)',
-        body: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'],
+        base: 'rgba(64,44,178,0.10)',
+        body: ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.04)'],
         bodyAngle: 160,
         caustic: 'rgba(255,150,220,0.24)',
         causticAt: '90% 115%',
@@ -207,14 +215,14 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         innerTop: 'rgba(255,255,255,0.55)',
         innerBottom: 'rgba(255,150,220,0.28)',
         innerGlow: 'inset 0px 0px 20px rgba(220,200,255,0.14)',
-        sheen: 'rgba(255,255,255,0.035)',
+        sheen: 'rgba(255,255,255,0.03)',
         shadowFloat: LAVENDER_FLOAT,
-        shadowPane: '0px 12px 28px -6px rgba(36,16,130,0.38), 0px 1px 3px rgba(36,16,130,0.18)',
+        shadowPane: '0px 12px 28px -6px rgba(30,12,120,0.45), 0px 1px 3px rgba(30,12,120,0.20)',
         shadowHero: `${LAVENDER_FLOAT}, 0px 22px 50px -6px rgba(255,120,210,0.34)`,
         pressFill: 'rgba(255,255,255,0.12)',
         pressRim: 'rgba(255,255,255,0.95)',
-        control: { body: ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.04)'], shadow: '0px 6px 18px rgba(190,150,255,0.45)' },
-        inset: { fill: 'rgba(255,255,255,0.05)', border: 'rgba(255,255,255,0.16)', borderTop: 'rgba(255,255,255,0.34)' },
+        control: { body: ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.06)'], shadow: '0px 8px 18px -6px rgba(30,12,120,0.50)' },
+        inset: { fill: 'rgba(255,255,255,0.045)', border: 'rgba(255,255,255,0.16)', borderTop: 'rgba(255,255,255,0.34)' },
         receded: { body: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'], shadow: '0px 4px 12px -4px rgba(36,16,130,0.24)' },
         sheet: {
           body: ['rgba(76,58,188,0.84)', 'rgba(40,26,130,0.93)'],
@@ -229,7 +237,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
           shadow: '0px 4px 12px -2px rgba(36,16,130,0.40)',
           ink: '#FFFFFF',
         },
-        light: { period: 90000, layers: ['lavender-orb-pink', 'lavender-orb-blue'], catch: 0.45 },
+        light: { period: 90000, layers: ['lavender-orb-pink', 'lavender-orb-blue'], catch: 0.36 },
         bloom: 'radial-gradient(60% 60% at 30% 20%, rgba(214,190,255,0.07), transparent 70%)',
       },
     },
@@ -257,6 +265,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onPrimary: '#2E2D24',
       primaryGradient: ['#F3E9D2', '#D3C39F'],
       onKind: '#2E2D24',
+      doneFill: ['#F3E9D2', '#D3C39F'],
+      onDone: '#2E2D24',
+      actionGlow: STONE_PANE,
       controlBorder: 'rgba(255,247,228,0.50)',
       track: 'rgba(255,246,226,0.07)',
       danger: '#F3D1C9',
@@ -342,6 +353,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onPrimary: '#FFFFFF',
       primaryGradient: ['rgba(26,28,25,0.86)', 'rgba(26,28,25,0.94)'],
       onKind: '#FFFFFF',
+      doneFill: ['rgba(26,28,25,0.86)', 'rgba(26,28,25,0.94)'],
+      onDone: '#FFFFFF',
+      actionGlow: '0px 6px 16px -4px rgba(46,52,40,0.18)',
       controlBorder: 'rgba(30,34,28,0.50)',
       track: 'rgba(30,34,28,0.08)',
       danger: '#B8281A',
@@ -428,6 +442,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onPrimary: '#06201A',
       primaryGradient: ['#A3F0D3', '#7CE3BC'],
       onKind: '#06201A',
+      doneFill: ['#A3F0D3', '#7CE3BC'],
+      onDone: '#06201A',
+      actionGlow: PINE_PANE,
       controlBorder: 'rgba(214,240,228,0.58)',
       track: 'rgba(214,240,228,0.08)',
       danger: '#F7C8C0',
