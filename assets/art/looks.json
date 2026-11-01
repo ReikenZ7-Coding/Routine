@@ -1,0 +1,125 @@
+{
+  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width.",
+  "frame": {
+    "widthDp": 400,
+    "heightDp": 860
+  },
+  "looks": {
+    "lavender": {
+      "scrim": "rgba(40,24,140,0.10)",
+      "topVeil": ["rgba(52,38,160,0.60)", "rgba(52,38,160,0)"],
+      "veilEnd": 0.26,
+      "lensSaturation": 1.12,
+      "lights": [
+        {
+          "name": "lavender-orb-pink",
+          "box": {
+            "w": 1.2,
+            "h": 1.2
+          },
+          "motion": {
+            "type": "orbit",
+            "period": 90000,
+            "radius": 0.3,
+            "dir": 1,
+            "phase": 0
+          }
+        },
+        {
+          "name": "lavender-orb-blue",
+          "box": {
+            "w": 1.2,
+            "h": 1.2
+          },
+          "motion": {
+            "type": "orbit",
+            "period": 90000,
+            "radius": 0.34,
+            "dir": -1,
+            "phase": 180
+          }
+        }
+      ]
+    },
+    "stone": {
+      "scrim": "rgba(0,0,0,0)",
+      "topVeil": ["rgba(24,24,16,0.40)", "rgba(24,24,16,0)"],
+      "veilEnd": 0.22,
+      "lensSaturation": 1.0,
+      "lights": [
+        {
+          "name": "stone-light-beam",
+          "box": "frame",
+          "motion": {
+            "type": "sway",
+            "period": 22000,
+            "dx": 14,
+            "rotate": 1.2
+          }
+        }
+      ]
+    },
+    "paper": {
+      "scrim": "rgba(0,0,0,0)",
+      "topVeil": ["rgba(248,247,243,0.60)", "rgba(248,247,243,0)"],
+      "veilEnd": 0.2,
+      "lensSaturation": 1.1,
+      "lights": [
+        {
+          "name": "paper-light-sun",
+          "box": "frame",
+          "motion": {
+            "type": "drift",
+            "period": 30000,
+            "ax": 18,
+            "ay": 10,
+            "s": 0.04
+          }
+        },
+        {
+          "name": "paper-mist",
+          "box": {
+            "w": 1,
+            "h": 0.5556
+          },
+          "anchor": "top",
+          "opacity": 0.5,
+          "motion": {
+            "type": "slide",
+            "period": 40000,
+            "x0": -12,
+            "ax": 12
+          }
+        }
+      ],
+      "header": {
+        "file": "paper-header",
+        "ratio": 1.1111,
+        "blur": "paper-header-blur"
+      }
+    },
+    "pine": {
+      "scrim": "rgba(0,0,0,0)",
+      "topVeil": ["rgba(11,42,36,0)", "rgba(11,42,36,0)"],
+      "veilEnd": 0.2,
+      "lensSaturation": 1.15,
+      "lights": [
+        {
+          "name": "pine-light-moon",
+          "box": "frame",
+          "motion": {
+            "type": "drift",
+            "period": 16000,
+            "ax": 14,
+            "ay": 10,
+            "s": 0.06
+          }
+        }
+      ],
+      "header": {
+        "file": "pine-header",
+        "ratio": 0.8333
+      }
+    }
+  }
+}

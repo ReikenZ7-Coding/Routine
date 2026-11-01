@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Bloom, SceneArt } from './Art';
+import { Magnolia, SceneArt } from './Art';
 import { Glass } from './Glass';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -232,7 +232,7 @@ function StoneHome(p: Props) {
           <Text style={styles.stoneTagline}>{p.tagline}</Text>
         </View>
         <View style={styles.stoneBloom} pointerEvents="none">
-          <Bloom size={92} />
+          <Magnolia width={92} />
         </View>
       </View>
 
@@ -246,7 +246,7 @@ function StoneHome(p: Props) {
             accessibilityRole="button"
             accessibilityLabel={p.calendarOpen ? 'Hide calendar' : 'Show calendar'}
           >
-            <Ionicons name={p.calendarOpen ? 'close' : 'arrow-forward'} size={18} color={colors.primary} />
+            <Ionicons name={p.calendarOpen ? 'close' : 'arrow-forward'} size={18} color={colors.link} />
           </Pressable>
         </View>
         <Text style={styles.stoneTitle} numberOfLines={2}>
@@ -468,7 +468,7 @@ const makeStyles = ({ colors, fonts, name }: Theme) =>
     stoneBloom: { position: 'absolute', right: -6, top: -6 },
     stoneCard: { marginTop: 22, padding: 20, borderRadius: 28 },
     stoneCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    stoneEyebrow: { fontFamily: fonts.body, fontSize: 14, letterSpacing: 0.6, color: colors.primary },
+    stoneEyebrow: { fontFamily: fonts.body, fontSize: 14, letterSpacing: 0.6, color: colors.link },
     stoneTitle: { marginTop: 10, fontFamily: fonts.display, fontSize: 26, lineHeight: 31, color: colors.text },
     stoneMeta: { marginTop: 4, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
     stonePill: {

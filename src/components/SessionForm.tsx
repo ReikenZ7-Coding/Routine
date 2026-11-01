@@ -161,7 +161,7 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
               </View>
             ))}
             <Pressable accessibilityRole="button" style={styles.addRow} onPress={() => setRows((prev) => [...prev, blankRow()])}>
-              <Ionicons name="add" size={18} color={colors.primary} />
+              <Ionicons name="add" size={18} color={colors.link} />
               <Text style={styles.addRowText}>Add exercise</Text>
             </Pressable>
 
@@ -213,7 +213,7 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     exRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
     num: { width: 48, textAlign: 'center', paddingHorizontal: 4 },
     addRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 10 },
-    addRowText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 15 },
+    addRowText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 15 },
     saveButton: {
       backgroundColor: colors.primary,
       borderRadius: 999,

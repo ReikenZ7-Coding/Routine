@@ -90,7 +90,7 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
             }}
             accessibilityLabel="Start focus session"
           >
-            <Ionicons name="play" size={16} color="#fff" />
+            <Ionicons name="play" size={16} color={colors.onKind} />
             <Text style={styles.btnText}>Start</Text>
           </Pressable>
         )}
@@ -128,7 +128,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
       paddingHorizontal: 18,
       paddingVertical: 11,
     },
-    btnText: { fontFamily: fonts.bodyBold, fontSize: 15, color: '#fff' },
+    btnText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onKind },
     stop: { backgroundColor: colors.primarySoft },
     stopText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
     track: { height: 3, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },

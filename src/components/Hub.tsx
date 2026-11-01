@@ -232,7 +232,7 @@ export function RoutineCard({
             accessibilityLabel={tickLabel}
           >
             {done ? (
-              <Ionicons name="checkmark" size={16} color={dark ? colors.onSelected : '#FFFFFF'} />
+              <Ionicons name="checkmark" size={16} color={colors.onKind} />
             ) : counter && count > 0 ? (
               <Text style={styles.tickCount}>{count}</Text>
             ) : null}

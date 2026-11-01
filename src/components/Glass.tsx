@@ -35,6 +35,7 @@ export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPres
   const nested = useContext(InsideGlass);
   const press = useRef(new Animated.Value(0)).current;
   const { colors, glass } = theme;
+  const m = colors.material;
   const r = radius ?? theme.radius;
   const interactive = !!(onPress || onLongPress);
 
@@ -59,8 +60,14 @@ export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPres
     <Animated.View
       style={[
         styles.shell,
-        { borderRadius: r, borderColor: colors.cardBorder, borderTopColor: colors.rim, borderLeftColor: colors.rim },
-        !nested && { boxShadow: colors.shadow },
+        {
+          borderRadius: r,
+          borderTopColor: m.rimTop,
+          borderLeftColor: m.rimLeft,
+          borderRightColor: m.rimRight,
+          borderBottomColor: m.rimBottom,
+        },
+        !nested && { boxShadow: m.shadowPane },
         interactive && { transform: [{ scale: press.interpolate({ inputRange: [0, 1], outputRange: [1, 0.95] }) }] },
         style,
       ]}
@@ -68,37 +75,19 @@ export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPres
       {canBlur && (
         <BlurView
           intensity={intensity}
-          tint={colors.blurTint}
+          tint={m.live.tint}
           blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
           blurTarget={target ?? undefined}
           style={StyleSheet.absoluteFill}
         />
       )}
-      <LinearGradient
-        colors={colors.glassFill}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: m.base }]} pointerEvents="none" />
+      <LinearGradient colors={m.body} {...angleToPoints(m.bodyAngle)} style={StyleSheet.absoluteFill} pointerEvents="none" />
       {tint ? <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} pointerEvents="none" /> : null}
-      {/* Specular shine across the top, and the surrounding colour caught along the bottom edge. */}
-      <LinearGradient
-        colors={[colors.shine, 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.65, y: 0.65 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
-      <LinearGradient
-        colors={['transparent', colors.edgeGlow]}
-        start={{ x: 0, y: 0.6 }}
-        end={{ x: 0, y: 1 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      {/* The highlight band along the inside top edge. */}
+      <LinearGradient colors={[m.topGlow, 'transparent']} style={[styles.topGlow, { height: m.topGlowPx }]} pointerEvents="none" />
       {interactive && (
-        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.shine, opacity: press }]} pointerEvents="none" />
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: m.pressFill, opacity: press }]} pointerEvents="none" />
       )}
       <InsideGlass.Provider value>{children}</InsideGlass.Provider>
     </Animated.View>
@@ -121,6 +110,15 @@ export function Glass({ style, radius, intensity = 85, tint, onPress, onLongPres
   );
 }
 
+/** A CSS linear-gradient angle as LinearGradient start and end points (180 runs top to bottom). */
+function angleToPoints(deg: number) {
+  const a = (deg * Math.PI) / 180;
+  const dx = Math.sin(a) / 2;
+  const dy = -Math.cos(a) / 2;
+  return { start: { x: 0.5 - dx, y: 0.5 - dy }, end: { x: 0.5 + dx, y: 0.5 + dy } };
+}
+
 const styles = StyleSheet.create({
   shell: { overflow: 'hidden', borderWidth: 1 },
+  topGlow: { position: 'absolute', top: 0, left: 0, right: 0 },
 });

@@ -46,7 +46,7 @@ export function CheckRow({ title, subtitle, done, tint: tintProp, meta, disabled
           (skipped || (disabled && !done)) && styles.boxDisabled,
         ]}
       >
-        {done && <Ionicons name="checkmark" size={16} color="#fff" />}
+        {done && <Ionicons name="checkmark" size={16} color={colors.onKind} />}
         {partial && <Text style={[styles.count, { color: tint }]}>{count.value}</Text>}
         {skipped && <Ionicons name="remove" size={14} color={colors.faint} />}
       </View>

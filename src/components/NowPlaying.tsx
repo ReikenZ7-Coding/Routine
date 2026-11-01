@@ -387,7 +387,7 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
     control: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
     big: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
-    bigLavender: { backgroundColor: '#FFFFFF', boxShadow: `0px 8px 28px ${colors.glow}` },
+    bigLavender: { backgroundColor: colors.primary, boxShadow: `0px 8px 28px ${colors.glow}` },
     bigStone: { backgroundColor: colors.primary, boxShadow: '0px 8px 24px rgba(230,214,179,0.35)' },
     playNudge: { marginLeft: 4 },
     picker: { flexDirection: 'row', padding: 6, gap: 6, marginTop: 20 },

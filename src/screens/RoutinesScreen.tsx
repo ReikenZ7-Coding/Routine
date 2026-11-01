@@ -100,7 +100,7 @@ export default function RoutinesScreen({
             </Text>
             {ROUTINE_IDEAS.map((idea) => (
               <Pressable accessibilityRole="button" key={idea.name} style={styles.idea} onPress={() => addIdea(idea)}>
-                <Ionicons name="add-circle-outline" size={22} color={colors.primary} />
+                <Ionicons name="add-circle-outline" size={22} color={colors.link} />
                 <View style={styles.flex}>
                   <Text style={styles.ideaName}>{idea.name}</Text>
                   <Text style={styles.ideaSub}>

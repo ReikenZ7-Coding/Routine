@@ -335,7 +335,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
     planTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
     planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
     secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
-    secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
     todayCard: { padding: 16 },
     eyebrow: {
       fontFamily: fonts.monoMedium,
@@ -374,7 +374,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
     },
     setDone: { backgroundColor: kinds.gym.color, borderColor: kinds.gym.color },
     setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted },
-    setTextDone: { color: '#fff' },
+    setTextDone: { color: colors.onKind },
     hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 14 },
     link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
     planRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },

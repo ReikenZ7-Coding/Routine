@@ -221,7 +221,7 @@ const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
     },
     primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
     secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
-    secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
     emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
     aisle: {
       fontFamily: fonts.monoMedium,

@@ -233,7 +233,7 @@ function GradeButton({
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
-  const color = tone === 'danger' ? colors.danger : tone === 'primary' ? colors.primary : colors.muted;
+  const color = tone === 'danger' ? colors.danger : tone === 'primary' ? colors.link : colors.muted;
   return (
     <Pressable accessibilityRole="button" style={[styles.gradeButton, { borderColor: color }]} onPress={onPress}>
       <Text style={[styles.gradeLabel, { color }]}>{label}</Text>
@@ -285,7 +285,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
     },
     primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
     secondaryButton: { paddingVertical: 14, alignItems: 'center' },
-    secondaryText: { color: colors.primary, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
     link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
     wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 10, paddingHorizontal: 14 },
     pressed: { backgroundColor: colors.primarySoft },

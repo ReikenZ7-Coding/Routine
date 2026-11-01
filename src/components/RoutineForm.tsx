@@ -258,7 +258,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
                     accessibilityLabel={`Icon ${ic}`}
                     accessibilityState={{ selected: active }}
                   >
-                    <Ionicons name={ic} size={18} color={active ? '#FFFFFF' : colors.text} />
+                    <Ionicons name={ic} size={18} color={active ? colors.onKind : colors.text} />
                   </Pressable>
                 );
               })}
