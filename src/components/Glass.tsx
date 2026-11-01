@@ -3,5 +3,5 @@ export { Glass, type GlassProps, type GlassTier, InsideGlass, RecededContext, us
 export { GlassScroll, GlassScrollContext, useGlassScroll } from './glass/GlassScroll';
 export { LensHeaderContext } from './glass/GlassLens';
 export { WorldFrame } from './glass/Frame';
-export { LightRoot, LightField, useFrame } from './glass/light';
+export { HeaderMist, LightRoot, LightField, useFrame } from './glass/light';
 export { ActiveBlurTargetContext, BlurTargetContext, useBlurTarget } from './glass/targets';

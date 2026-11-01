@@ -1,5 +1,5 @@
 // The hub pieces for the page looks' Library: a segmented switch with a gliding pill, filter chips
-// under small uppercase captions, section headers with an accent bar, and the routine cards in the grid.
+// under small captions, section headers with the kind's icon, and the routine cards in the grid.
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -272,18 +272,21 @@ export function HubHeader({
   color: string;
   right?: ReactNode;
 }) {
-  const { type } = useTheme();
+  const { type, colors, name } = useTheme();
   const styles = useStyles(makeStyles);
+  // Paper keeps its section marks in ink on a glass pebble, and a header that already says "1/4 done" needs no
+  // second count beside it.
+  const paper = name === 'paper';
   return (
     <View style={styles.hubHead}>
-      <View style={[styles.hubIcon, { backgroundColor: `${color}22` }]}>
-        <Ionicons name={icon as 'sunny'} size={14} color={color} />
+      <View style={[styles.hubIcon, paper ? styles.hubPebble : { backgroundColor: `${color}22` }]}>
+        <Ionicons name={icon as 'sunny'} size={paper ? 15 : 14} color={paper ? colors.text : color} />
       </View>
       <Text style={[type.sectionTitle, styles.flex]} numberOfLines={1} accessibilityRole="header">
         {title}
       </Text>
       {right}
-      {count !== undefined && (
+      {count !== undefined && !(paper && right) && (
         <View style={styles.count}>
           <Text style={styles.countText}>{count}</Text>
         </View>
@@ -306,8 +309,10 @@ export function RoutineCard({
   onChange?: (r: Routine) => void;
   onOpen: () => void;
 }) {
-  const { colors, kinds } = useTheme();
+  const { colors, kinds, name } = useTheme();
   const styles = useStyles(makeStyles);
+  // Paper ticks in ink (its done colour), like every other done mark on the page.
+  const paper = name === 'paper';
   const done = isDoneOn(r, today);
   const skipped = isSkipped(r, today);
   const counter = !!r.target && r.target > 1;
@@ -345,12 +350,18 @@ export function RoutineCard({
             accessibilityState={counter ? undefined : { checked: done }}
             accessibilityLabel={tickLabel}
           >
-            <SelectFade on={done} color={kinds.routines.color} radius={22} bleed={2} />
+            <SelectFade
+              on={done}
+              color={paper ? undefined : kinds.routines.color}
+              radius={22}
+              bleed={2}
+              style={paper ? styles.tickDone : undefined}
+            />
             <Pop done={done}>
               <FadeSwap
                 on={done}
                 off={counter && count > 0 ? <Text style={styles.tickCount}>{count}</Text> : null}
-                onContent={<Ionicons name="checkmark" size={18} color={colors.onKind} />}
+                onContent={<Ionicons name="checkmark" size={18} color={paper ? colors.onDone : colors.onKind} />}
               />
             </Pop>
           </Press>
@@ -433,6 +444,16 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
     chipText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
     hubHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 28, marginBottom: 12 },
     hubIcon: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+    hubPebble: {
+      width: 32,
+      height: 32,
+      borderRadius: 11,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    tickDone: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
     count: {
       minWidth: 28,
       height: 28,

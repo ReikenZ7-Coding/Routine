@@ -7,7 +7,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { AppState, useWindowDimensions } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle, useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { type ThemeName, useTheme } from '../../theme';
-import { type Light, type LightMotion, LIGHTS, lightBox } from '../Art';
+import { HEADER_MISTS, HEADER_RATIOS, type Light, type LightMotion, LIGHTS, lightBox } from '../Art';
 import { useReduceMotion } from '../Motion';
 
 /** Bloom breathing period (ms); it rides the same clock as the light. */
@@ -239,6 +239,31 @@ function CatchLayer({ light, frame, placement, strength }: { light: Light; frame
       pointerEvents="none"
       accessibilityIgnoresInvertColors
       style={[{ position: 'absolute', ...box, opacity: 0 }, style]}
+    />
+  );
+}
+
+/** Mist drifting over the header's rock (Paper's Today), on the frame's clock; `width` is the header's width. */
+export function HeaderMist({ width }: { width: number }) {
+  const { name } = useTheme();
+  const frame = useFrame();
+  const mist = HEADER_MISTS[name];
+  const { w, t, still } = frame;
+  const motion = mist?.motion;
+  const style = useAnimatedStyle(() => {
+    if (!motion) return {};
+    const k = pose(motion, phase(t.get(), still.get(), motion.period), w);
+    return { transform: [{ translateX: k.tx }, { translateY: k.ty }] };
+  });
+  if (!mist) return null;
+  return (
+    <Animated.Image
+      source={mist.source}
+      resizeMode="stretch"
+      fadeDuration={0}
+      pointerEvents="none"
+      accessibilityIgnoresInvertColors
+      style={[{ position: 'absolute', top: 0, left: 0, width, height: Math.round(width * (HEADER_RATIOS[name] ?? 1)) }, style]}
     />
   );
 }

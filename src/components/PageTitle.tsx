@@ -38,12 +38,12 @@ const makeStyles = ({ type, colors, fonts, name }: Theme) =>
     badge: {
       borderRadius: 999,
       paddingHorizontal: 12,
-      minHeight: 30,
+      minHeight: name === 'paper' ? 32 : 30,
       justifyContent: 'center',
       backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
     },
-    badgeText: { ...type.badge, color: colors.text, fontVariant: ['tabular-nums'] },
+    badgeText: { ...type.badge, ...(name === 'paper' ? { fontSize: 13 } : null), color: colors.text, fontVariant: ['tabular-nums'] },
   });

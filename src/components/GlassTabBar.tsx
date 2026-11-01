@@ -131,7 +131,7 @@ export function GlassTabBar({
             const item = (on: boolean) => (
               <View style={styles.item}>
                 {options.tabBarIcon?.({ focused: on, color: on ? m.drop.ink : colors.muted, size: 24 })}
-                <Text style={[styles.label, { color: on ? m.drop.ink : colors.muted }]} numberOfLines={1}>
+                <Text style={[styles.label, on && styles.labelOn, { color: on ? m.drop.ink : colors.muted }]} numberOfLines={1}>
                   {label}
                 </Text>
               </View>
@@ -185,5 +185,7 @@ const makeStyles = ({ colors, fonts, name }: Theme) => {
     item: { alignItems: 'center', gap: 3 },
     // Lavender's labels are 13, the caption floor; the other looks keep their tighter 12.
     label: { fontFamily: fonts.bodyMedium, fontSize: name === 'lavender' ? 13 : 12 },
+    // Paper's current tab is set in bold ink, the reference's solid-icon-and-bold-label tab.
+    labelOn: name === 'paper' ? { fontFamily: fonts.bodyBold } : {},
   });
 };

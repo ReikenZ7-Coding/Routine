@@ -58,7 +58,9 @@ export default function GroceriesScreen({
   const { colors, kinds, name, type } = useTheme();
   const styles = useStyles(makeStyles);
   // Lavender gives every aisle its own pane, so the list reads as a stack of small glass cards.
-  const panes = name === 'lavender';
+  // Paper does the same, with each aisle's mark in ink on a glass pebble.
+  const panes = name === 'lavender' || name === 'paper';
+  const paper = name === 'paper';
   const [copied, setCopied] = useState(false);
   const contentBottom = useContentBottom(true);
   const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
@@ -131,7 +133,7 @@ export default function GroceriesScreen({
                   {byAisle(toBuy).map(([aisle, items]) => (
                     <Glass key={aisle}>
                       <View style={styles.aisleHead}>
-                        <View style={styles.aisleTile}>
+                        <View style={[styles.aisleTile, paper && styles.aislePebble]}>
                           <Ionicons name={aisleIcon(aisle)} size={18} color={colors.text} />
                         </View>
                         <Text style={styles.aisleName} accessibilityRole="header">
@@ -156,6 +158,21 @@ export default function GroceriesScreen({
                   ))}
                   <HintPane>Tap to tick off. Press and hold an item to edit it.</HintPane>
                 </View>
+              </Enter>
+            ) : paper && toBuy.length === 0 ? (
+              <Enter index={0}>
+                <Text style={[type.sectionTitle, styles.paneHead, styles.paperHead]} accessibilityRole="header">
+                  To buy
+                </Text>
+                <Glass style={styles.allBought}>
+                  <View style={styles.allBoughtPebble}>
+                    <Ionicons name="basket-outline" size={26} color={colors.text} />
+                  </View>
+                  <View style={styles.flex}>
+                    <Text style={styles.allBoughtTitle}>All bought</Text>
+                    <Text style={type.hint}>Ticked items come back on their next day.</Text>
+                  </View>
+                </Glass>
               </Enter>
             ) : (
               <Section
@@ -265,7 +282,7 @@ export default function GroceriesScreen({
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, type }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, type, name }: Theme) =>
   StyleSheet.create({
     screen: { flex: 1 },
     content: { padding: 16 },
@@ -277,7 +294,23 @@ const makeStyles = ({ colors, kinds, fonts, type }: Theme) =>
     aisle: { ...type.label, color: kinds.groceries.text, paddingHorizontal: 16, paddingTop: 14 },
     flex: { flex: 1 },
     paneHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 10 },
-    aislePanes: { gap: 8 },
+    aislePanes: { gap: name === 'paper' ? 12 : 8 },
+    aislePebble: { backgroundColor: colors.material.inset.fill },
+    // Lines up with the Section titles below it.
+    paperHead: { paddingHorizontal: 2 },
+    allBought: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
+    allBoughtPebble: {
+      width: 52,
+      height: 52,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    allBoughtTitle: { fontFamily: fonts.bodyBold, fontSize: 17, lineHeight: 22, color: colors.text, marginBottom: 2 },
     aisleHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 2 },
     aisleTile: {
       width: 32,
@@ -290,7 +323,7 @@ const makeStyles = ({ colors, kinds, fonts, type }: Theme) =>
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
     },
-    aisleName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 14, letterSpacing: 0.3, color: colors.text },
+    aisleName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: name === 'paper' ? 15 : 14, letterSpacing: 0.3, color: colors.text },
     aisleCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     laterRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 54 },
     laterText: { flex: 1 },

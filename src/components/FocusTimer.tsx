@@ -125,14 +125,24 @@ const makeStyles = ({ colors, fonts, type, name }: Theme) =>
             letterSpacing: name === 'stone' ? -1 : -1.5,
             fontVariant: ['tabular-nums'],
           }
-        : {
-            fontFamily: fonts.monoMedium,
-            fontSize: 40,
-            lineHeight: 48,
-            color: colors.text,
-            letterSpacing: -1,
-            fontVariant: ['tabular-nums'],
-          },
+        : name === 'paper'
+          ? // Paper: a firm DM Sans numeral with steady (tabular) figures, in ink.
+            {
+              fontFamily: fonts.bodyMedium,
+              fontSize: 46,
+              lineHeight: 52,
+              color: colors.text,
+              letterSpacing: -1.4,
+              fontVariant: ['tabular-nums'],
+            }
+          : {
+              fontFamily: fonts.monoMedium,
+              fontSize: 40,
+              lineHeight: 48,
+              color: colors.text,
+              letterSpacing: -1,
+              fontVariant: ['tabular-nums'],
+            },
     btn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 18, minHeight: 48 },
     stop: {
       backgroundColor: colors.material.inset.fill,

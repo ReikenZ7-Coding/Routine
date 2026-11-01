@@ -404,7 +404,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         pressRim: '#FFFFFF',
         control: { body: ['rgba(255,255,255,0.80)', 'rgba(255,255,255,0.60)'], shadow: '0px 6px 16px -4px rgba(46,52,40,0.18)' },
         inset: { fill: 'rgba(255,255,255,0.65)', border: 'rgba(20,22,18,0.06)', borderTop: '#FFFFFF' },
-        receded: { body: ['rgba(255,255,255,0.58)', 'rgba(255,255,255,0.46)'], shadow: '0px 0px 0px 0.5px rgba(30,34,28,0.07)' },
+        receded: { body: ['rgba(255,255,255,0.46)', 'rgba(255,255,255,0.34)'], shadow: '0px 0px 0px 0.5px rgba(30,34,28,0.07)' },
         sheet: {
           body: ['rgba(252,252,249,0.96)', 'rgba(246,246,242,0.98)'],
           rimTop: '#FFFFFF',
@@ -534,7 +534,8 @@ const FONTS = {
 };
 
 // Per-look faces. Lavender drops mono entirely (numbers use DM Sans with tabular figures); Stone has no bold
-// and no mono (its "bold" is DM Sans 500); Paper keeps its mono map voice; Pine keeps mono for numbers only.
+// and no mono (its "bold" is DM Sans 500); Paper is Bricolage display over DM Sans, with no mono (numbers use
+// DM Sans tabular figures, big numerals Bricolage); Pine keeps mono for numbers only.
 const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; displayMedium: string }> = {
   lavender: {
     display: 'DMSans_700Bold',
@@ -549,7 +550,12 @@ const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; d
     mono: 'DMSans_400Regular',
     monoMedium: 'DMSans_500Medium',
   },
-  paper: { display: 'BricolageGrotesque_700Bold', displayMedium: 'BricolageGrotesque_500Medium' },
+  paper: {
+    display: 'BricolageGrotesque_700Bold',
+    displayMedium: 'BricolageGrotesque_500Medium',
+    mono: 'DMSans_500Medium',
+    monoMedium: 'DMSans_700Bold',
+  },
   pine: { display: 'DMSans_700Bold', displayMedium: 'DMSans_500Medium' },
 };
 
@@ -593,9 +599,9 @@ function makeType(name: ThemeName, colors: Palette, fonts: Fonts) {
       title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, color: colors.text, letterSpacing: -0.6 },
       sectionTitle: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24, color: colors.text, letterSpacing: -0.3 },
       sheetTitle: { fontFamily: 'BricolageGrotesque_700Bold', fontSize: 24, lineHeight: 28, color: colors.text, letterSpacing: -0.3 },
-      label: { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.label },
-      badge: { fontFamily: fonts.monoMedium, fontSize: 12, letterSpacing: 1, textTransform: 'uppercase', color: colors.label },
-      num: { fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text, fontVariant: TABULAR },
+      label: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 19, textTransform: 'none', color: colors.label },
+      badge: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.2, textTransform: 'none', color: colors.label },
+      num: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, fontVariant: TABULAR },
     },
     pine: {
       title: { fontFamily: 'DMSans_700Bold', fontSize: 28, lineHeight: 32, color: colors.text, letterSpacing: -0.8 },

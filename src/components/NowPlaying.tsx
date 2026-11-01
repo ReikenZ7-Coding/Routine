@@ -13,9 +13,9 @@ import { alphaOf } from './glass/colour';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 /** Art for a sound: the look's own scene for it (rain, waves, focus), cropped to a rounded tile. */
-export function SoundArt({ size, id }: { icon?: string; size: number; id?: string }) {
+export function SoundArt({ size, id, radius }: { icon?: string; size: number; id?: string; radius?: number }) {
   return (
-    <View style={{ width: size, height: size, borderRadius: size * 0.22, overflow: 'hidden' }}>
+    <View style={{ width: size, height: size, borderRadius: radius ?? size * 0.22, overflow: 'hidden' }}>
       <SceneArt width={size} height={size} variant={id} />
     </View>
   );
@@ -68,7 +68,7 @@ const MINI_IN = rise();
 
 /** Full "now playing" sheet with the sound list. */
 export function NowPlaying() {
-  const { colors, type, radii, glass } = useTheme();
+  const { colors, type, radii, glass, name } = useTheme();
   const styles = useStyles(makeStyles);
   const s = useSounds();
 
@@ -90,7 +90,14 @@ export function NowPlaying() {
     <Sheet visible={s.sheetOpen} title="Now playing" onClose={() => s.setSheetOpen(false)}>
       <Text style={type.small}>Focus sounds · loops until you stop</Text>
       <View style={styles.art}>
-        <SoundArt id={s.current.id} size={220} />
+        {name === 'paper' ? (
+          // Paper frames the scene like a print under milk glass: a wide white mat and a soft, deep shadow.
+          <View style={styles.paperFrame}>
+            <SoundArt id={s.current.id} size={204} radius={20} />
+          </View>
+        ) : (
+          <SoundArt id={s.current.id} size={220} />
+        )}
       </View>
       <Text style={styles.name}>{s.current.name}</Text>
       <Text style={type.small}>{s.current.subtitle}</Text>
@@ -174,7 +181,7 @@ function Progress({ position, length }: { position: number; length: number }) {
   );
 }
 
-const makeProgressStyles = ({ colors, fonts }: Theme) =>
+const makeProgressStyles = ({ colors, fonts, name }: Theme) =>
   StyleSheet.create({
     row: { height: 44, justifyContent: 'center' },
     rail: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: colors.track },
@@ -186,6 +193,8 @@ const makeProgressStyles = ({ colors, fonts }: Theme) =>
       marginLeft: -7,
       borderRadius: 7,
       backgroundColor: colors.accent,
+      // Paper: a white ring lifts the ink knob off the track.
+      ...(name === 'paper' ? { borderWidth: 2, borderColor: colors.material.rimTop, boxShadow: colors.material.control.shadow } : null),
     },
     times: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -8 },
     time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
@@ -412,8 +421,14 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     picker: { marginTop: 20 },
   });
 
-const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
   StyleSheet.create({
+    paperFrame: {
+      padding: 8,
+      borderRadius: 28,
+      backgroundColor: alphaOf(colors.material.rimTop, 0.7),
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.shadowHero}`,
+    },
     flex: { flex: 1 },
     miniSpot: { position: 'absolute', left: 16, right: 16 },
     mini: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 8 },
@@ -446,11 +461,21 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
     playNudge: { marginLeft: 4 },
     list: { marginTop: 20, gap: 6 },
     item: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, minHeight: 60, borderRadius: radii.inset },
-    itemActive: {
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.controlBorder,
-    },
+    itemActive:
+      name === 'paper'
+        ? // Paper: the playing sound rises as a small pane of milk glass.
+          {
+            backgroundColor: colors.material.inset.fill,
+            borderWidth: 1,
+            borderColor: colors.material.inset.border,
+            borderTopColor: colors.material.inset.borderTop,
+            boxShadow: colors.material.shadowPane,
+          }
+        : {
+            backgroundColor: colors.material.inset.fill,
+            borderWidth: 1,
+            borderColor: colors.controlBorder,
+          },
   });
 
 /** The bottom padding a screen's scroll needs so its last card can rise clear of the tab bar, the mini player

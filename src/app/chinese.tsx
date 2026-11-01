@@ -121,7 +121,12 @@ export default function ChineseScreen() {
             {log.minutes} <Text style={styles.minutesOf}>/ {chinese.target} min</Text>
           </Text>
           <View style={styles.track}>
-            <Bar progress={pct} color={kinds.chinese.color} track={colors.track} height={name === 'stone' ? 4 : 8} />
+            <Bar
+              progress={pct}
+              color={kinds.chinese.color}
+              track={name === 'paper' ? kinds.chinese.soft : colors.track}
+              height={name === 'stone' ? 4 : 8}
+            />
           </View>
           <Text style={styles.small}>Log the time you practised</Text>
           <View style={styles.chips}>
@@ -301,8 +306,9 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
     streak: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     minutes: {
       fontFamily: fonts.display,
-      fontSize: name === 'lavender' ? 40 : 34,
-      lineHeight: name === 'lavender' ? 46 : 40,
+      fontSize: name === 'lavender' || name === 'paper' ? 40 : 34,
+      lineHeight: name === 'lavender' || name === 'paper' ? 46 : 40,
+      letterSpacing: name === 'paper' ? -0.8 : undefined,
       color: colors.text,
       marginTop: 8,
       fontVariant: ['tabular-nums'],
@@ -324,10 +330,13 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
     },
     undoOff: { opacity: 0.45 },
     reviewCard: { padding: 16, marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-    reviewTitle: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
+    reviewTitle: { fontFamily: name === 'paper' ? fonts.bodyBold : fonts.bodyMedium, fontSize: 17, color: colors.text },
     starter: { marginTop: 16, gap: 8 },
     wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingVertical: 10, paddingHorizontal: 14 },
-    wordHanzi: { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
+    wordHanzi:
+      name === 'paper'
+        ? { fontFamily: fonts.body, fontSize: 26, lineHeight: 32, color: colors.text, minWidth: 56 }
+        : { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
     wordPinyin: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
     wordMeaning: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 1 },
     wordDue: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },

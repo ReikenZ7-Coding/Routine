@@ -32,7 +32,7 @@ interface LookArt {
   veilEnd: number;
   lensSaturation: number;
   lights: LightSpec[];
-  header?: { file: string; ratio: number; blur?: string };
+  header?: { file: string; ratio: number; blur?: string; mist?: { file: string; motion: LightMotion } };
 }
 
 const LOOKS = LOOKS_JSON.looks as unknown as Record<ThemeName, LookArt>;
@@ -105,10 +105,28 @@ const HEADERS: Partial<Record<ThemeName, ImageSourcePropType>> = {
   paper: require('../../assets/art/paper-header.png'),
   pine: require('../../assets/art/pine-header.png'),
 };
+/** A look's header art (the misty ridges on the trail looks), for previews such as the Settings swatches. */
+export function headerSource(look: ThemeName): ImageSourcePropType | undefined {
+  return HEADERS[look];
+}
+
 /** Paper's header as glass sees it: blurred like the lens, for cards that overlap it. */
 export const HEADER_BLURS: Partial<Record<ThemeName, ImageSourcePropType>> = {
   paper: require('../../assets/art/paper-header-blur.png'),
 };
+
+/** Mist that drifts over the header's rock (Paper), drawn just above the header art, with its motion. */
+const HEADER_MIST_SOURCES: Record<string, ImageSourcePropType> = {
+  'paper-header-mist': require('../../assets/art/paper-header-mist.png'),
+};
+export const HEADER_MISTS: Partial<Record<ThemeName, { source: ImageSourcePropType; motion: LightMotion }>> = Object.fromEntries(
+  (Object.keys(LOOKS) as ThemeName[])
+    .filter((look) => LOOKS[look].header?.mist)
+    .map((look) => {
+      const mist = LOOKS[look].header!.mist!;
+      return [look, { source: HEADER_MIST_SOURCES[mist.file], motion: mist.motion }];
+    }),
+);
 
 /** Height over width of each look's header art. */
 export const HEADER_RATIOS: Partial<Record<ThemeName, number>> = Object.fromEntries(

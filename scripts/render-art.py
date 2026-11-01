@@ -533,28 +533,176 @@ def paper_backdrop():
     glow(img, W * 0.82, H * 0.04, W * 0.75, hexc('#FFF3DC'), 0.55)
     glow(img, W * 0.1, H * 0.62, W * 0.6, hexc('#DCE6DC'), 0.30)
     glow(img, W * 0.9, H * 0.86, W * 0.5, hexc('#F1E6D6'), 0.25)
-    line = ridge(W, H * 0.18, H * 0.06, [(1.1, 1), (2.9, 0.4), (6.5, 0.15), (15, 0.05)], 41)
-    ridge_img = fill_below(img.copy(), line, hexc('#B9B6AE'), soft=3)
-    mist = noise(W, H, 140, 4, 43)[..., None]
-    fade = np.clip(1 - (np.arange(H)[:, None, None] - H * 0.18) / (H * 0.35), 0, 1)  # the ridge sinks into the fog
-    m = 0.18 * fade * (1 - 0.6 * mist)
-    img = img * (1 - m) + ridge_img * m
+    # two far ranges drowned in mist, the nearer one a touch firmer, sinking into the fog below
+    for y0, amp, color, strength, seed in ((0.15, 0.05, '#C2BEB5', 0.16, 45), (0.19, 0.06, '#B3AFA6', 0.22, 41)):
+        line = ridge(W, H * y0, H * amp, [(1.1, 1), (2.9, 0.4), (6.5, 0.15), (15, 0.05), (37, 0.015)], seed)
+        ridge_img = fill_below(img.copy(), line, hexc(color), soft=3)
+        mist = noise(W, H, 140, 4, seed + 2)[..., None]
+        fade = np.clip(1 - (np.arange(H)[:, None, None] - H * y0) / (H * 0.30), 0, 1)
+        m = strength * fade * (1 - 0.6 * mist)
+        img = img * (1 - m) + ridge_img * m
     return grain(img, 0.012)
 
 
+def smooth1d(v, sigma):
+    """Gaussian smoothing of a 1D profile, edges reflected."""
+    r = int(3 * sigma) + 1
+    k = np.exp(-0.5 * (np.arange(-r, r + 1) / sigma) ** 2)
+    k /= k.sum()
+    return np.convolve(np.pad(v, r, mode='reflect'), k, mode='valid')
+
+
+def streaks(w, h, sx, sy, seed, octaves=3):
+    """Anisotropic value noise in 0..1: long in y, short in x, like gullies and couloirs on a rock face."""
+    r = np.random.default_rng(seed)
+    out = np.zeros((h, w))
+    amp, total = 1.0, 0.0
+    for o in range(octaves):
+        cw, ch = max(2, int(w / sx) * 2 ** o), max(2, int(h / sy) * 2 ** o)
+        layer = Image.fromarray(r.random((ch, cw)).astype(np.float32), 'F').resize((w, h), Image.BICUBIC)
+        out += np.asarray(layer).astype(float) * amp
+        total += amp
+        amp *= 0.55
+    return np.clip(out / total, 0, 1)
+
+
+def granite(img, mask_acc, line, tones, fog, haze, seed, depth_fog=0.6, lit_gain=1.0):
+    """Paints a granite face below a ridge line. Light comes from the upper right, so faces below a stretch of
+    ridge that falls away to the right are lit and the rest sit in shade; gullies run down the face, sheared
+    the way the face leans, and mist pools further down. tones = (shade, base, lit) hex; haze mixes the whole
+    face toward the fog for distance. Returns the image and the union of the silhouettes."""
+    h, w = img.shape[:2]
+    shade, base, lit = (hexc(c) for c in tones)
+    yy = np.arange(h)[:, None].astype(float)
+    d = yy - line[None, :]
+    slope = np.gradient(smooth1d(line, 6))
+    facing = np.tanh(slope * 1.8)                      # +1 faces the light, -1 faces away
+    # The facing carries down the face, blurring and drifting with depth, broken up by gullies.
+    lean = np.clip(d, 0, None) * 0.3 * np.tanh(smooth1d(facing, 40) * 2.5)[None, :]
+    # arêtes wander as they come down the face, instead of dropping plumb from each summit
+    wander = (noise(w, h, 220, 2, seed + 7) - 0.5) * np.clip(d / (h * 0.12), 0, 1) * w * 0.10
+    cols = np.clip((np.arange(w)[None, :] + lean + wander).astype(int), 0, w - 1)
+    gcols = np.clip((np.arange(w)[None, :] + lean * 0.6).astype(int), 0, w - 1)
+    far = smooth1d(facing, 30)
+    f = np.take_along_axis(np.broadcast_to(far[None, :], (h, w)), cols, 1)
+    near = np.take_along_axis(np.broadcast_to(facing[None, :], (h, w)), cols, 1)
+    k = np.exp(-np.clip(d, 0, None) / (h * 0.10))
+    face = near * k + f * (1 - k) * 0.7
+    g = streaks(w, h, 7, 90, seed)
+    g = np.take_along_axis(g, gcols, 1)
+    fine = noise(w, h, 9, 3, seed + 3)
+    t = np.clip(face * lit_gain + (g - 0.5) * 1.3 + (fine - 0.5) * 0.5, -1, 1)[..., None]
+    col = np.where(t > 0, base + (lit - base) * t, base + (base - shade) * t)
+    # a bright lip along lit stretches of the crest
+    lip = np.clip(1 - np.abs(d - 2) / 5, 0, 1) * np.clip(near, 0, 1)
+    col = col + lip[..., None] * 0.07
+    # mist pooling lower on the face
+    pool = np.clip((d - h * 0.03) / (h * 0.22), 0, 1) ** 0.9 * (0.55 + 0.45 * noise(w, h, 120, 3, seed + 5))
+    col = col * (1 - pool[..., None] * depth_fog) + hexc(fog) * pool[..., None] * depth_fog
+    col = col * (1 - haze) + hexc(fog) * haze
+    m = np.clip(d / 1.6 + 0.5, 0, 1)[..., None]
+    img = img * (1 - m) + col * m
+    return img, np.maximum(mask_acc, m[..., 0])
+
+
+def pine_tree(d, x, base, height, r):
+    """One spruce: a trunk and stacked, ragged, drooping boughs that widen toward the foot."""
+    d.line([(x, base - height), (x, base)], fill=255, width=max(1, int(height * 0.018)))
+    n = int(np.clip(height / 6, 10, 26))
+    for i in range(n):
+        t = i / (n - 1)
+        y = base - height * (0.97 - 0.9 * t)
+        span = height * 0.25 * (0.06 + 0.94 * t ** 0.9)
+        left, right = span * r.uniform(0.7, 1.15), span * r.uniform(0.7, 1.15)
+        droop = height * (0.025 + 0.035 * t) * r.uniform(0.7, 1.3)
+        lift = height * 0.045
+        d.polygon([(x, y - lift), (x - left * 0.55, y + droop * 0.4), (x - left, y + droop),
+                   (x - left * 0.62, y + droop * 0.85), (x, y + droop * 0.5),
+                   (x + right * 0.62, y + droop * 0.85), (x + right, y + droop), (x + right * 0.55, y + droop * 0.4)], fill=255)
+    d.polygon([(x, base - height * 1.04), (x - height * 0.02, base - height * 0.9), (x + height * 0.02, base - height * 0.9)], fill=255)
+
+
+def spruce_stand(img, w, h, spots, color, blur, seed):
+    layer = Image.new('L', (w, h), 0)
+    d = ImageDraw.Draw(layer)
+    r = np.random.default_rng(seed)
+    for x, base, height in spots:
+        pine_tree(d, x, base, height, r)
+    m = np.asarray(layer.filter(ImageFilter.GaussianBlur(blur))).astype(float)[..., None] / 255
+    return img * (1 - m) + hexc(color) * m, m[..., 0]
+
+
 def paper_header():
-    """Warm, photographic ridges and pines in morning fog behind the Today trail."""
-    def keep(x, y):
-        return np.clip((x - 0.06) / 0.5, 0, 1) ** 1.3 * np.clip((1.0 - y) / 0.45, 0, 1) ** 1.1
-    pm = mountain_header('paper-header', 1080, 1200, hexc('#F8F7F3'), hexc('#EEEFEA'),
-                         [(0.30, 0.12, '#A7A39A', 3), (0.44, 0.11, '#8C887F', 4), (0.58, 0.10, '#6F6C64', 6)],
-                         '#4E5149', '#F4F3EF', 0.85, light=(0.8, 0.05, 0.45, '#FFF1D6', 0.4),
-                         pine_blur=2.2, pine_tiers=7, keep=keep, tilt=0.12, ceiling=0.12)
+    """Warm granite crags and spruce in morning fog behind the Today trail, lit from the upper right. The sky
+    is left clear (alpha 0), so the world's dawn glow and the drifting sun show behind the peaks; the rock
+    fades into the page along the left and the foot, and mist pools between the ridges."""
+    reseed('paper-header')
+    w, h = 1080, 1200
+    fog = '#F1EFEA'
+    img = np.zeros((h, w, 3)) + hexc(fog)
+    mask = np.zeros((h, w))
+    x = np.linspace(0, 1, w)
+    jag = [(1.3, 1), (3.1, 0.45), (7, 0.2), (17, 0.08), (41, 0.035), (97, 0.012)]
+
+    def crest(y0, amp, seed, peaks):
+        line = ridge(w, y0 * h, amp * h, jag, seed)
+        for px, py, pw in peaks:
+            line -= py * h * np.exp(-((x - px) / pw) ** 2)
+        return line
+
+    layers = [
+        # far range, deep in haze
+        (crest(0.30, 0.05, 13, [(0.86, 0.09, 0.07), (0.40, 0.05, 0.10)]), ('#B3AEA5', '#C3BEB5', '#D3CEC4'), 0.42, 0.5, 23),
+        # the main crag
+        (crest(0.40, 0.06, 3, [(0.60, 0.25, 0.085), (0.72, 0.10, 0.05)]), ('#6C685F', '#8A857C', '#BAB4A9'), 0.05, 0.6, 31),
+        # the middle ridge
+        (crest(0.56, 0.05, 4, [(0.92, 0.10, 0.07)]), ('#706C64', '#838078', '#A8A398'), 0.12, 0.62, 37),
+    ]
+    for line, tones, haze, depth, seed in layers:
+        img, mask = granite(img, mask, line, tones, fog, haze, seed, depth_fog=depth)
+        band = noise(w, h, 90, 3, seed + 1) * np.exp(-((np.arange(h)[:, None] - (line.mean() + h * 0.10)) / (h * 0.07)) ** 2)
+        img = img * (1 - band[..., None] * 0.75) + hexc(fog) * band[..., None] * 0.75
+    r = np.random.default_rng(5)
+    # distant spruce on the middle ridge, pale with haze
+    mid = layers[2][0]
+    far_spots = [(w * xx, mid[min(w - 1, int(w * xx))] + h * r.uniform(0.04, 0.10), h * r.uniform(0.07, 0.12))
+                 for xx in np.linspace(0.70, 1.0, 9) + r.uniform(-0.015, 0.015, 9)]
+    img, m1 = spruce_stand(img, w, h, far_spots, '#8F918A', 1.6, 51)
+    mask = np.maximum(mask, m1)
+    # the near shoulder and its stand of spruce
+    near = crest(0.74, 0.04, 6, [(0.95, 0.06, 0.08)])
+    img, mask = granite(img, mask, near, ('#66635C', '#77736B', '#948F86'), fog, 0.12, 41, depth_fog=0.7)
+    spots = []
+    for k in range(13):
+        xx = 0.60 + 0.42 * k / 12 + r.uniform(-0.015, 0.015)
+        spots.append((w * xx, h * r.uniform(0.90, 1.02), h * r.uniform(0.20, 0.40) * (0.75 + 0.25 * xx)))
+    img, m2 = spruce_stand(img, w, h, spots, '#4E5149', 1.4, 53)
+    mask = np.maximum(mask, m2)
+    # drifting fog over everything, thicker low down
+    fn = noise(w, h, 150, 4, 21)
+    yy = np.linspace(0, 1, h)[:, None]
+    fogamt = np.clip(fn * 1.3 - 0.25, 0, 1) * (0.25 + 0.55 * yy)
+    img = img * (1 - fogamt[..., None]) + hexc(fog) * fogamt[..., None]
+    img = np.clip(grain(img, 0.012), 0, 1)
+    xg = x[None, :]
+    keep = np.clip((xg - 0.08) / 0.5, 0, 1) ** 1.3 * np.clip((1.0 - yy) / 0.45, 0, 1) ** 1.1
+    alpha = mask * keep
+    full = np.dstack([img * alpha[..., None], alpha])
+    out = resize(full, int(w * 0.75), int(h * 0.75))
+    al = np.clip(out[..., 3], 0, 1)
+    save_png(np.dstack([np.clip(out[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1), al]), 'paper-header')
     # The header seen through glass: the same art, blurred as much as the lens (sigma 24 at half size).
-    small = resize(pm, 540, 600)
-    small = gblur(small, 24)
+    small = gblur(resize(full, 540, 600), 24)
     al = np.clip(small[..., 3], 0, 1)
     save_png(np.dstack([np.clip(small[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1), al]), 'paper-header-blur')
+    # Mist that drifts over the rock (drawn above the header art; the sky's mist is the world's paper-mist).
+    mw, mh = 540, 600
+    n = noise(mw, mh, 80, 4, 79)
+    hm = resize(alpha[..., None], mw, mh)[..., 0]
+    hm = gblur(hm, 6)
+    vy = np.linspace(0, 1, mh)[:, None]
+    band = np.clip(1 - np.abs(vy - 0.45) / 0.4, 0, 1)
+    light_png('paper-header-mist', mw, mh, '#FBFAF7', np.clip((n - 0.38) / 0.45, 0, 1) * hm * band * 0.55)
 
 
 def paper_lights():

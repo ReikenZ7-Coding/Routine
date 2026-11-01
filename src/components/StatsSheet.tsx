@@ -9,6 +9,7 @@ import { WEEKDAY_SHORT, friendlyDate, parseKey } from '../lib/schedule';
 import { useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass } from './Glass';
+import { alphaOf } from './glass/colour';
 import { EASE_OUT, useReduceMotion } from './Motion';
 import { Divider, Section } from './Section';
 import { Sheet } from './Sheet';
@@ -45,17 +46,28 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
             >
               <DayBar share={d.share ?? 0} index={i} shown={visible} />
               {name === 'lavender' && <View style={[styles.todayDot, d.date !== today && styles.hidden]} />}
-              <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
+              {name === 'paper' ? (
+                // Paper marks today with a small ink-glass disc behind its letter.
+                <View style={[styles.dayDisc, d.date === today && styles.dayDiscToday]}>
+                  <Text style={[styles.barLabel, d.date === today && styles.barTodayOnInk]}>
+                    {WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
+              )}
             </View>
           );
         })}
       </View>
 
       {s.gymVolume > 0 && (
-        <Text style={[type.small, styles.gap]}>You moved {Math.round(s.gymVolume).toLocaleString('en')} kg at the gym this week.</Text>
+        <Text style={[type.small, styles.gap, name === 'paper' && styles.moved]}>
+          You moved {Math.round(s.gymVolume).toLocaleString('en')} kg at the gym this week.
+        </Text>
       )}
 
-      <Section title="Best streaks" dot={kinds.routines.color}>
+      <Section title="Best streaks" dot={name === 'paper' ? undefined : kinds.routines.color}>
         {s.bestStreaks.length === 0 ? (
           <Text style={styles.empty}>Do a routine two times in a row to start a streak.</Text>
         ) : (
@@ -71,7 +83,7 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
         )}
       </Section>
 
-      <Section title="Personal records" dot={kinds.gym.color}>
+      <Section title="Personal records" dot={name === 'paper' ? undefined : kinds.gym.color}>
         {prs.length === 0 ? (
           <Text style={styles.empty}>Log a workout and your best lifts show up here.</Text>
         ) : (
@@ -137,7 +149,12 @@ function DayBar({ share, index, shown }: { share: number; index: number; shown: 
 const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
   const lavender = name === 'lavender';
   const stone = name === 'stone';
+  const paper = name === 'paper';
   return StyleSheet.create({
+    moved: { fontSize: 15, lineHeight: 21 },
+    dayDisc: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+    dayDiscToday: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
+    barTodayOnInk: { color: colors.onPrimary, fontFamily: fonts.bodyBold },
     flex: { flex: 1 },
     gap: { marginTop: 12 },
     tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
@@ -155,7 +172,7 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
     barTrack: {
       flex: 1,
       width: '100%',
-      borderRadius: stone ? 8 : 6,
+      borderRadius: stone || paper ? 8 : 6,
       // Stone's empty days are frosted glass slots, not dark grooves.
       backgroundColor: stone ? colors.material.inset.fill : colors.track,
       ...(stone ? { borderWidth: 1, borderColor: colors.material.inset.border, borderTopColor: colors.material.inset.borderTop } : null),
@@ -167,7 +184,14 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
       ? { backgroundImage: `linear-gradient(180deg, ${colors.node}, ${kinds.routines.color})` }
       : stone
         ? { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` }
-        : {},
+        : paper
+          ? // Paper's bars: the routine blue, a touch lighter at the top, with a lit top edge.
+            {
+              borderRadius: 8,
+              backgroundImage: `linear-gradient(180deg, ${alphaOf(colors.material.rimTop, 0.18)}, ${alphaOf(colors.material.rimTop, 0)})`,
+              boxShadow: `inset 0px 1px 0px ${alphaOf(colors.material.rimTop, 0.45)}`,
+            }
+          : {},
     todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.text, marginBottom: -2 },
     hidden: { opacity: 0 },
     barLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },

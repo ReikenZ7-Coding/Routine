@@ -40,7 +40,10 @@ export default function InboxScreen() {
   // Lavender: nothing to sort and nothing planned gets one scene card in place of the empty list.
   const clearDay = lavender && waiting.length === 0 && planned.length === 0;
   // Stone: the same moment as one quiet pane, with the tray in champagne.
-  const stoneClear = name === 'stone' && waiting.length === 0 && planned.length === 0;
+  const stoneClear = (name === 'stone' || name === 'paper') && waiting.length === 0 && planned.length === 0;
+  // Paper: the add button is always there, an ink-glass disc at the end of the composer, and the how-to sits in
+  // its own small pane under the lists instead of at the foot of a card.
+  const paper = name === 'paper';
 
   const add = () => {
     const title = draft.trim();
@@ -126,8 +129,8 @@ export default function InboxScreen() {
       <Text style={styles.label} nativeID="inbox-add-label">
         Add to inbox
       </Text>
-      <Glass tier="control" radius={radii.pill} style={styles.composer}>
-        <Ionicons name="add" size={20} color={colors.muted} />
+      <Glass tier="control" radius={radii.pill} style={[styles.composer, paper && styles.composerPaper]}>
+        {!paper && <Ionicons name="add" size={20} color={colors.muted} />}
         <TextInput
           ref={input}
           style={styles.input}
@@ -143,7 +146,17 @@ export default function InboxScreen() {
           accessibilityLabel="Add to inbox"
           accessibilityLabelledBy="inbox-add-label"
         />
-        {draft.trim() ? (
+        {paper ? (
+          <Press
+            style={styles.inkDisc}
+            hitSlop={4}
+            haptic
+            onPress={() => (draft.trim() ? add() : input.current?.focus())}
+            accessibilityLabel="Add to inbox"
+          >
+            <Ionicons name="add" size={22} color={colors.onPrimary} />
+          </Press>
+        ) : draft.trim() ? (
           <Animated.View entering={SHOW} exiting={HIDE}>
             <Press
               style={lavender ? styles.addDisc : styles.addButton}
@@ -191,8 +204,8 @@ export default function InboxScreen() {
         <Section
           enter={0}
           title={`To sort · ${waiting.length}`}
-          dot={kinds.inbox.color}
-          footer={waiting.length > 0 ? 'Tap to tick off. Press and hold to plan it for today or tomorrow.' : undefined}
+          dot={paper ? undefined : kinds.inbox.color}
+          footer={waiting.length > 0 && !paper ? 'Tap to tick off. Press and hold to plan it for today or tomorrow.' : undefined}
         >
           {waiting.length === 0 ? <Text style={styles.empty}>All clear. New to-dos land here.</Text> : waiting.map(row)}
         </Section>
@@ -208,13 +221,45 @@ export default function InboxScreen() {
           {done.map(row)}
         </Section>
       )}
+      {paper && waiting.length + planned.length > 0 && (
+        <Glass style={styles.hint}>
+          <View style={styles.hintPebble}>
+            <Ionicons name="hand-left-outline" size={18} color={colors.text} />
+          </View>
+          <Text style={[type.hint, styles.flex]}>Tap to tick off. Press and hold to plan it for today or tomorrow.</Text>
+        </Glass>
+      )}
     </GlassScroll>
   );
 }
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
+    flex: { flex: 1 },
     content: { paddingHorizontal: 16 },
+    composerPaper: { paddingLeft: 20, paddingRight: 8 },
+    inkDisc: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: colors.litGlow,
+    },
+    hint: { marginTop: 28, flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, paddingHorizontal: 14 },
+    hintPebble: {
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
     intro: { marginTop: 4 },
     label: { ...type.label, marginTop: 20, marginBottom: 8 },
     composer: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingRight: 6, minHeight: 56 },

@@ -454,9 +454,16 @@ export default function TodayScreen() {
             onPress={() => (key === 'routine' ? edit() : setPanel(key))}
             accessibilityLabel={`${title}. ${sub}`}
           >
-            <View style={[styles.addIcon, { backgroundColor: color }]}>
-              <Ionicons name={icon} size={18} color={colors.onKind} />
-            </View>
+            {theme.name === 'paper' ? (
+              // Paper: a glass pebble with the kind's colour on the glyph alone.
+              <View style={styles.addPebble}>
+                <Ionicons name={icon} size={20} color={color} />
+              </View>
+            ) : (
+              <View style={[styles.addIcon, { backgroundColor: color }]}>
+                <Ionicons name={icon} size={18} color={colors.onKind} />
+              </View>
+            )}
             <View style={styles.flex}>
               <Text style={type.bodyMedium}>{title}</Text>
               <Text style={type.small}>{sub}</Text>
@@ -574,6 +581,17 @@ const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
       borderRadius: radii.inset,
     },
     addIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+    addPebble: {
+      width: 44,
+      height: 44,
+      borderRadius: radii.inset,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
     saveButton: { marginTop: 20 },
     label: type.label,
   });

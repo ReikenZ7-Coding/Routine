@@ -100,7 +100,16 @@
       "header": {
         "file": "paper-header",
         "ratio": 1.1111,
-        "blur": "paper-header-blur"
+        "blur": "paper-header-blur",
+        "mist": {
+          "file": "paper-header-mist",
+          "motion": {
+            "type": "slide",
+            "period": 40000,
+            "x0": -14,
+            "ax": 14
+          }
+        }
       }
     },
     "pine": {

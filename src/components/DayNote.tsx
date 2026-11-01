@@ -15,8 +15,10 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
   const styles = useStyles(makeStyles);
   // Lavender and Stone draw each mood as a disc with its name beneath. Lavender's chosen disc fills with the done
   // colour; Stone's faces are drawn in champagne and the chosen one sits in a champagne glass disc.
-  const discs = name === 'lavender' || name === 'stone';
+  // Paper's faces are drawn in ink, and the chosen one sits in an ink-glass disc, drawn in white.
+  const discs = name === 'lavender' || name === 'stone' || name === 'paper';
   const stone = name === 'stone';
+  const paper = name === 'paper';
   const { journal, updateJournal } = useStore();
   const entry = journal[date] ?? {};
   const mood = moodOf(entry.mood);
@@ -51,8 +53,8 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
                 accessibilityLabel={m.label}
                 accessibilityState={{ checked: active }}
               >
-                <View style={stone ? styles.stoneDisc : styles.disc}>
-                  <SelectFade on={active} radius={25} bleed={1} style={stone ? styles.stoneDiscOn : styles.discOn} />
+                <View style={stone ? styles.stoneDisc : paper ? styles.paperDisc : styles.disc}>
+                  <SelectFade on={active} radius={25} bleed={paper ? 0 : 1} style={stone ? styles.stoneDiscOn : styles.discOn} />
                   <Pop done={active}>
                     <FadeSwap
                       on={active}
@@ -129,6 +131,7 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
     },
+    paperDisc: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     discOn: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
     stoneDisc: {
       width: 50,

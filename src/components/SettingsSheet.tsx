@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { AMBIENCE, BACKDROPS } from './Art';
+import { AMBIENCE, BACKDROPS, HEADER_RATIOS, headerSource } from './Art';
 import { calendarSupported, connectPhoneCalendar } from '../lib/deviceCalendar';
 import { useStore } from '../lib/store';
 import { THEME_OPTIONS, type Theme, type ThemeName, themeFor, useStyles, useTheme } from '../theme';
@@ -118,10 +118,18 @@ function Swatch({ look }: { look: ThemeName }) {
   const styles = useStyles(makeStyles);
   const t = themeFor(look);
   const m = t.colors.material;
+  const header = headerSource(look);
   return (
     <View style={styles.swatch}>
       <Image source={BACKDROPS[look]} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: AMBIENCE[look].scrim }]} />
+      {look === 'paper' && header ? (
+        // Paper's world is its mountains: the swatch shows the crag and its spruce, as on the Today trail.
+        // The frame holds the art's own proportions: an Image left to size itself takes its file's height on the web.
+        <View style={[styles.swatchRidges, { aspectRatio: 1 / (HEADER_RATIOS.paper ?? 1) }]}>
+          <Image source={header} style={styles.swatchArt} resizeMode="cover" accessibilityIgnoresInvertColors />
+        </View>
+      ) : null}
       <View
         style={[
           styles.swatchCard,
@@ -171,6 +179,8 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
     // Stone's chosen look is ringed in champagne; the other looks use their text colour.
     themeRing: name === 'stone' ? { borderWidth: 1.5, borderColor: colors.litRim } : { borderWidth: 2, borderColor: colors.text },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
+    swatchRidges: { position: 'absolute', left: '-23%', width: '100%', top: '35%' },
+    swatchArt: { width: '100%', height: '100%' },
     swatchCard: {
       borderRadius: 10,
       borderWidth: 1,
@@ -184,7 +194,11 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
     swatchLine: { height: 4, borderRadius: 2, width: '80%' },
     swatchLineShort: { width: '50%', marginTop: 4 },
     swatchButton: { alignSelf: 'flex-end', width: 24, height: 24, borderRadius: 12 },
-    checkOn: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
+    checkOn: {
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      // Paper's check sits on its swatch in a white ring, so it reads on the light world.
+      ...(name === 'paper' ? { borderWidth: 2, borderColor: colors.material.rimTop } : null),
+    },
     themeName: { fontFamily: fonts.bodyBold, fontSize: name === 'stone' ? 15 : 14, color: colors.text, marginTop: 8 },
     themeDesc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     check: { position: 'absolute', top: 14, right: 14, width: 24, height: 24 },
