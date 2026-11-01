@@ -58,9 +58,11 @@ export default function GroceriesScreen({
   const { colors, kinds, name, type } = useTheme();
   const styles = useStyles(makeStyles);
   // Lavender gives every aisle its own pane, so the list reads as a stack of small glass cards.
-  // Paper does the same, with each aisle's mark in ink on a glass pebble.
-  const panes = name === 'lavender' || name === 'paper';
+  // Paper does the same, with each aisle's mark in ink on a glass pebble; Pine with its mark in birch, the aisle
+  // named in capitals like the tags on its cards, and a quiet "All bought" pane when the list is done.
+  const panes = name === 'lavender' || name === 'paper' || name === 'pine';
   const paper = name === 'paper';
+  const pine = name === 'pine';
   const [copied, setCopied] = useState(false);
   const contentBottom = useContentBottom(true);
   const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
@@ -134,9 +136,9 @@ export default function GroceriesScreen({
                     <Glass key={aisle}>
                       <View style={styles.aisleHead}>
                         <View style={[styles.aisleTile, paper && styles.aislePebble]}>
-                          <Ionicons name={aisleIcon(aisle)} size={18} color={colors.text} />
+                          <Ionicons name={aisleIcon(aisle)} size={18} color={pine ? kinds.groceries.color : colors.text} />
                         </View>
-                        <Text style={styles.aisleName} accessibilityRole="header">
+                        <Text style={[styles.aisleName, pine && styles.aisleCaps]} accessibilityRole="header">
                           {aisle}
                         </Text>
                         <Text style={styles.aisleCount}>{items.length}</Text>
@@ -159,14 +161,14 @@ export default function GroceriesScreen({
                   <HintPane>Tap to tick off. Press and hold an item to edit it.</HintPane>
                 </View>
               </Enter>
-            ) : paper && toBuy.length === 0 ? (
+            ) : (paper || pine) && toBuy.length === 0 ? (
               <Enter index={0}>
                 <Text style={[type.sectionTitle, styles.paneHead, styles.paperHead]} accessibilityRole="header">
                   To buy
                 </Text>
                 <Glass style={styles.allBought}>
                   <View style={styles.allBoughtPebble}>
-                    <Ionicons name="basket-outline" size={26} color={colors.text} />
+                    <Ionicons name="basket-outline" size={26} color={pine ? colors.accent : colors.text} />
                   </View>
                   <View style={styles.flex}>
                     <Text style={styles.allBoughtTitle}>All bought</Text>
@@ -324,6 +326,7 @@ const makeStyles = ({ colors, kinds, fonts, type, name }: Theme) =>
       borderTopColor: colors.material.inset.borderTop,
     },
     aisleName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: name === 'paper' ? 15 : 14, letterSpacing: 0.3, color: colors.text },
+    aisleCaps: { fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', color: kinds.groceries.text },
     aisleCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     laterRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 54 },
     laterText: { flex: 1 },

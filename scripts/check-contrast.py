@@ -19,7 +19,7 @@ Bare backdrop (titles, section headings, hints): the sharp backdrop with scrim a
   single star speck doesn't count, in the zones where that text sits.
 Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
   onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
-  against their track 3:1. Pine also checks its canopy slab (text and onSlabMuted).
+  against their track 3:1. Pine also checks its canopy slab (check_canopy).
 """
 import importlib.util
 import json
@@ -286,6 +286,11 @@ def gate_look(look, theme, g):
         return img
 
     sheets = [sheet_stack(s) for s in mat['sheet']['body']]
+    if mat.get('sheetOrb'):
+        # Pine's moon orb in the sheet's top right corner, at its peak where it reaches the nearest text.
+        om = re.search(r'radial-gradient\(\s*([\d.]+% [\d.]+%) at ([\d.]+% [\d.]+%)\s*,\s*(rgba?\([^)]*\))', mat['sheetOrb'])
+        oc, oa = col(om.group(3))
+        sheets = [over(sh, oc, oa * radial_alpha_at_text(om.group(2), om.group(1))) for sh in sheets]
     if mat['sheet'].get('band'):
         c, a = col(mat['sheet']['band'][0])
         sheets.append(over(sheets[0], c, a * max(0.0, 1 - TEXT_TOP / mat['sheet']['band'][1])))
@@ -329,6 +334,18 @@ def gate_look(look, theme, g):
         g.check(look, 'track', f'kind.{k} fill', ratio(lum(over(region, fc, fa)), lum(track)), NONTEXT, (0, y0))
     ac, aa = col(colors['accent'])
     g.check(look, 'track', 'accent fill', ratio(lum(over(region, ac, aa)), lum(track)), NONTEXT, (0, y0))
+
+    if mat.get('orb'):
+        # Pine's card orb: a disc of moonlight in the top-right corner that a card's title and meta can run under
+        oc2, oa2 = col(mat['orb']['fill'])
+        orbbed = over(pane[y0:], oc2, oa2)
+        for tname in every:
+            g.text(look, 'pane under orb', tname, text_tokens[tname], orbbed, (0, y0))
+    if mat.get('tag'):
+        # Pine's card tags: white capitals on a near-black pill, on any glass
+        tc2, ta2 = col(mat['tag']['fill'])
+        for sname, bg in (('pane', pane), ('hero', surfaces.get('hero', (pane,))[0]), ('receded', receded)):
+            g.check(look, f'tag on {sname}', 'tag.ink', text_on(over(bg[y0:], tc2, ta2), mat['tag']['ink']), TEXT, (0, y0))
 
     # Ink on fills.
     for k, v in kinds.items():
@@ -380,15 +397,48 @@ def gate_look(look, theme, g):
         for tname in (only[0] if only else ('text', 'muted', 'link')):
             g.text(look, zname, tname, colors[tname], bg, (ox, oy))
 
-    if look == 'pine':
-        art = np.asarray(Image.open(f'{ART}/pine-header.png').convert('RGBA')).astype(float) / 255
-        slabs = []
-        for stop in ('#1F6352', '#164D41', '#113D34'):
-            base = np.broadcast_to(col(stop)[0], art.shape[:2] + (3,)).astype(float)
-            slabs.append(over(base, art[..., :3], art[..., 3] * 0.5))
-        slab = pick_worse(slabs, True)
+    canopy = mat.get('canopy')
+    if canopy:
+        check_canopy(look, colors, canopy, g)
+
+
+def check_canopy(look, colors, canopy, g):
+    """Pine's canopy slab, at the heights it takes (a title alone, and a title with a greeting or a segmented
+    control under it): the slab gradient (stops at 0, 0.6, 1), the art drawn at the slab's height anchored bottom
+    right at its opacity, and the moon glow behind the top-right buttons (at the edge of its drift toward the
+    text). The title, subtitle, greeting and date sit in the left 62%; the segmented trough and the round buttons
+    (glass on the slab becomes canopy.inset) sit anywhere, the segmented labels in the slab's lower part; the count badge (accent on a dark pill) sits right."""
+    spec = META['looks'][look]['canopy']
+    art_full = Image.open(f"{ART}/{spec['file']}.png").convert('RGBA')
+    stops = [col(c)[0] for c in canopy['gradient']]
+    mc, ma = col(canopy['moon'])
+    ic, ia = col(canopy['inset']['fill'])
+    for hdp in (100, 170, 230):
+        hh = int(hdp * DP)
+        t = np.linspace(0, 1, hh)[:, None, None]
+        slab = np.where(t < 0.6, stops[0] + (stops[1] - stops[0]) * (t / 0.6), stops[1] + (stops[2] - stops[1]) * ((t - 0.6) / 0.4))
+        slab = np.broadcast_to(slab, (hh, FW, 3)).astype(float).copy()
+        # the art is drawn at the slab's height up to canopy.maxArt dp, anchored bottom right
+        ah = int(min(hdp, canopy['maxArt']) * DP)
+        full_w = int(round(ah / spec['ratio']))
+        aw = min(FW, full_w)
+        art = np.asarray(art_full.resize((full_w, ah), Image.LANCZOS)).astype(float) / 255
+        art = art[:, -aw:]
+        slab[hh - ah:, FW - aw:] = over(slab[hh - ah:, FW - aw:], art[..., :3], art[..., 3] * canopy['art'])
+        yy, xx = np.mgrid[:hh, :FW].astype(float)
+        d = np.hypot(xx - (FW - (70 + 14) * DP), yy - (20 + 10) * DP)
+        slab = over(slab, mc, ma * np.clip(1 - d / (105 * DP), 0, 1))
+        left = slab[:, : int(0.62 * FW)]
         for tname in ('text', 'onSlabMuted'):
-            g.check(look, 'canopy slab', tname, text_on(slab, colors[tname]).ravel(), TEXT)
+            g.check(look, f'canopy {hdp} left', tname, text_on(left, colors[tname]).ravel(), TEXT)
+        # glass on the slab: the round buttons' glyphs (text) up top, the segmented labels (muted when not chosen)
+        # in the slab's lower part, under the title
+        trough = over(slab, ic, ia)
+        g.check(look, f'canopy {hdp} trough', 'text', text_on(trough, colors['text']).ravel(), TEXT)
+        g.check(look, f'canopy {hdp} trough', 'muted', text_on(trough[int(hh * 0.55):], colors['muted']).ravel(), TEXT)
+        bc, ba = col(canopy['badge'])
+        pill = over(slab[:, int(0.62 * FW):], bc, ba)
+        g.check(look, f'canopy {hdp} badge', 'accent', text_on(pill, colors['accent']).ravel(), TEXT)
 
 
 def suggest(token, worst, need):

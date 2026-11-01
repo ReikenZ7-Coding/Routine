@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type ComponentRef, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 import { SceneArt } from '../components/Art';
 import { Glass, GlassScroll } from '../components/Glass';
 import { EASE_OUT, FadeSwap, Press, SelectFade } from '../components/Motion';
@@ -10,6 +11,7 @@ import { useContentBottom } from '../components/NowPlaying';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckRow } from '../components/CheckRow';
 import { Divider, Section } from '../components/Section';
+import { PageTitle } from '../components/PageTitle';
 import { type InboxItem, inboxOpen, itemsFor, planFor, recentlyDone, toggleItem } from '../lib/inbox';
 import { addDays, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
@@ -40,10 +42,11 @@ export default function InboxScreen() {
   // Lavender: nothing to sort and nothing planned gets one scene card in place of the empty list.
   const clearDay = lavender && waiting.length === 0 && planned.length === 0;
   // Stone: the same moment as one quiet pane, with the tray in champagne.
-  const stoneClear = (name === 'stone' || name === 'paper') && waiting.length === 0 && planned.length === 0;
+  const stoneClear = (name === 'stone' || name === 'paper' || name === 'pine') && waiting.length === 0 && planned.length === 0;
   // Paper: the add button is always there, an ink-glass disc at the end of the composer, and the how-to sits in
   // its own small pane under the lists instead of at the foot of a card.
   const paper = name === 'paper';
+  const pine = name === 'pine';
 
   const add = () => {
     const title = draft.trim();
@@ -123,14 +126,20 @@ export default function InboxScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: contentBottom }]}
       keyboardShouldPersistTaps="handled"
     >
-      <Text style={type.title}>Inbox</Text>
-      <Text style={[type.small, styles.intro]}>Jot down anything. Put it on a day when you're ready.</Text>
+      {colors.material.canopy ? (
+        <PageTitle title="Inbox" subtitle="Jot down anything. Put it on a day when you're ready." bleed={insets.top + 16} />
+      ) : (
+        <>
+          <Text style={type.title}>Inbox</Text>
+          <Text style={[type.small, styles.intro]}>Jot down anything. Put it on a day when you're ready.</Text>
+        </>
+      )}
 
       <Text style={styles.label} nativeID="inbox-add-label">
         Add to inbox
       </Text>
-      <Glass tier="control" radius={radii.pill} style={[styles.composer, paper && styles.composerPaper]}>
-        {!paper && <Ionicons name="add" size={20} color={colors.muted} />}
+      <Glass tier="control" radius={radii.pill} style={[styles.composer, (paper || pine) && styles.composerPaper]}>
+        {!paper && !pine && <Ionicons name="add" size={20} color={colors.muted} />}
         <TextInput
           ref={input}
           style={styles.input}
@@ -146,7 +155,7 @@ export default function InboxScreen() {
           accessibilityLabel="Add to inbox"
           accessibilityLabelledBy="inbox-add-label"
         />
-        {paper ? (
+        {paper || pine ? (
           <Press
             style={styles.inkDisc}
             hitSlop={4}
@@ -190,12 +199,18 @@ export default function InboxScreen() {
 
       {stoneClear ? (
         <Glass style={styles.stoneClear}>
-          <View style={styles.stoneTray}>
-            <Ionicons name="file-tray-outline" size={28} color={colors.accent} />
-          </View>
-          <Text style={styles.stoneClearTitle}>Nothing to sort</Text>
+          {pine ? (
+            <MoonPine color={colors.accent} />
+          ) : (
+            <View style={styles.stoneTray}>
+              <Ionicons name="file-tray-outline" size={28} color={colors.accent} />
+            </View>
+          )}
+          <Text style={styles.stoneClearTitle}>{pine ? 'Inbox zero' : 'Nothing to sort'}</Text>
           <Text style={styles.stoneClearText}>
-            When something crosses your mind, write it above. It waits here until you give it a day.
+            {pine
+              ? 'Anything you jot down lands here, until you give it a day.'
+              : 'When something crosses your mind, write it above. It waits here until you give it a day.'}
           </Text>
         </Glass>
       ) : null}
@@ -230,6 +245,24 @@ export default function InboxScreen() {
         </Glass>
       )}
     </GlassScroll>
+  );
+}
+
+/** Pine's empty inbox: a faceted pine under a crescent moon, drawn in one mint line. */
+function MoonPine({ color }: { color: string }) {
+  return (
+    <Svg width={96} height={72} viewBox="0 0 96 72" style={{ opacity: 0.8, marginBottom: 12 }} accessibilityElementsHidden>
+      <Path d="M70 10a12 12 0 1 0 11 17a10 10 0 0 1-11-17z" stroke={color} strokeWidth={1.5} fill="none" strokeLinejoin="round" />
+      <Path
+        d="M34 8 L22 28 h7 L17 46 h9 L12 64 h44 L42 46 h9 L39 28 h7 Z M34 64 v6"
+        stroke={color}
+        strokeWidth={1.5}
+        fill="none"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <Path d="M34 8 v56" stroke={color} strokeWidth={1} opacity={0.5} />
+    </Svg>
   );
 }
 

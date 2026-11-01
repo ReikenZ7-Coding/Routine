@@ -33,6 +33,8 @@ interface LookArt {
   lensSaturation: number;
   lights: LightSpec[];
   header?: { file: string; ratio: number; blur?: string; mist?: { file: string; motion: LightMotion } };
+  /** Pine: the art inside the canopy slab, drawn at the slab's height and anchored to its bottom right. */
+  canopy?: { file: string; ratio: number };
 }
 
 const LOOKS = LOOKS_JSON.looks as unknown as Record<ThemeName, LookArt>;
@@ -100,11 +102,15 @@ export const MAGNOLIA_RATIO = 700 / 420;
 /** Stone's satin grain, a 128x128 tile. */
 export const GLASS_GRAIN: ImageSourcePropType = require('../../assets/art/glass-grain.png');
 
-// Misty ridges and pines behind the Today header on the trail looks. They fade into the world on their own.
+// Granite and spruce behind Paper's Today header. They fade into the world on their own.
 const HEADERS: Partial<Record<ThemeName, ImageSourcePropType>> = {
   paper: require('../../assets/art/paper-header.png'),
-  pine: require('../../assets/art/pine-header.png'),
 };
+
+/** Pine's canopy slab art (faceted pines and far ridges, clear sky) and its height over width. */
+export const CANOPY_ART: { source: ImageSourcePropType; ratio: number } | undefined = LOOKS.pine.canopy
+  ? { source: require('../../assets/art/pine-header.png'), ratio: LOOKS.pine.canopy.ratio }
+  : undefined;
 /** A look's header art (the misty ridges on the trail looks), for previews such as the Settings swatches. */
 export function headerSource(look: ThemeName): ImageSourcePropType | undefined {
   return HEADERS[look];

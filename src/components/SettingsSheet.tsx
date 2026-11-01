@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { AMBIENCE, BACKDROPS, HEADER_RATIOS, headerSource } from './Art';
+import { AMBIENCE, BACKDROPS, CANOPY_ART, HEADER_RATIOS, headerSource } from './Art';
 import { calendarSupported, connectPhoneCalendar } from '../lib/deviceCalendar';
 import { useStore } from '../lib/store';
 import { THEME_OPTIONS, type Theme, type ThemeName, themeFor, useStyles, useTheme } from '../theme';
@@ -130,9 +130,31 @@ function Swatch({ look }: { look: ThemeName }) {
           <Image source={header} style={styles.swatchArt} resizeMode="cover" accessibilityIgnoresInvertColors />
         </View>
       ) : null}
+      {m.canopy ? (
+        // Pine's world is a canopy slab over the night floor: the swatch shows the slab's band with its pines.
+        <View
+          style={[
+            styles.swatchSlab,
+            {
+              backgroundImage: `linear-gradient(180deg, ${m.canopy.gradient[0]}, ${m.canopy.gradient[2]})`,
+              borderBottomColor: m.canopy.rim,
+            },
+          ]}
+        >
+          {CANOPY_ART ? (
+            <Image
+              source={CANOPY_ART.source}
+              style={[styles.swatchSlabArt, { opacity: m.canopy.art }]}
+              resizeMode="cover"
+              accessibilityIgnoresInvertColors
+            />
+          ) : null}
+        </View>
+      ) : null}
       <View
         style={[
           styles.swatchCard,
+          m.canopy ? styles.swatchCardLow : null,
           {
             backgroundImage: `linear-gradient(${m.bodyAngle}deg, ${m.body[0]}, ${m.body[1]}), linear-gradient(${m.base}, ${m.base})`,
             borderTopColor: m.rimTop,
@@ -177,10 +199,25 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
       backgroundColor: colors.material.inset.fill,
     },
     // Stone's chosen look is ringed in champagne; the other looks use their text colour.
-    themeRing: name === 'stone' ? { borderWidth: 1.5, borderColor: colors.litRim } : { borderWidth: 2, borderColor: colors.text },
+    // Pine's is ringed in its mint edge light.
+    themeRing:
+      name === 'stone' || name === 'pine' ? { borderWidth: 1.5, borderColor: colors.litRim } : { borderWidth: 2, borderColor: colors.text },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
     swatchRidges: { position: 'absolute', left: '-23%', width: '100%', top: '35%' },
     swatchArt: { width: '100%', height: '100%' },
+    swatchSlab: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 30,
+      borderBottomLeftRadius: 10,
+      borderBottomRightRadius: 10,
+      borderBottomWidth: 1,
+      overflow: 'hidden',
+    },
+    swatchSlabArt: { position: 'absolute', right: 0, bottom: 0, height: 30, width: 60 },
+    swatchCardLow: { marginTop: 22 },
     swatchCard: {
       borderRadius: 10,
       borderWidth: 1,

@@ -89,12 +89,14 @@ export default function LibraryScreen() {
 
   const header = (
     <View style={styles.hub}>
-      <PageTitle title="Library" subtitle="Your routines and the shopping list" badge={`${routines.length + groceries.length}`} />
-      <Segmented
-        options={shelves.map(([key, label, count]) => ({ key, label, count, icon: key === 'routines' ? 'repeat' : 'basket-outline' }))}
-        value={shelf}
-        onChange={setShelf}
-      />
+      <PageTitle title="Library" subtitle="Your routines and the shopping list" badge={`${routines.length + groceries.length}`} bleed={20}>
+        <Segmented
+          accessibilityLabel="Shelf"
+          options={shelves.map(([key, label, count]) => ({ key, label, count, icon: key === 'routines' ? 'repeat' : 'basket-outline' }))}
+          value={shelf}
+          onChange={setShelf}
+        />
+      </PageTitle>
       {search}
       {shelf === 'routines' && (
         <>

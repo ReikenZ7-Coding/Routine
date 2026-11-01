@@ -45,6 +45,8 @@ export type GlassTier = 'hero' | 'pane' | 'control' | 'inset' | 'sheet' | 'chrom
 
 /** Set inside glass: glass drawn within it becomes the inset tier, so the pieces read as one sheet. */
 export const InsideGlass = createContext(false);
+/** Set on Pine's canopy slab: glass laid on the slab is a trough in the slab's own colour (canopy.inset). */
+export const OnCanopy = createContext(false);
 /** Set inside a receded (done or skipped) surface: icon tiles inside drop to 0.6 opacity. */
 export const RecededContext = createContext(false);
 export const useReceded = () => useContext(RecededContext);
@@ -191,6 +193,7 @@ export function Glass({
   const { colors, radii, name } = theme;
   const m = colors.material;
   const nested = useContext(InsideGlass);
+  const slab = useContext(OnCanopy) && m.canopy ? m.canopy.inset : undefined;
   const tier: GlassTier = nested && tierProp !== 'chrome' ? 'inset' : tierProp;
   const reduced = useReduceMotion();
   const split = splitStyle(style);
@@ -221,6 +224,7 @@ export function Glass({
   const base = chromeThin ? thicker(m.base, 0.25) : m.base;
   const layers: string[] = [];
   if (tier === 'sheet') {
+    if (m.sheetOrb) layers.push(m.sheetOrb);
     if (m.sheet.band) layers.push(`linear-gradient(180deg, ${m.sheet.band[0]} 0px, ${clearOf(m.sheet.band[0])} ${m.sheet.band[1]}px)`);
     layers.push(`linear-gradient(180deg, ${m.sheet.body[0]}, ${m.sheet.body[1]})`);
     // The sheet lies on the dimmed world, like everything around it.
@@ -232,16 +236,17 @@ export function Glass({
     layers.push(`linear-gradient(${m.bodyAngle}deg, ${bodyStops[0]}, ${bodyStops[1]})`);
     layers.push(`linear-gradient(${base}, ${base})`);
   }
+  const inset = slab ?? m.inset;
   const bodyStyle: ViewStyle =
     tier === 'inset'
-      ? { backgroundColor: m.inset.fill, ...(tint ? { backgroundImage: `linear-gradient(${tint}, ${tint})` } : null) }
+      ? { backgroundColor: inset.fill, ...(tint ? { backgroundImage: `linear-gradient(${tint}, ${tint})` } : null) }
       : { backgroundImage: layers.join(', ') };
 
   const rims: ViewStyle =
     tier === 'inset'
       ? {
-          borderColor: m.inset.border,
-          borderTopColor: m.inset.borderTop,
+          borderColor: inset.border,
+          borderTopColor: inset.borderTop,
         }
       : {
           borderTopColor: tier === 'sheet' ? m.sheet.rimTop : m.rimTop,

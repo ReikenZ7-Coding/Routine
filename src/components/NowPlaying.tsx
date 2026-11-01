@@ -95,6 +95,11 @@ export function NowPlaying() {
           <View style={styles.paperFrame}>
             <SoundArt id={s.current.id} size={204} radius={20} />
           </View>
+        ) : name === 'pine' ? (
+          // Pine frames the night scene in a thin mint edge of glass over a deep shadow on the floor.
+          <View style={styles.pineFrame}>
+            <SoundArt id={s.current.id} size={220} radius={48} />
+          </View>
         ) : (
           <SoundArt id={s.current.id} size={220} />
         )}
@@ -429,6 +434,13 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
       backgroundColor: alphaOf(colors.material.rimTop, 0.7),
       boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.shadowHero}`,
     },
+    pineFrame: {
+      borderRadius: 49,
+      borderWidth: 1,
+      borderColor: colors.material.rimTop,
+      borderBottomColor: colors.material.rimBottom,
+      boxShadow: colors.material.shadowHero,
+    },
     flex: { flex: 1 },
     miniSpot: { position: 'absolute', left: 16, right: 16 },
     mini: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 8 },
@@ -474,7 +486,7 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
         : {
             backgroundColor: colors.material.inset.fill,
             borderWidth: 1,
-            borderColor: colors.controlBorder,
+            borderColor: name === 'pine' ? colors.litRim : colors.controlBorder,
           },
   });
 

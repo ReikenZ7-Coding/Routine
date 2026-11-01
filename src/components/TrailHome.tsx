@@ -2,15 +2,18 @@
 // trail of routines winding past a dotted path, and the balance rings for routines, gym and Chinese.
 // On Paper the trail is a footpath up the mountain: the walked part is inked in, the way ahead is faint, done
 // steps sink back into the fog, the step that's up next is the lit one, and the last node is the summit.
+// On Pine the header sits on the canopy slab; the walked part of the trail glows mint, the step that's up next
+// is a lit hero card with a black "Up next" tag under its name, and done steps recede into the night.
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { HEADER_RATIOS, HeaderScene } from './Art';
 import { Button } from './Button';
+import { Canopy } from './Canopy';
 import { Glass, HeaderMist, LensHeaderContext, useGlassScroll } from './Glass';
 import { alphaOf, clearOf } from './glass/colour';
 import { Bar, Chevron, Collapse, Dim, EASE_OUT, Enter, FadeSwap, Pop, Press, Ring, SelectFade, useReduceMotion } from './Motion';
@@ -99,7 +102,6 @@ export function TrailHome(p: Props) {
   const centerKey = centers.join(',');
   const walkedPath = useMemo(() => trail(centers.slice(0, split + 1), 0, paper), [centerKey, split, paper]); // eslint-disable-line react-hooks/exhaustive-deps
   const aheadPath = useMemo(() => trail(centers.slice(split), split, paper), [centerKey, split, paper]); // eslint-disable-line react-hooks/exhaustive-deps
-  const railPath = useMemo(() => trail(centers, 0, false), [centerKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The mountains sit at the top of the scroll content, flush with the top of the frame. On Paper they move
   // slower than the content (parallax), and glass over them shows their blurred copy, moved the same way.
@@ -117,43 +119,47 @@ export function TrailHome(p: Props) {
         ? `${plural(p.streak, 'day')} streak`
         : 'Start a streak';
 
+  const top = (
+    <View style={styles.top}>
+      <View style={styles.flex}>
+        <Text style={styles.greet}>{p.greeting},</Text>
+        <Text style={styles.hello} numberOfLines={1} accessibilityRole="header">
+          {p.name}
+        </Text>
+        <Press
+          onPress={p.onToggleCalendar}
+          style={styles.dateRow}
+          accessibilityLabel={p.calendarOpen ? 'Hide the calendar' : 'Pick a day'}
+          accessibilityState={{ expanded: p.calendarOpen }}
+          hitSlop={6}
+        >
+          <Text style={styles.date}>{p.dateLabel}</Text>
+          <Chevron open={!p.calendarOpen} color={colors.onSlabMuted} size={16} />
+        </Press>
+      </View>
+      <View style={styles.topButtons}>
+        <Round icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'} label="Focus sounds" onPress={p.onSounds} dot={p.soundsPlaying} />
+        <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
+        <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
+      </View>
+    </View>
+  );
+
   return (
     <LensHeaderContext.Provider value={lensHeader}>
       <View>
-        <Animated.View style={[styles.scene, { top: -p.topInset, left: -16, width }, sceneMotion]} pointerEvents="none">
-          <HeaderScene width={width} />
-          {paper && <HeaderMist width={width} />}
-          {paper && <SummitSweep on={allDone} width={width} />}
-        </Animated.View>
-
-        <View style={styles.top}>
-          <View style={styles.flex}>
-            <Text style={styles.greet}>{p.greeting},</Text>
-            <Text style={styles.hello} numberOfLines={1} accessibilityRole="header">
-              {p.name}
-            </Text>
-            <Press
-              onPress={p.onToggleCalendar}
-              style={styles.dateRow}
-              accessibilityLabel={p.calendarOpen ? 'Hide the calendar' : 'Pick a day'}
-              accessibilityState={{ expanded: p.calendarOpen }}
-              hitSlop={6}
-            >
-              <Text style={styles.date}>{p.dateLabel}</Text>
-              <Chevron open={!p.calendarOpen} color={colors.muted} size={16} />
-            </Press>
-          </View>
-          <View style={styles.topButtons}>
-            <Round
-              icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'}
-              label="Focus sounds"
-              onPress={p.onSounds}
-              dot={p.soundsPlaying}
-            />
-            <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
-            <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
-          </View>
-        </View>
+        {paper ? (
+          <>
+            <Animated.View style={[styles.scene, { top: -p.topInset, left: -16, width }, sceneMotion]} pointerEvents="none">
+              <HeaderScene width={width} />
+              <HeaderMist width={width} />
+              <SummitSweep on={allDone} width={width} />
+            </Animated.View>
+            {top}
+          </>
+        ) : (
+          <Canopy bleed={p.topInset}>{top}</Canopy>
+        )}
 
         <Collapse open={p.calendarOpen}>
           <Glass style={styles.calendar}>{p.calendar}</Glass>
@@ -165,7 +171,7 @@ export function TrailHome(p: Props) {
               <Ionicons name={p.streak > 0 ? 'flame' : 'flame-outline'} size={16} color={p.streak > 0 ? colors.streak : colors.muted} />
             </View>
           ) : (
-            <Ionicons name={p.streak > 0 ? 'flame' : 'flame-outline'} size={16} color={p.streak > 0 ? colors.streak : colors.muted} />
+            <Ionicons name={p.streak > 0 ? 'flame' : 'flame-outline'} size={16} color={colors.streak} />
           )}
           <Text style={styles.streakText}>
             {streakText}
@@ -201,6 +207,22 @@ export function TrailHome(p: Props) {
           </View>
         </View>
 
+        {!paper && allDone && (
+          <Enter index={0}>
+            <Glass tier="hero" bloom style={styles.complete} accessibilityLabel={`Trail complete. ${streakText}`}>
+              <Pop done style={styles.completeDisc}>
+                <Ionicons name="checkmark" size={24} color={colors.onPrimary} />
+              </Pop>
+              <View style={styles.flex}>
+                <Text style={styles.completeTitle}>Trail complete</Text>
+                <Text style={styles.rowMeta}>
+                  {p.streak > 0 ? `${plural(p.streak, 'day')} in a row. Rest well.` : 'Every step done today. Rest well.'}
+                </Text>
+              </View>
+            </Glass>
+          </Enter>
+        )}
+
         {p.items.length === 0 ? (
           paper ? (
             <Glass style={styles.clear}>
@@ -212,15 +234,16 @@ export function TrailHome(p: Props) {
               <Button label="Add a step" icon="add" onPress={p.onAdd} style={styles.clearButton} />
             </Glass>
           ) : (
-            <Press onPress={p.onAdd} style={styles.empty} accessibilityLabel="Add a routine or a to-do">
+            <Glass style={styles.empty}>
               <View style={[styles.tile, { backgroundColor: colors.tile }]}>
-                <Ionicons name="add" size={22} color={colors.text} />
+                <Ionicons name="trail-sign-outline" size={22} color={colors.accent} />
               </View>
               <View style={styles.flex}>
                 <Text style={styles.rowTitle}>A clear day</Text>
                 <Text style={styles.rowMeta}>Add a routine or a to-do and it starts the trail.</Text>
+                <Button label="Add a routine" icon="add" variant="plain" onPress={p.onAdd} style={styles.emptyButton} />
               </View>
-            </Press>
+            </Glass>
           )
         ) : (
           <View style={styles.trail}>
@@ -248,16 +271,20 @@ export function TrailHome(p: Props) {
                     />
                   </Svg>
                 ) : (
+                  // Pine: the way ahead is a faint dotted path; the walked part is lit mint, with a soft wide copy
+                  // under it so it reads as light on the forest floor.
                   <Svg width={RAIL} height={y}>
                     <Path
-                      d={railPath}
+                      d={aheadPath}
                       stroke={colors.faint}
                       strokeWidth={2.5}
                       strokeDasharray="1 7"
                       strokeLinecap="round"
                       fill="none"
-                      opacity={0.7}
+                      opacity={0.6}
                     />
+                    <Path d={walkedPath} stroke={colors.node} strokeWidth={8} strokeLinecap="round" fill="none" opacity={0.12} />
+                    <Path d={walkedPath} stroke={colors.node} strokeWidth={2.5} strokeLinecap="round" fill="none" opacity={0.85} />
                   </Svg>
                 ))}
             </View>
@@ -266,7 +293,7 @@ export function TrailHome(p: Props) {
                 key={it.key}
                 item={it}
                 index={i}
-                current={paper ? i === current : it.key === p.nextKey}
+                current={i === current}
                 summit={paper && i === p.items.length - 1}
                 currentLabel={it.key === p.nextKey ? p.nextLabel : undefined}
                 onLayout={(h) => setRows((r) => (r[it.key] === h ? r : { ...r, [it.key]: h }))}
@@ -320,7 +347,7 @@ export function TrailHome(p: Props) {
                       stroke={paper ? 12 : 9}
                       progress={rest ? 0 : b.value / b.total}
                       color={b.color}
-                      track={b.soft}
+                      track={paper ? b.soft : colors.track}
                     >
                       <Text style={[styles.ringValue, { color: rest ? colors.faint : b.color }]}>{rest ? '–' : b.value}</Text>
                       <Text style={styles.ringUnit}>{rest ? 'rest' : `of ${b.total}`}</Text>
@@ -387,18 +414,26 @@ function TrailRow({
         : item.meta;
   const state: NodeState = item.done ? 'done' : item.skipped ? 'skipped' : current ? 'current' : 'ahead';
   const lit = paper && current && !finished;
+  // Pine: the step that's up next is the lit hero of the trail. Its tag carries when ("Up next · 21:00"), the
+  // meta line under it what's left ("in 2 h 33 min").
+  const hero = !paper && current && !finished;
+  const [tag, rest] = hero ? splitTag(currentLabel) : [undefined, undefined];
   const card = (
     <Glass
+      tier={hero ? 'hero' : 'pane'}
+      lit={hero}
+      bloom={hero}
       onPress={press}
       onLongPress={item.onLongPress}
       receded={finished}
-      style={[styles.flex, styles.rowCard]}
+      style={[styles.flex, styles.rowCard, hero && styles.heroCard]}
       accessibilityRole={item.nav ? 'button' : 'checkbox'}
       accessibilityState={item.nav ? undefined : { checked: item.done }}
       accessibilityLabel={`${item.title}, ${meta}`}
       accessibilityHint={item.nav ? undefined : item.onLongPress ? 'Double tap to tick off. Long press to edit.' : undefined}
     >
       {paper && <Sweep run={item.done} width={cardW} />}
+      {hero && <MountSweep width={cardW} />}
       {paper ? (
         <Dim on={finished} to={0.6}>
           <View style={styles.pebble}>
@@ -411,14 +446,22 @@ function TrailRow({
           </View>
         </Dim>
       ) : (
-        <View style={[styles.tile, { backgroundColor: colors.tile }]}>
-          <Ionicons name={item.icon as 'sunny'} size={20} color={finished ? colors.faint : item.color} />
+        <View style={[styles.tile, { backgroundColor: hero ? alphaOf(item.color, 0.16) : colors.tile }]}>
+          <Ionicons name={item.icon as 'sunny'} size={hero ? 22 : 20} color={finished ? colors.faint : item.color} />
         </View>
       )}
       <View style={styles.flex}>
-        <Text style={[styles.rowTitle, finished && styles.rowTitleDone]} numberOfLines={2}>
+        <Text style={[styles.rowTitle, hero && styles.heroTitle, finished && styles.rowTitleDone]} numberOfLines={2}>
           {item.title}
         </Text>
+        {hero && (
+          <View style={styles.tagRow}>
+            <View style={styles.tag}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </View>
+            {rest ? <Text style={styles.tagRest}>{rest}</Text> : null}
+          </View>
+        )}
         {item.progress && !finished ? (
           <View style={styles.progress}>
             <Bar
@@ -429,9 +472,11 @@ function TrailRow({
             />
           </View>
         ) : null}
-        <Text style={[styles.rowMeta, current && !finished && styles.rowMetaLit]} numberOfLines={2}>
-          {meta}
-        </Text>
+        {hero && !item.progress ? null : (
+          <Text style={[styles.rowMeta, current && !finished && styles.rowMetaLit]} numberOfLines={2}>
+            {hero ? item.meta : meta}
+          </Text>
+        )}
       </View>
       {item.nav ? (
         <Ionicons name="chevron-forward" size={18} color={paper ? colors.muted : colors.faint} />
@@ -466,6 +511,7 @@ function TrailRow({
                 item.skipped && styles.nodeSkipped,
               ]}
             >
+              {state === 'current' && <PineHalo />}
               {item.done ? (
                 <Ionicons name="checkmark" size={16} color={colors.onNode} />
               ) : current ? (
@@ -515,6 +561,50 @@ function PaperNode({ state, summit }: { state: NodeState; summit: boolean }) {
         </View>
       </Dim>
     </Pop>
+  );
+}
+
+/** "Up next · 21:00 · in 2 h 33 min" -> ["Up next · 21:00", "in 2 h 33 min"]; "Happening now · 5 min left" ->
+ *  ["Happening now", "5 min left"]. A step lit without a time is simply "Up next". */
+function splitTag(label?: string): [string, string | undefined] {
+  if (!label) return ['Up next', undefined];
+  const parts = label.split(' · ');
+  const n = parts.length > 1 && /^\d/.test(parts[1]) ? 2 : 1;
+  return [parts.slice(0, n).join(' · '), parts.slice(n).join(' · ') || undefined];
+}
+
+/** Pine's lit node breathes a ring out (the same halo as Paper's, in mint); still under reduced motion. */
+function PineHalo() {
+  const reduced = useReduceMotion();
+  return reduced ? null : <Halo />;
+}
+
+/** One pass of moonlight across the lit card when the trail first shows (never under reduced motion). */
+function MountSweep({ width }: { width: number }) {
+  const { colors } = useTheme();
+  const reduced = useReduceMotion();
+  const p = useSharedValue(0);
+  const ran = useRef(false);
+  useEffect(() => {
+    if (ran.current || reduced || width <= 0) return;
+    ran.current = true;
+    p.set(withDelay(240, withTiming(1, { duration: 900, easing: EASE_OUT })));
+  }, [reduced, width, p]);
+  const band = 48;
+  const style = useAnimatedStyle(() => ({
+    opacity: p.get() > 0 && p.get() < 1 ? 1 : 0,
+    transform: [{ translateX: -band - 20 + p.get() * (width + band + 40) }, { rotate: '15deg' }],
+  }));
+  const light = colors.material.topGlow;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        { position: 'absolute', top: -20, bottom: -20, left: 0, width: band },
+        { backgroundImage: `linear-gradient(90deg, ${clearOf(light)}, ${light} 50%, ${clearOf(light)})` },
+        style,
+      ]}
+    />
   );
 }
 
@@ -595,11 +685,11 @@ const makeStyles = ({ colors, fonts, type, radius, radii, name }: Theme) => {
   return StyleSheet.create({
     flex: { flex: 1 },
     scene: { position: 'absolute' },
-    top: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 8 },
-    greet: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 20, color: colors.muted },
+    top: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: paper ? 8 : 0 },
+    greet: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 20, color: colors.onSlabMuted },
     hello: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.6, marginTop: 1 },
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 44 },
-    date: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.muted },
+    date: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.onSlabMuted },
     topButtons: { flexDirection: 'row', gap: paper ? 10 : 8 },
     round: paper
       ? { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' }
@@ -616,8 +706,8 @@ const makeStyles = ({ colors, fonts, type, radius, radii, name }: Theme) => {
           borderColor: colors.material.rimTop,
           backgroundColor: colors.streak,
         }
-      : { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.streak },
-    calendar: { marginTop: 14, padding: 8 },
+      : { position: 'absolute', top: 8, right: 8, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.accent },
+    calendar: paper ? { marginTop: 14, padding: 8 } : { marginBottom: 14, padding: 8 },
     streak: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -626,7 +716,7 @@ const makeStyles = ({ colors, fonts, type, radius, radii, name }: Theme) => {
       paddingLeft: paper ? 8 : 12,
       paddingRight: 14,
       minHeight: paper ? 40 : 38,
-      marginTop: 18,
+      marginTop: paper ? 18 : 0,
     },
     flamePebble: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     flamePebbleOn: {
@@ -729,16 +819,31 @@ const makeStyles = ({ colors, fonts, type, radius, radii, name }: Theme) => {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    empty: {
-      flexDirection: 'row',
+    empty: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 16 },
+    emptyButton: { alignSelf: 'flex-start', marginTop: 6, marginLeft: -12 },
+    complete: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, marginBottom: 12 },
+    completeDisc: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
       alignItems: 'center',
-      gap: 12,
-      padding: 14,
-      borderRadius: radius,
-      borderWidth: 1,
-      borderStyle: 'dashed',
-      borderColor: colors.faint,
+      justifyContent: 'center',
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: colors.actionGlow,
     },
+    completeTitle: { fontFamily: fonts.display, fontSize: 20, lineHeight: 25, color: colors.text, letterSpacing: -0.3 },
+    heroCard: { minHeight: 88, padding: 16, paddingRight: 16, gap: 14 },
+    heroTitle: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 23, letterSpacing: -0.2 },
+    tagRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+    tag: {
+      borderRadius: 999,
+      paddingHorizontal: 9,
+      minHeight: 22,
+      justifyContent: 'center',
+      backgroundColor: colors.material.tag?.fill ?? inset.fill,
+    },
+    tagText: { ...type.badge, fontSize: 10.5, letterSpacing: 1.4, color: colors.material.tag?.ink ?? colors.text },
+    tagRest: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 19, color: colors.text },
     clear: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 20 },
     clearPebble: {
       width: 56,
@@ -768,9 +873,7 @@ const makeStyles = ({ colors, fonts, type, radius, radii, name }: Theme) => {
       ? { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 18, paddingTop: 18 }
       : { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 8, paddingBottom: 18, paddingTop: 4 },
     ringWrap: { alignItems: 'center', gap: 10 },
-    ringValue: paper
-      ? { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, fontVariant: ['tabular-nums'] }
-      : { fontFamily: fonts.display, fontSize: 22, lineHeight: 26 },
+    ringValue: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, fontVariant: ['tabular-nums'] },
     ringUnit: { fontFamily: fonts.body, fontSize: paper ? 14 : 13, color: colors.muted },
     ringLabel: paper
       ? { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text }

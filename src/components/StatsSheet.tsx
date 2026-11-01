@@ -112,6 +112,7 @@ function Tile({ value, label, color }: { value: string; label: string; color: st
   const styles = useStyles(makeStyles);
   return (
     <Glass style={styles.tile}>
+      <View pointerEvents="none" style={styles.orb} />
       <View style={[styles.tileLine, { backgroundColor: color }]} />
       <Text style={styles.tileValue}>{value}</Text>
       <Text style={type.small}>{label}</Text>
@@ -150,7 +151,22 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
   const lavender = name === 'lavender';
   const stone = name === 'stone';
   const paper = name === 'paper';
+  const orb = colors.material.orb;
   return StyleSheet.create({
+    // Pine: each tile carries the moon orb in its top-right corner
+    orb: orb
+      ? {
+          position: 'absolute',
+          top: -30,
+          right: -30,
+          width: 84,
+          height: 84,
+          borderRadius: 42,
+          backgroundColor: orb.fill,
+          borderWidth: 1,
+          borderColor: orb.rim,
+        }
+      : { display: 'none' },
     moved: { fontSize: 15, lineHeight: 21 },
     dayDisc: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     dayDiscToday: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
@@ -162,8 +178,8 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
     tileLine: { width: 20, height: 3, borderRadius: 2, marginBottom: 8 },
     tileValue: {
       fontFamily: fonts.display,
-      fontSize: lavender ? 30 : stone ? 34 : 26,
-      lineHeight: lavender ? 36 : stone ? 38 : 32,
+      fontSize: lavender ? 30 : stone ? 34 : orb ? 28 : 26,
+      lineHeight: lavender ? 36 : stone ? 38 : orb ? 33 : 32,
       color: colors.text,
       fontVariant: ['tabular-nums'],
     },
@@ -191,13 +207,21 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
               backgroundImage: `linear-gradient(180deg, ${alphaOf(colors.material.rimTop, 0.18)}, ${alphaOf(colors.material.rimTop, 0)})`,
               boxShadow: `inset 0px 1px 0px ${alphaOf(colors.material.rimTop, 0.45)}`,
             }
-          : {},
+          : orb
+            ? // Pine: moonlit mint, brightest at the top, with a lit top edge
+              {
+                borderRadius: 8,
+                backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${kinds.routines.color} 45%, ${alphaOf(kinds.routines.color, 0.72)})`,
+                boxShadow: `inset 0px 1px 0px ${alphaOf(colors.material.rimTop, 0.9)}`,
+              }
+            : {},
     todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.text, marginBottom: -2 },
     hidden: { opacity: 0 },
     barLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },
-    barToday: { color: colors.text, fontFamily: fonts.monoMedium },
+    barToday: { color: orb ? colors.accent : colors.text, fontFamily: fonts.monoMedium },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
-    num: { fontFamily: fonts.monoMedium, fontSize: stone ? 15 : 14, color: colors.text, fontVariant: ['tabular-nums'] },
+    // "4 in a row", "40 kg × 8": words with their numbers, so a sans with tabular figures (never mono for words)
+    num: { fontFamily: fonts.bodyBold, fontSize: stone ? 15 : 14, color: colors.text, fontVariant: ['tabular-nums'] },
     empty: { padding: 16, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
   });
 };

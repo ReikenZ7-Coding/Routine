@@ -20,6 +20,7 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
+import { alphaOf } from './glass/colour';
 import { EASE_OUT, FADE, FadeSwap, Micro, Pop, Press, SelectFade, useReduceMotion } from './Motion';
 
 function tick() {
@@ -311,8 +312,10 @@ export function RoutineCard({
 }) {
   const { colors, kinds, name } = useTheme();
   const styles = useStyles(makeStyles);
-  // Paper ticks in ink (its done colour), like every other done mark on the page.
+  // Paper ticks in ink (its done colour), like every other done mark on the page. Pine's cards carry a moon orb in
+  // their top-right corner, as on the training hub they are modelled on.
   const paper = name === 'paper';
+  const orb = !!colors.material.orb;
   const done = isDoneOn(r, today);
   const skipped = isSkipped(r, today);
   const counter = !!r.target && r.target > 1;
@@ -330,6 +333,7 @@ export function RoutineCard({
       accessibilityLabel={`${r.name}, ${routineSubtitle(r, today)}`}
       accessibilityHint="Opens the editor"
     >
+      {orb && <View style={styles.orb} pointerEvents="none" />}
       <View style={styles.watermark} pointerEvents="none">
         <Ionicons name={iconFor(r) as 'sunny'} size={96} color={colors.text} />
       </View>
@@ -401,8 +405,10 @@ export function RoutineCard({
   );
 }
 
-const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
-  StyleSheet.create({
+const makeStyles = ({ colors, fonts, type, dark }: Theme) => {
+  const tag = colors.material.tag;
+  const orb = colors.material.orb;
+  return StyleSheet.create({
     flex: { flex: 1 },
     trough: { padding: 4 },
     segments: { flexDirection: 'row', minHeight: 44 },
@@ -429,16 +435,27 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
     filter: { gap: 6 },
     chipScroll: { marginHorizontal: -16 },
     chips: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 24 },
-    chip: {
-      minHeight: 44,
-      paddingHorizontal: 14,
-      justifyContent: 'center',
-      borderRadius: 999,
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.material.inset.border,
-      borderTopColor: colors.material.inset.borderTop,
-    },
+    chip: tag
+      ? {
+          // Pine: outlined chips on the night floor, a mint edge on a dark fill, as on the training hub
+          minHeight: 44,
+          paddingHorizontal: 14,
+          justifyContent: 'center',
+          borderRadius: 999,
+          backgroundColor: alphaOf(colors.bg, 0.5),
+          borderWidth: 1,
+          borderColor: alphaOf(colors.accent, 0.5),
+        }
+      : {
+          minHeight: 44,
+          paddingHorizontal: 14,
+          justifyContent: 'center',
+          borderRadius: 999,
+          backgroundColor: colors.material.inset.fill,
+          borderWidth: 1,
+          borderColor: colors.material.inset.border,
+          borderTopColor: colors.material.inset.borderTop,
+        },
     chipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     chosen: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     chipText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
@@ -467,18 +484,33 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
     },
     countText: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
     card: { padding: 14, minHeight: 182 },
+    orb: orb
+      ? {
+          position: 'absolute',
+          top: -34,
+          right: -34,
+          width: 124,
+          height: 124,
+          borderRadius: 62,
+          backgroundColor: orb.fill,
+          borderWidth: 1,
+          borderColor: orb.rim,
+        }
+      : {},
     watermark: { position: 'absolute', right: -22, bottom: -26, opacity: dark ? 0.06 : 0.05, transform: [{ rotate: '-12deg' }] },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
-    cardBadge: {
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.material.inset.border,
-      borderRadius: 999,
-      paddingHorizontal: 9,
-      minHeight: 22,
-      justifyContent: 'center',
-    },
-    cardBadgeText: { ...type.badge, color: colors.muted },
+    cardBadge: tag
+      ? { backgroundColor: tag.fill, borderRadius: 999, paddingHorizontal: 9, minHeight: 22, justifyContent: 'center' }
+      : {
+          backgroundColor: colors.material.inset.fill,
+          borderWidth: 1,
+          borderColor: colors.material.inset.border,
+          borderRadius: 999,
+          paddingHorizontal: 9,
+          minHeight: 22,
+          justifyContent: 'center',
+        },
+    cardBadgeText: tag ? { ...type.badge, fontSize: 10.5, letterSpacing: 1.4, color: tag.ink } : { ...type.badge, color: colors.muted },
     tickSpot: { marginTop: -8, marginRight: -6 },
     tick: {
       width: 44,
@@ -490,7 +522,13 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
       justifyContent: 'center',
     },
     tickCount: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
-    cardTitle: { fontFamily: fonts.bodyBold, fontSize: 17, lineHeight: 22, color: colors.text, letterSpacing: -0.2 },
+    cardTitle: {
+      fontFamily: fonts.bodyBold,
+      fontSize: tag ? 18 : 17,
+      lineHeight: tag ? 23 : 22,
+      color: colors.text,
+      letterSpacing: tag ? -0.3 : -0.2,
+    },
     cardTitleDone: { color: colors.faint, textDecorationLine: 'line-through' },
     cardSub: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 4, flexGrow: 1 },
     cardBottom: { marginTop: 12, gap: 8 },
@@ -501,10 +539,15 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
       minHeight: 22,
       justifyContent: 'center',
       backgroundColor: colors.material.inset.fill,
+      ...(tag ? { borderWidth: 1, borderColor: alphaOf(colors.accent, 0.5) } : null),
     },
-    levelHot: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
+    levelHot: {
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      ...(tag ? { borderColor: colors.primaryGradient[0] } : null),
+    },
     levelText: { ...type.badge, color: colors.text },
     levelTextHot: { color: colors.onPrimary },
     meta: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 19 },
     metaText: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
   });
+};

@@ -306,8 +306,8 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
     streak: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     minutes: {
       fontFamily: fonts.display,
-      fontSize: name === 'lavender' || name === 'paper' ? 40 : 34,
-      lineHeight: name === 'lavender' || name === 'paper' ? 46 : 40,
+      fontSize: name === 'stone' ? 34 : 40,
+      lineHeight: name === 'stone' ? 40 : 46,
       letterSpacing: name === 'paper' ? -0.8 : undefined,
       color: colors.text,
       marginTop: 8,

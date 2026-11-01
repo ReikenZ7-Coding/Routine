@@ -73,6 +73,27 @@ export interface GlassMaterial {
   light: { period: number; layers: string[]; catch: number };
   /** Lavender and Pine hero cards: a radial light inside the glass. */
   bloom?: string;
+  /** Sheets: an extra radial light in the body (Pine's moon orb in the top right corner). */
+  sheetOrb?: string;
+  /** Pine: the lit teal slab that carries each screen's header. Its gradient top to bottom, the 1px rim along its
+   *  rounded foot, its offset shadow, the opacity of its art, the moon glow behind its top-right buttons, and the
+   *  trough that glass laid on the slab becomes (darker than the slab, lit along its lower lip). */
+  canopy?: {
+    gradient: [string, string, string];
+    rim: string;
+    shadow: string;
+    art: number;
+    /** The art is drawn at the slab's height, up to this many dp. */
+    maxArt: number;
+    moon: string;
+    /** The count badge on the slab: a dark pill (litRim edge, accent count). */
+    badge: string;
+    inset: { fill: string; border: string; borderTop: string };
+  };
+  /** Pine: the near-black pill with white bold capitals that tags cards (time of day, "New best", "Up next"). */
+  tag?: { fill: string; ink: string };
+  /** Pine: the moon orb, a soft disc of light bleeding in from a card's top-right corner (fill and its rim). */
+  orb?: { fill: string; rim: string };
 }
 
 export interface Palette {
@@ -155,7 +176,7 @@ const STONE_FLOAT = '6px 20px 44px -12px rgba(14,13,8,0.40), 1px 2px 6px rgba(14
 const STONE_PANE = '4px 14px 30px -10px rgba(14,13,8,0.34), 0px 1px 2px rgba(14,13,8,0.18)';
 const PAPER_FLOAT =
   '0px 0px 0px 0.5px rgba(30,34,28,0.07), 0px 1px 1px rgba(30,34,28,0.05), 0px 10px 28px -6px rgba(46,52,40,0.16), 0px 26px 52px -20px rgba(46,52,40,0.14)';
-const PINE_FLOAT = '0px 18px 36px -6px rgba(0,8,6,0.60), 0px 2px 6px rgba(0,8,6,0.35), 0px 0px 24px rgba(124,227,188,0.08)';
+const PINE_FLOAT = '0px 18px 36px -6px rgba(0,8,6,0.60), 0px 2px 6px rgba(0,8,6,0.35), 0px 14px 30px -14px rgba(124,227,188,0.12)';
 const PINE_PANE = '0px 10px 24px -6px rgba(0,8,6,0.50), 0px 1px 2px rgba(0,8,6,0.30)';
 
 const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindStyle>; radii: Radii }> = {
@@ -446,13 +467,15 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onKind: '#06201A',
       doneFill: ['#A3F0D3', '#7CE3BC'],
       onDone: '#06201A',
-      actionGlow: PINE_PANE,
+      actionGlow: '0px 10px 26px -6px rgba(124,227,188,0.42), 0px 2px 6px rgba(0,8,6,0.40)',
       controlBorder: 'rgba(214,240,228,0.58)',
       track: 'rgba(214,240,228,0.08)',
       danger: '#F7C8C0',
       backdrop: 'rgba(0,10,8,0.55)',
       statusBar: 'light',
-      edgeTop: ['rgba(11,42,36,0.90)', 'rgba(11,42,36,0)'],
+      // The status bar sits on the canopy slab, so the top edge fades in the slab's own teal: invisible over the
+      // slab at rest, a teal band over content once the slab has scrolled away.
+      edgeTop: ['rgba(31,99,82,0.94)', 'rgba(31,99,82,0)'],
       edgeBottom: ['rgba(3,17,14,0)', 'rgba(3,17,14,0.90)'],
       accent: '#7CE3BC',
       streak: '#7CE3BC',
@@ -463,7 +486,8 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onWarmTile: '#7CE3BC',
       onSlabMuted: '#D8EBE3',
       litRim: 'rgba(124,227,188,0.60)',
-      litGlow: '0px 0px 24px rgba(124,227,188,0.28)',
+      // moonlight spilling from under the lit card onto the floor (offset, never a flat halo)
+      litGlow: '0px 12px 28px -10px rgba(124,227,188,0.38)',
       material: {
         live: { tint: 'systemUltraThinMaterialDark', intensity: 10, reduction: 0.42, webBlur: 24, webSaturate: 1.3 },
         chromeTint: 'rgba(4,18,15,0.55)',
@@ -504,6 +528,19 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         },
         light: { period: 16000, layers: ['pine-light-moon'], catch: 0.6 },
         bloom: 'radial-gradient(60% 60% at 70% 100%, rgba(124,227,188,0.1), transparent 70%)',
+        tag: { fill: 'rgba(4,14,12,0.80)', ink: '#FFFFFF' },
+        orb: { fill: 'rgba(124,227,188,0.07)', rim: 'rgba(168,240,212,0.12)' },
+        sheetOrb: 'radial-gradient(60% 50% at 100% 0%, rgba(124,227,188,0.10), rgba(124,227,188,0) 70%)',
+        canopy: {
+          gradient: ['#1F6352', '#164D41', '#113D34'],
+          rim: 'rgba(168,240,212,0.18)',
+          shadow: '0px 16px 32px -10px rgba(0,8,6,0.55), 0px 2px 6px rgba(0,8,6,0.30)',
+          art: 0.6,
+          maxArt: 180,
+          moon: 'rgba(124,227,188,0.30)',
+          badge: 'rgba(4,14,12,0.55)',
+          inset: { fill: 'rgba(4,14,12,0.30)', border: 'rgba(168,240,212,0.16)', borderTop: 'rgba(4,14,12,0.40)' },
+        },
       },
     },
     kinds: {

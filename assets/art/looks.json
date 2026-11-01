@@ -1,5 +1,5 @@
 {
-  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width. bounds: the part of a light's box where its alpha is visible at all (alpha > 0.004), as [x0, y0, x1, y1] fractions of the box; glass skips drawing a light whose bounds miss it.",
+  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width. bounds: the part of a light's box where its alpha is visible at all (alpha > 0.004), as [x0, y0, x1, y1] fractions of the box; glass skips drawing a light whose bounds miss it. canopy (Pine): the art inside the canopy slab that carries each screen's header; ratio is its height over its width, and it is drawn at the slab's height, anchored to the slab's bottom right.",
   "frame": {
     "widthDp": 400,
     "heightDp": 860
@@ -128,12 +128,12 @@
             "ay": 10,
             "s": 0.06
           },
-          "bounds": [0.66, 0.0, 1.0, 0.14]
+          "bounds": [0.609, 0.212, 0.994, 0.389]
         }
       ],
-      "header": {
+      "canopy": {
         "file": "pine-header",
-        "ratio": 0.8333
+        "ratio": 0.5
       }
     }
   }

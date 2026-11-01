@@ -723,9 +723,70 @@ def paper_lights():
 # Pine: a night training hub in a pine forest.
 
 
+def lowpoly_pines(w, h, spots, seed, tiers=3):
+    """Turned pines, like the wooden trees on a training-hub poster: three stacked cones, each with a shadow side
+    and a side lit from the upper right (the moon), and a soft occlusion band under every cone's bowed rim.
+    Returns (body, lit, shade) masks in 0..1, drawn 4x supersampled."""
+    s = 4
+    body = Image.new('L', (w * s, h * s), 0)
+    lit = Image.new('L', (w * s, h * s), 0)
+    shade = Image.new('L', (w * s, h * s), 0)
+    db, dl, ds = ImageDraw.Draw(body), ImageDraw.Draw(lit), ImageDraw.Draw(shade)
+    r = np.random.default_rng(seed)
+    for x, base, height in spots:
+        x, base, height = x * s, base * s, height * s
+        trunk = height * 0.09
+        tw = height * 0.04
+        db.rectangle([x - tw, base - trunk * 1.8, x + tw, base], fill=255)
+        dl.rectangle([x + tw * 0.2, base - trunk * 1.8, x + tw, base], fill=90)
+        crown = height - trunk
+        spec = []
+        for t in range(tiers):
+            bottom = base - trunk * 1.2 - crown * 0.27 * t
+            top = base - height if t == tiers - 1 else bottom - crown * (0.48 - 0.03 * t)
+            half = crown * 0.31 * (1 - 0.24 * t) * r.uniform(0.95, 1.05)
+            spec.append((bottom, top, half))
+        for t, (bottom, top, half) in enumerate(spec):
+            sag = half * 0.2
+            # the cone's rim: a shallow arc, bowed toward the viewer
+            us = np.linspace(-1, 1, 25)
+            rim = [(x + u * half, bottom + sag * (1 - u * u) - sag * 0.3) for u in us]
+            db.polygon([(x, top)] + rim, fill=255)
+            # the lit side: from just right of the axis out to the right edge of the rim
+            dl.polygon([(x + half * 0.05, top)] + rim[14:], fill=255)
+            # occlusion: the cone above shades a narrow band just under its rim
+            if t < tiers - 1:
+                nb, _, nh = spec[t + 1]
+                ds.ellipse([x - nh * 0.78, nb - nh * 0.04, x + nh * 0.78, nb + nh * 0.2], fill=255)
+    out = []
+    for m, blur in ((body, 0.45), (lit, 0.6), (shade, 3)):
+        m = m.filter(ImageFilter.GaussianBlur(s * blur)).resize((w, h), Image.LANCZOS)
+        out.append(np.asarray(m).astype(float) / 255)
+    b, l, sh = out
+    return b, np.minimum(l, b), np.minimum(sh, b)
+
+
+def paint_pines(img, a, masks, body_col, lit_col, shade=0.45, lit_top=None):
+    """Composite faceted pines: body colour, then the lit side (lighter toward the tips when lit_top is given),
+    then the occlusion bands. a is the alpha to accumulate (or None)."""
+    body, lit, sh = masks
+    img = img * (1 - body[..., None]) + hexc(body_col) * body[..., None]
+    if lit_top:
+        hh = img.shape[0]
+        v = np.linspace(0, 1, hh)[:, None, None]
+        lc = hexc(lit_top) * (1 - v) + hexc(lit_col) * v
+    else:
+        lc = hexc(lit_col)
+    img = img * (1 - lit[..., None]) + lc * lit[..., None]
+    img = img * (1 - sh[..., None] * shade)
+    if a is not None:
+        a = a + body * (1 - a)
+    return img, a
+
+
 def pine_backdrop():
-    """Night in the pines: a deep evergreen floor, a mint moon glow top right, a low aurora band,
-    mint mist and a pine ridge along the foot."""
+    """Night in the pines: a deep evergreen floor, a mint moon glow top right, a low aurora band, mint mist,
+    and a stand of faceted pines along the foot, their moon-side faces just catching the light."""
     reseed('pine-bg')
     img = gradient([(0, hexc('#0B2A24')), (0.45, hexc('#071D19')), (1, hexc('#03110E'))], tilt=0.12)
     glow(img, W * 0.84, H * 0.02, W * 0.6, hexc('#2E8F74'), 0.22)
@@ -739,30 +800,56 @@ def pine_backdrop():
     for yc in (0.30, 0.70):
         mist = np.exp(-((yy - H * yc) / (H * 0.05)) ** 2) * noise(W, H, 200, 3, int(yc * 100))
         img = img * (1 - mist[..., None] * 0.12) + hexc('#2C7A66') * mist[..., None] * 0.12
-    # the ridge along the foot, with a mist band above it
-    line = ridge(W, H * 0.86, H * 0.025, [(1.7, 1), (4.3, 0.4), (11, 0.15)], 61)
-    mist = np.exp(-((yy - H * 0.85) / (H * 0.03)) ** 2)
+    # a low ridge along the foot, a mist band above it, then the faceted stand in front
+    line = ridge(W, H * 0.885, H * 0.02, [(1.7, 1), (4.3, 0.4), (11, 0.15)], 61)
+    mist = np.exp(-((yy - H * 0.86) / (H * 0.035)) ** 2)
     img = img * (1 - mist[..., None] * 0.22) + hexc('#1A5547') * mist[..., None] * 0.22
+    img = fill_below(img, line, hexc('#04150F'), soft=4)
     r = np.random.default_rng(63)
-    spots = [(W * k / 13 + r.uniform(-30, 30), H * 0.9 + r.uniform(-10, 30), H * r.uniform(0.06, 0.1)) for k in range(14)]
-    img = fill_below(img, line, hexc('#03100C'), soft=4)
-    img = pines(img, spots, hexc('#03100C'), seed=64, blur=1.5)
+    far = [(W * (k + 0.5) / 16 + r.uniform(-25, 25), H * 0.905 + r.uniform(-8, 8), H * r.uniform(0.045, 0.07)) for k in range(16)]
+    img, _ = paint_pines(img, None, lowpoly_pines(W, H, far, 65), '#061C16', '#0B2B24', shade=0.3)
+    near = [(W * x, H * (0.985 + r.uniform(-0.01, 0.01)), H * hh) for x, hh in
+            ((0.05, 0.11), (0.16, 0.08), (0.30, 0.095), (0.47, 0.07), (0.62, 0.10), (0.78, 0.085), (0.93, 0.12))]
+    img, _ = paint_pines(img, None, lowpoly_pines(W, H, near, 66), '#03100C', '#0E352C', shade=0.4)
     m = noise(W, H, 260, 3, 31)[..., None]
     img = img * (1 - m * 0.03) + hexc('#2C7A66') * m * 0.03
     return grain(img, 0.006)
 
 
 def pine_lights():
+    """The moon's light: a soft mint pool that drifts behind the upper cards, below the canopy slab."""
     w, h = LENS_W, LENS_H
     y, x = np.mgrid[:h, :w].astype(float)
-    d = np.hypot(x - 0.84 * w, y - 0.05 * h)
-    light_png('pine-light-moon', w, h, '#7CE3BC', falloff(d, 210 / 2) * 0.12)
+    cx, cy, rad = 0.80 * w, 0.30 * h, 230 / 2
+    d = np.hypot(x - cx, y - cy)
+    light_png('pine-light-moon', w, h, '#7CE3BC', falloff(d, rad) * 0.12)
 
 
 def pine_header():
-    mountain_header('pine-header', 1080, 900, hexc('#1B5A4C'), hexc('#0A2B25'),
-                    [(0.3, 0.16, '#164A3F', 3), (0.46, 0.14, '#0F3A31', 4), (0.62, 0.11, '#0B2E27', 6)],
-                    '#04170F', '#2A6A58', 0.5, light=(0.78, 0.12, 0.3, '#7CE3BC', 0.28))
+    """The canopy slab's art: far ridges in moonlit mist and a stand of faceted pines on the right, lit from the
+    upper right. The sky is clear (alpha 0) so the slab's own teal shows, and the art fades out toward the left,
+    where the title sits. Drawn inside the slab at its height, anchored bottom right."""
+    reseed('pine-header')
+    w, h = 1080, 540
+    img = np.zeros((h, w, 3))
+    a = np.zeros((h, w))
+    yy, xx = np.mgrid[:h, :w].astype(float)
+    for y0, amp, color, seed, alpha in ((0.42, 0.16, '#3A8C76', 3, 0.55), (0.60, 0.12, '#2A715F', 4, 0.75)):
+        line = ridge(w, y0 * h, amp * h, [(1.1, 1), (2.9, 0.45), (6.5, 0.18), (15, 0.06)], seed)
+        m = np.clip((yy - line[None, :]) / 2 + 0.5, 0, 1) * alpha
+        img = img * (1 - m[..., None]) + hexc(color) * m[..., None]
+        a = a + m * (1 - a)
+        mist = noise(w, h, 90, 3, seed + 1) * np.exp(-((yy - (y0 * h + amp * h)) / (h * 0.10)) ** 2) * 0.45
+        img = img * (1 - mist[..., None]) + hexc('#4FA48C') * mist[..., None]
+        a = a + mist * 0.5 * (1 - a)
+    spots = [(w * 0.60, h * 1.03, h * 0.62), (w * 0.69, h * 1.05, h * 0.86), (w * 0.79, h * 1.04, h * 0.70),
+             (w * 0.885, h * 1.06, h * 0.96), (w * 0.975, h * 1.04, h * 0.66), (w * 0.535, h * 1.06, h * 0.42)]
+    img, a = paint_pines(img, a, lowpoly_pines(w, h, spots, 71), '#123F35', '#24705D', shade=0.3, lit_top='#368C75')
+    # the art fades out toward the left, where the title and greeting sit
+    fade = np.clip((xx / w - 0.30) / 0.28, 0, 1) ** 1.3
+    a = a * fade
+    img = np.clip(grain(img, 0.008), 0, 1)
+    save_png(np.dstack([img, np.clip(a, 0, 1)]), 'pine-header')
 
 
 # ---------------------------------------------------------------------------------------------
@@ -969,7 +1056,7 @@ def scenes_stone():
 
 
 def landscape(name, sky, ridges, fog, pine_color=None, light=None, water=None, rain=0, size=1000, grain_amt=0.012,
-              stars=0, moon=None, ember=None):
+              stars=0, moon=None, ember=None, faceted=None):
     """A square scene in the mountains: sky, a sun or moon glow, misty ridges, pines, and optionally
     a lake that mirrors it all or rain falling through it."""
     reseed(name)
@@ -999,7 +1086,12 @@ def landscape(name, sky, ridges, fog, pine_color=None, light=None, water=None, r
         base_y = horizon * h if water else h * 0.98
         spots = [(w * (0.02 + 0.96 * k / 11) + r.uniform(-25, 25), base_y + r.uniform(-6, 10), h * r.uniform(0.14, 0.32))
                  for k in range(12) if not (0.35 < k / 11 < 0.62)]
-        img = pines(img, spots, hexc(pine_color), seed=zlib.crc32(name.encode()) % 997, tiers=7, blur=1.4)
+        if faceted:
+            # Pine's turned trees: a shadow side and a side lit by the moon (faceted = the lit side's colour)
+            masks = lowpoly_pines(w, h, [(x, b, hh * 0.9) for x, b, hh in spots], zlib.crc32(name.encode()) % 997)
+            img, _ = paint_pines(img, None, masks, pine_color, faceted, shade=0.35)
+        else:
+            img = pines(img, spots, hexc(pine_color), seed=zlib.crc32(name.encode()) % 997, tiers=7, blur=1.4)
     if ember:
         ex, ey, er, ec, es = ember
         dd = np.hypot((xx - ex * w), (yy - ey * h) * 1.6)
@@ -1038,13 +1130,13 @@ def scenes_paper():
 
 def scenes_pine():
     landscape('pine-rain', ('#0B2A24', '#071D19'), [(0.48, 0.10, '#0E3A31', 3), (0.62, 0.08, '#0A2D26', 5)], ('#1E5C4D', 0.35),
-              pine_color='#03100C', moon=(0.72, 0.2, 0.045, '#BFF5DF'), rain=1100, grain_amt=0.008, stars=0)
+              pine_color='#03100C', moon=(0.72, 0.2, 0.045, '#BFF5DF'), rain=1100, grain_amt=0.008, stars=0, faceted='#14463A')
     landscape('pine-waves', ('#0C2E28', '#0A2620'), [(0.40, 0.09, '#0F3A31', 7), (0.50, 0.07, '#0B2E27', 8)], ('#1E5C4D', 0.3),
-              pine_color='#03100C', moon=(0.30, 0.18, 0.04, '#BFF5DF'), water=0.6, grain_amt=0.008, stars=60)
+              pine_color='#03100C', moon=(0.30, 0.18, 0.04, '#BFF5DF'), water=0.6, grain_amt=0.008, stars=60, faceted='#123F35')
     landscape('pine-brown', ('#0A231E', '#06140F'), [(0.46, 0.10, '#0D3129', 11), (0.60, 0.08, '#08221C', 12)], ('#1A5547', 0.3),
-              pine_color='#020C09', ember=(0.5, 0.95, 0.35, '#F2B061', 0.75), grain_amt=0.008, stars=40)
+              pine_color='#020C09', ember=(0.5, 0.95, 0.35, '#F2B061', 0.75), grain_amt=0.008, stars=40, faceted='#3A2A14')
     landscape('pine-dusk', ('#1F5A4C', '#9FD9C2'), [(0.42, 0.12, '#2A6A58', 13), (0.56, 0.10, '#164D41', 14), (0.70, 0.08, '#0E3A31', 15)],
-              ('#7CC9AE', 0.35), pine_color='#04170F', light=(0.5, 0.55, 0.6, '#C8F5E2', 0.5), grain_amt=0.008)
+              ('#7CC9AE', 0.35), pine_color='#04170F', light=(0.5, 0.55, 0.6, '#C8F5E2', 0.5), grain_amt=0.008, faceted='#1D5A4B')
 
 
 TARGETS = {

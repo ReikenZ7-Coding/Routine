@@ -7,7 +7,8 @@ import { Press } from './Motion';
 import { useFabBottom } from './NowPlaying';
 
 /** The screen's one floating action: a 56 circle of control glass filled with the look's primary, clear of the
- *  tab bar and the mini player. Paper's is ink glass: a dark lens with a faint lit top edge and a specular cap. */
+ *  tab bar and the mini player. Paper's is ink glass: a dark lens with a faint lit top edge and a specular cap;
+ *  Pine's mint disc wears the same specular cap, a moonlit bead of glass. */
 export function Fab({ icon = 'add', onPress, accessibilityLabel }: { icon?: string; onPress: () => void; accessibilityLabel: string }) {
   const { colors, name } = useTheme();
   const styles = useStyles(makeStyles);
@@ -30,6 +31,7 @@ export function Fab({ icon = 'add', onPress, accessibilityLabel }: { icon?: stri
   return (
     <Glass tier="control" radius={28} style={[styles.fab, { bottom }]} onPress={onPress} accessibilityLabel={accessibilityLabel}>
       <View pointerEvents="none" style={styles.fill} />
+      {name === 'pine' && <View pointerEvents="none" style={styles.specular} />}
       <Ionicons name={icon as 'add'} size={28} color={colors.onPrimary} />
     </Glass>
   );

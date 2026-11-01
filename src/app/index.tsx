@@ -34,6 +34,7 @@ import { Chevron, Press } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { plural } from '../lib/plural';
+import { alphaOf } from '../components/glass/colour';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 type Panel = 'stats' | 'settings' | 'backup' | 'add' | 'routine' | 'todo' | 'grocery' | 'word' | null;
@@ -457,6 +458,11 @@ export default function TodayScreen() {
             {theme.name === 'paper' ? (
               // Paper: a glass pebble with the kind's colour on the glyph alone.
               <View style={styles.addPebble}>
+                <Ionicons name={icon} size={20} color={color} />
+              </View>
+            ) : theme.name === 'pine' ? (
+              // Pine: the kind's colour on the glyph, in a soft tile of that colour.
+              <View style={[styles.addPebble, { backgroundColor: alphaOf(color, 0.14) }]}>
                 <Ionicons name={icon} size={20} color={color} />
               </View>
             ) : (
