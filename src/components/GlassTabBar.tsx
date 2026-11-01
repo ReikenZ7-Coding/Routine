@@ -98,7 +98,13 @@ export function GlassTabBar({
 
   return (
     <View style={[dock ? styles.dock : styles.wrap, { bottom, height }]}>
-      <Glass tier="chrome" radius={dock ? 0 : FLOAT_RADIUS} topOnly={dock} tint={colors.tabBar} style={StyleSheet.absoluteFill}>
+      <Glass
+        tier="chrome"
+        radius={dock ? 0 : FLOAT_RADIUS}
+        topOnly={dock}
+        tint={colors.material.chromeTint}
+        style={StyleSheet.absoluteFill}
+      >
         {dock && <View pointerEvents="none" style={[styles.edgeLight, { backgroundImage: edgeLight(m.drop.rim) }]} />}
         <View
           style={[styles.track, dock ? styles.dockTrack : styles.floatTrack]}

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { GlassScroll } from '../components/Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassHome } from '../components/GlassHome';
@@ -22,15 +22,18 @@ import { dueWords, newWord, todaysLog } from '../lib/chinese';
 import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/deviceCalendar';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { itemsFor, toggleItem } from '../lib/inbox';
-import { moodFace } from '../lib/journal';
+import { moodOf } from '../lib/journal';
 import { type Routine, countOn, iconFor, isDoneOn, isScheduled, isSkipped, sortByTime, tapRoutine, toggleSkip } from '../lib/routines';
 import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
 import { useSounds } from '../lib/sounds';
 import { dayStreak } from '../lib/stats';
 import { newId, useStore } from '../lib/store';
 import { type TimedEntry, clock, timedRoutines, upNext } from '../lib/timeline';
-import { Press } from '../components/Motion';
-import { useFabBottom } from '../components/NowPlaying';
+import { Fab } from '../components/Fab';
+import { Chevron, Press } from '../components/Motion';
+import { Skeleton } from '../components/Skeleton';
+import { useContentBottom } from '../components/NowPlaying';
+import { plural } from '../lib/plural';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 type Panel = 'stats' | 'settings' | 'backup' | 'add' | 'routine' | 'todo' | 'grocery' | 'word' | null;
@@ -55,8 +58,8 @@ export default function TodayScreen() {
   const theme = useTheme();
   const { colors, kinds, type } = theme;
   const styles = useStyles(makeStyles);
-  const fabBottom = useFabBottom();
   const store = useStore();
+  const contentBottom = useContentBottom(!theme.glass);
   const {
     ready,
     today,
@@ -111,14 +114,10 @@ export default function TodayScreen() {
   const dayState = { groceries, gym, chinese, routines };
   const marks = useCallback((d: string) => marksFor(dayState, d, today), [groceries, gym, chinese, routines, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const busy = useMemo(() => new Set(Object.keys(events)), [events]);
-  const moodFor = useCallback((d: string) => moodFace(journal[d]?.mood), [journal]);
+  const moodFor = useCallback((d: string) => moodOf(journal[d]?.mood), [journal]);
 
   if (!ready) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.text} accessibilityLabel="Loading your day" />
-      </View>
-    );
+    return <Skeleton label="Loading your day" />;
   }
 
   const isToday = selected === today;
@@ -189,21 +188,22 @@ export default function TodayScreen() {
   const calendar = (
     <View>
       <View style={styles.dateRow}>
-        <Pressable
-          accessibilityRole="button"
+        <Press
           style={styles.dateTitle}
           onPress={() => setExpanded((e) => !e)}
-          accessibilityLabel={expanded ? 'Show week' : 'Show month'}
+          accessibilityLabel={expanded ? 'Show the week' : 'Show the whole month'}
+          accessibilityState={{ expanded }}
         >
           <Text style={styles.dateText}>
-            {date.getDate()}. {date.toLocaleDateString('en', { month: 'long' })}
+            {date.getDate()} {date.toLocaleDateString('en', { month: 'long' })}
           </Text>
-          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.text} />
-        </Pressable>
+          <Chevron open={expanded} color={colors.text} />
+        </Press>
         {!isToday && (
-          <Pressable accessibilityRole="button" style={styles.todayButton} onPress={() => setSelected(today)} hitSlop={6}>
+          <Press style={styles.todayButton} overlay={colors.material.pressFill} onPress={() => setSelected(today)}>
+            <Ionicons name="return-down-back" size={16} color={colors.text} />
             <Text style={styles.todayButtonText}>Back to today</Text>
-          </Pressable>
+          </Press>
         )}
       </View>
       <CalendarStrip
@@ -268,7 +268,7 @@ export default function TodayScreen() {
             title: 'Chinese practice',
             icon: 'language',
             color: kinds.chinese.color,
-            meta: `${practice.minutes}/${chinese.target} min${toReview ? ` · ${toReview} words to review` : ''}`,
+            meta: `${practice.minutes}/${chinese.target} min${toReview ? ` · ${plural(toReview, 'word')} to review` : ''}`,
             done: chineseDone,
             nav: true,
             progress: { value: practice.minutes, total: chinese.target },
@@ -298,7 +298,7 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.flex}>
-      <GlassScroll contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
+      <GlassScroll contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: contentBottom }]}>
         {theme.glass ? (
           <GlassHome
             name={settings.name || 'friend'}
@@ -341,15 +341,21 @@ export default function TodayScreen() {
               pinned[0]
                 ? {
                     label: pinned[0].name,
+                    kind: 'routines' as const,
                     icon: iconFor(pinned[0]) as 'repeat',
                     active: isDoneOn(pinned[0], selected),
                     onPress: () => tap(pinned[0]),
                   }
-                : { label: 'Routines', icon: 'repeat', onPress: () => openLibrary('routines') },
-              { label: 'Gym', icon: 'barbell', active: gymDone, onPress: () => router.navigate('/gym') },
-              { label: 'Chinese', icon: 'language', active: chineseDone, onPress: () => router.navigate('/chinese') },
-              { label: 'Groceries', icon: 'basket', onPress: () => openLibrary('groceries') },
-              { label: 'Sounds', icon: sounds.playing ? 'pause' : 'musical-notes', onPress: () => sounds.setSheetOpen(true) },
+                : { label: 'Routines', kind: 'routines' as const, icon: 'repeat', onPress: () => openLibrary('routines') },
+              { label: 'Gym', kind: 'gym', icon: 'barbell', active: gymDone, onPress: () => router.navigate('/gym') },
+              { label: 'Chinese', kind: 'chinese', icon: 'language', active: chineseDone, onPress: () => router.navigate('/chinese') },
+              { label: 'Groceries', kind: 'groceries', icon: 'basket', onPress: () => openLibrary('groceries') },
+              {
+                label: 'Sounds',
+                kind: 'calendar',
+                icon: sounds.playing ? 'pause' : 'musical-notes',
+                onPress: () => sounds.setSheetOpen(true),
+              },
             ]}
             items={items}
             done={done}
@@ -423,18 +429,7 @@ export default function TodayScreen() {
       </GlassScroll>
 
       {/* The glass looks add from the quick-add bar and the hero card, so they skip the floating button. */}
-      {!theme.glass && (
-        <Press
-          outerStyle={[styles.fabSpot, { bottom: fabBottom }]}
-          style={styles.fab}
-          overlay={colors.material.pressFill}
-          haptic
-          onPress={() => setPanel('add')}
-          accessibilityLabel="Quick add"
-        >
-          <Ionicons name="add" size={30} color={colors.onPrimary} />
-        </Press>
-      )}
+      {!theme.glass && <Fab onPress={() => setPanel('add')} accessibilityLabel="Add a routine, to-do, grocery item or word" />}
 
       <Sheet visible={panel === 'add'} title="Add" onClose={close}>
         {(
@@ -544,8 +539,7 @@ export default function TodayScreen() {
 
 const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
   StyleSheet.create({
-    content: { paddingHorizontal: 16, paddingBottom: 170 },
-    loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    content: { paddingHorizontal: 16 },
     flex: { flex: 1 },
     dateRow: {
       flexDirection: 'row',
@@ -557,25 +551,18 @@ const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
     dateTitle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 },
     dateText: { fontFamily: fonts.display, fontSize: glass ? 28 : 22, color: colors.text, letterSpacing: -0.5 },
     todayButton: {
-      paddingHorizontal: 12,
-      minHeight: 36,
-      justifyContent: 'center',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 14,
+      minHeight: 44,
       borderRadius: 999,
       borderWidth: 1,
-      borderColor: colors.cardBorder,
-      backgroundColor: glass ? colors.card : colors.chip,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+      backgroundColor: colors.material.inset.fill,
     },
-    todayButtonText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-    fabSpot: { position: 'absolute', right: 20 },
-    fab: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: '0px 8px 20px rgba(0,0,0,0.22)',
-    },
+    todayButtonText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     addRow: {
       flexDirection: 'row',
       alignItems: 'center',

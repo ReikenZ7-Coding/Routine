@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Modal, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Segmented } from './Hub';
-import { FadeSwap, Press, SelectFade } from './Motion';
+import Animated from 'react-native-reanimated';
+import { FadeSwap, rise, Press, SelectFade } from './Motion';
 import { Sheet } from './Sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUNDS, useSounds } from '../lib/sounds';
@@ -26,36 +27,49 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
   const s = useSounds();
   if (!s.started) return null;
   return (
-    <Pressable
-      accessibilityRole="button"
-      style={[styles.mini, { bottom }]}
-      onPress={() => s.setSheetOpen(true)}
-      accessibilityLabel="Open focus sounds"
-    >
-      <SoundArt icon={s.current.icon} id={s.current.id} size={38} />
-      <View style={styles.flex}>
-        <Text style={styles.miniTitle}>{s.current.name}</Text>
-        <Text style={styles.miniSub}>{s.playing ? 'Playing' : 'Paused'} · Focus sounds</Text>
-      </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={s.toggle}
-        hitSlop={10}
-        style={styles.miniButton}
-        accessibilityLabel={s.playing ? 'Pause' : 'Play'}
+    <Animated.View entering={MINI_IN} style={[styles.miniSpot, { bottom }]}>
+      <Glass
+        tier="chrome"
+        radius={24}
+        tint={colors.material.chromeTint}
+        style={styles.mini}
+        onPress={() => s.setSheetOpen(true)}
+        accessibilityLabel="Open focus sounds"
       >
-        <Ionicons name={s.playing ? 'pause' : 'play'} size={18} color={colors.onPrimary} />
-      </Pressable>
-    </Pressable>
+        <SoundArt icon={s.current.icon} id={s.current.id} size={38} />
+        <View style={styles.flex}>
+          <Text style={styles.miniTitle} numberOfLines={1}>
+            {s.current.name}
+          </Text>
+          <Text style={styles.miniSub} numberOfLines={1}>
+            {s.playing ? 'Playing' : 'Paused'} · Focus sounds
+          </Text>
+        </View>
+        <Press
+          onPress={s.toggle}
+          style={styles.miniButton}
+          overlay={colors.material.pressFill}
+          haptic
+          accessibilityLabel={s.playing ? 'Pause' : 'Play'}
+        >
+          <FadeSwap
+            on={s.playing}
+            off={<Ionicons name="play" size={18} color={colors.onPrimary} style={styles.miniNudge} />}
+            onContent={<Ionicons name="pause" size={18} color={colors.onPrimary} />}
+          />
+        </Press>
+      </Glass>
+    </Animated.View>
   );
 }
+
+const MINI_IN = rise();
 
 /** Full "now playing" sheet with the sound list. */
 export function NowPlaying() {
   const { colors, type, radii, glass } = useTheme();
   const styles = useStyles(makeStyles);
   const s = useSounds();
-  const pct = Math.min(1, s.position / s.length);
 
   if (glass) {
     return (
@@ -80,20 +94,7 @@ export function NowPlaying() {
       <Text style={styles.name}>{s.current.name}</Text>
       <Text style={type.small}>{s.current.subtitle}</Text>
 
-      <View
-        style={styles.track}
-        accessibilityRole="progressbar"
-        accessibilityLabel="Loop progress"
-        accessibilityValue={{ min: 0, max: Math.round(s.length), now: Math.round(s.position) }}
-      >
-        <View style={styles.rail} />
-        <View style={[styles.fill, { width: `${pct * 100}%` }]} />
-        <View style={[styles.knob, { left: `${pct * 100}%` }]} />
-      </View>
-      <View style={styles.times}>
-        <Text style={styles.time}>{sec(s.position)}</Text>
-        <Text style={styles.time}>{sec(s.length)}</Text>
-      </View>
+      <Progress position={s.position} length={s.length} />
 
       <View style={styles.controls}>
         <Press style={styles.side} overlay={colors.material.pressFill} onPress={() => s.skip(-1)} accessibilityLabel="Previous sound">
@@ -145,6 +146,50 @@ export function NowPlaying() {
   );
 }
 
+/**
+ * Loop progress: a 4px track in the look's track colour, the fill and a 14px knob, in a 44-tall row. It shows
+ * progress only (the loop cannot be scrubbed), so the row is one readable progress bar.
+ */
+function Progress({ position, length }: { position: number; length: number }) {
+  const styles = useStyles(makeProgressStyles);
+  const pct = length > 0 ? Math.min(1, position / length) : 0;
+  return (
+    <View>
+      <View
+        style={styles.row}
+        accessibilityRole="progressbar"
+        accessibilityLabel={`Loop progress, ${sec(position)} of ${sec(length)}`}
+        accessibilityValue={{ min: 0, max: Math.round(length), now: Math.round(position) }}
+      >
+        <View style={styles.rail} />
+        <View style={[styles.fill, { width: `${pct * 100}%` }]} />
+        <View style={[styles.knob, { left: `${pct * 100}%` }]} />
+      </View>
+      <View style={styles.times} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <Text style={styles.time}>{sec(position)}</Text>
+        <Text style={styles.time}>{sec(length)}</Text>
+      </View>
+    </View>
+  );
+}
+
+const makeProgressStyles = ({ colors, fonts }: Theme) =>
+  StyleSheet.create({
+    row: { height: 44, justifyContent: 'center' },
+    rail: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: colors.track },
+    fill: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: colors.accent },
+    knob: {
+      position: 'absolute',
+      width: 14,
+      height: 14,
+      marginLeft: -7,
+      borderRadius: 7,
+      backgroundColor: colors.accent,
+    },
+    times: { flexDirection: 'row', justifyContent: 'space-between', marginTop: -8 },
+    time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
+  });
+
 const sec = (n: number) => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
 
 /**
@@ -158,7 +203,6 @@ function GlassPlayer() {
   const { width, height } = useWindowDimensions();
   const s = useSounds();
   const stone = name === 'stone';
-  const pct = Math.min(1, s.position / s.length);
   // Artwork fills the width but leaves room for the controls on short phones.
   const art = Math.min(width - (stone ? 64 : 72), height * 0.42);
   const close = () => s.setSheetOpen(false);
@@ -183,20 +227,8 @@ function GlassPlayer() {
               <Text style={styles.topTitle}>Now Playing</Text>
               {!stone && <Text style={styles.topSub}>Focus sounds · loops until you stop</Text>}
             </View>
-            {stone ? (
-              <Glass tier="control" radius={22} style={styles.round} onPress={s.cycleTimer} accessibilityLabel={timerLabel(s.timer)}>
-                <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={18} color={iconColor} />
-              </Glass>
-            ) : (
-              <Press
-                onPress={s.cycleTimer}
-                style={styles.round}
-                overlay={colors.material.pressFill}
-                accessibilityLabel={timerLabel(s.timer)}
-              >
-                <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={20} color={iconColor} />
-              </Press>
-            )}
+            {/* The sleep timer lives in the transport row; this keeps the title centred. */}
+            <View style={styles.round} />
           </View>
 
           <View style={styles.artWrap}>
@@ -230,19 +262,8 @@ function GlassPlayer() {
             ) : null}
           </View>
 
-          <View
-            style={styles.track}
-            accessibilityRole="progressbar"
-            accessibilityLabel="Loop progress"
-            accessibilityValue={{ min: 0, max: Math.round(s.length), now: Math.round(s.position) }}
-          >
-            <View style={styles.rail} />
-            <View style={[styles.fill, { width: `${pct * 100}%` }]} />
-            <View style={[styles.knob, { left: `${pct * 100}%` }]} />
-          </View>
-          <View style={styles.times}>
-            <Text style={styles.time}>{sec(s.position)}</Text>
-            <Text style={styles.time}>{sec(s.length)}</Text>
+          <View style={styles.progress}>
+            <Progress position={s.position} length={s.length} />
           </View>
 
           <View style={styles.controls}>
@@ -327,7 +348,7 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     artWrap: { alignItems: 'center', marginTop: 24 },
     frame: { padding: 8 },
     artClip: { overflow: 'hidden' },
-    artGlow: { boxShadow: `0px 18px 40px ${colors.glow}66` },
+    artGlow: { boxShadow: colors.material.shadowPane },
     info: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 28 },
     title: {
       fontFamily: fonts.display,
@@ -344,28 +365,25 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
       paddingHorizontal: 12,
       height: 32,
       borderRadius: 16,
-      backgroundColor: colors.primarySoft,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
     },
     timerText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
-    track: { height: 24, justifyContent: 'center', marginTop: 20 },
-    rail: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: colors.border },
-    fill: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: colors.accent },
-    knob: {
-      position: 'absolute',
-      width: 14,
-      height: 14,
-      marginLeft: -7,
-      borderRadius: 7,
-      backgroundColor: name === 'stone' ? colors.accent : colors.text,
-      boxShadow: `0px 0px 10px ${colors.accent}`,
-    },
-    times: { flexDirection: 'row', justifyContent: 'space-between' },
-    time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    progress: { marginTop: 10 },
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
     control: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
     big: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
-    bigLavender: { backgroundColor: colors.primary, boxShadow: `0px 8px 28px ${colors.glow}` },
-    bigStone: { backgroundColor: colors.primary, boxShadow: '0px 8px 24px rgba(230,214,179,0.35)' },
+    bigLavender: {
+      backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
+    },
+    bigStone: {
+      backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
+    },
     playNudge: { marginLeft: 4 },
     picker: { marginTop: 20 },
   });
@@ -373,43 +391,22 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
 const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    mini: {
-      position: 'absolute',
-      left: 16,
-      right: 16,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      padding: 8,
-      paddingRight: 12,
-      borderRadius: 20,
-      backgroundColor: colors.sheet,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      elevation: 6,
-      shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 10,
-      shadowOffset: { width: 0, height: 4 },
-    },
+    miniSpot: { position: 'absolute', left: 16, right: 16 },
+    mini: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, paddingRight: 8 },
     miniTitle: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
-    miniSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    miniSub: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
     miniButton: {
       width: 44,
       height: 44,
       borderRadius: 22,
       backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
       alignItems: 'center',
       justifyContent: 'center',
     },
+    miniNudge: { marginLeft: 2 },
     art: { alignItems: 'center', marginVertical: 20 },
     name: { ...type.sheetTitle },
-    track: { height: 24, justifyContent: 'center', marginTop: 16 },
-    rail: { position: 'absolute', left: 0, right: 0, height: 4, borderRadius: 2, backgroundColor: colors.track },
-    fill: { position: 'absolute', left: 0, height: 4, borderRadius: 2, backgroundColor: colors.accent },
-    knob: { position: 'absolute', width: 14, height: 14, marginLeft: -7, borderRadius: 7, backgroundColor: colors.accent },
-    times: { flexDirection: 'row', justifyContent: 'space-between' },
-    time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 32, marginTop: 12 },
     side: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
     bigButton: {
@@ -431,6 +428,12 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
       borderColor: colors.controlBorder,
     },
   });
+
+/** The bottom padding a screen's scroll needs so its last card can rise clear of the tab bar, the mini player
+ *  and (with `fab`) the floating button. */
+export function useContentBottom(fab = false): number {
+  return useFabBottom() + (fab ? 56 + 24 : 16);
+}
 
 /** Where floating buttons sit: clear of the tab bar and, once a sound has started, the mini player. */
 export function useFabBottom(): number {

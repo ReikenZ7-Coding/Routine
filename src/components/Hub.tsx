@@ -1,12 +1,11 @@
 // The hub pieces for the page looks' Library: a segmented switch with a gliding pill, filter chips
 // under small uppercase captions, section headers with an accent bar, and the routine cards in the grid.
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
-import { Glass, GlassScroll } from './Glass';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { type LayoutChangeEvent, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Glass, GlassScroll, useGlassScroll } from './Glass';
+import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import {
   type Routine,
   countOn,
@@ -21,7 +20,7 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { EASE_OUT, FADE, FadeSwap, Micro, Press, SelectFade, useReduceMotion } from './Motion';
+import { EASE_OUT, FADE, FadeSwap, Micro, Pop, Press, SelectFade, useReduceMotion } from './Motion';
 
 function tick() {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
@@ -148,8 +147,9 @@ export interface FilterOption<K extends string> {
   icon?: string;
 }
 
-/** A captioned row of chips that scrolls sideways; the chosen chip fills with the accent (a 150ms fade). The
- *  row ends in a 24px clear margin so the last chip never stops mid-word at the edge. */
+/** A captioned row of chips that scrolls sideways; the chosen chip fills with the accent (a 150ms fade). The row
+ *  rests with a chip's start at the left edge, and a chip running off the right edge fades out as it goes, so
+ *  the edge reads as "more this way" rather than a word cut in half. */
 export function FilterRow<K extends string>({
   caption,
   options,
@@ -161,45 +161,104 @@ export function FilterRow<K extends string>({
   value: K;
   onChange: (k: K) => void;
 }) {
-  const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
+  const { width } = useWindowDimensions();
+  const [starts, setStarts] = useState<number[]>([]);
+  const place = (i: number) => (e: LayoutChangeEvent) => {
+    const x = Math.round(e.nativeEvent.layout.x);
+    setStarts((s) => (s[i] === x ? s : Object.assign([...s], { [i]: x })));
+  };
   return (
     <View style={styles.filter}>
       <Micro>{caption}</Micro>
-      <GlassScroll horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
-        {options.map((o) => {
-          const active = o.key === value;
-          const content = (color: string) => (
-            <View style={styles.chipInner}>
-              {o.icon ? <Ionicons name={o.icon as 'sunny'} size={14} color={color} /> : null}
-              <Text style={[styles.chipText, { color }]}>{o.label}</Text>
-            </View>
-          );
-          return (
-            <Press
-              key={o.key}
-              style={styles.chip}
-              overlay={colors.material.pressFill}
-              onPress={() => {
-                if (active) return;
-                tick();
-                onChange(o.key);
-              }}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={`${caption}: ${o.label}`}
-            >
-              <SelectFade on={active} radius={radii.pill} bleed={1} style={styles.chosen} />
-              <FadeSwap on={active} off={content(colors.text)} onContent={content(colors.onPrimary)} />
-            </Press>
-          );
-        })}
+      <GlassScroll
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chips}
+        style={styles.chipScroll}
+        snapToOffsets={starts.filter((x) => x !== undefined).map((x) => Math.max(0, x - CHIP_INSET))}
+        snapToEnd
+        decelerationRate="fast"
+      >
+        {options.map((o, i) => (
+          <FilterChip
+            key={o.key}
+            option={o}
+            active={o.key === value}
+            caption={caption}
+            viewport={width}
+            onLayout={place(i)}
+            onPress={() => {
+              if (o.key === value) return;
+              tick();
+              onChange(o.key);
+            }}
+          />
+        ))}
       </GlassScroll>
     </View>
   );
 }
 
-/** A section header with an accent bar, an icon, the title and a count badge. */
+const CHIP_INSET = 16;
+
+function FilterChip<K extends string>({
+  option: o,
+  active,
+  caption,
+  viewport,
+  onLayout,
+  onPress,
+}: {
+  option: FilterOption<K>;
+  active: boolean;
+  caption: string;
+  viewport: number;
+  onLayout: (e: LayoutChangeEvent) => void;
+  onPress: () => void;
+}) {
+  const { colors, radii } = useTheme();
+  const styles = useStyles(makeStyles);
+  const { scrollX } = useGlassScroll();
+  const box = useSharedValue({ x: 0, w: 0 });
+  // How far the chip's right edge runs past the screen's: none keeps it whole, most of it fades it to a hint.
+  const edge = useAnimatedStyle(() => {
+    const { x, w } = box.get();
+    if (!w) return { opacity: 1 };
+    const over = x + w - scrollX.get() - viewport;
+    return { opacity: interpolate(over, [0, w * 0.75], [1, 0.2], Extrapolation.CLAMP) };
+  });
+  const content = (color: string) => (
+    <View style={styles.chipInner}>
+      {o.icon ? <Ionicons name={o.icon as 'sunny'} size={14} color={color} /> : null}
+      <Text style={[styles.chipText, { color }]}>{o.label}</Text>
+    </View>
+  );
+  return (
+    <Animated.View
+      style={edge}
+      onLayout={(e) => {
+        const { x, width } = e.nativeEvent.layout;
+        box.set({ x, w: width });
+        onLayout(e);
+      }}
+    >
+      <Press
+        style={styles.chip}
+        overlay={colors.material.pressFill}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={`${caption}: ${o.label}`}
+      >
+        <SelectFade on={active} radius={radii.pill} bleed={1} style={styles.chosen} />
+        <FadeSwap on={active} off={content(colors.text)} onContent={content(colors.onPrimary)} />
+      </Press>
+    </Animated.View>
+  );
+}
+
+/** A section header: the kind's icon, the title and a count badge. */
 export function HubHeader({
   icon,
   title,
@@ -217,11 +276,10 @@ export function HubHeader({
   const styles = useStyles(makeStyles);
   return (
     <View style={styles.hubHead}>
-      <View style={[styles.hubBar, { backgroundColor: color }]} />
       <View style={[styles.hubIcon, { backgroundColor: `${color}22` }]}>
         <Ionicons name={icon as 'sunny'} size={14} color={color} />
       </View>
-      <Text style={[type.sectionTitle, styles.flex]} numberOfLines={1}>
+      <Text style={[type.sectionTitle, styles.flex]} numberOfLines={1} accessibilityRole="header">
         {title}
       </Text>
       {right}
@@ -248,7 +306,7 @@ export function RoutineCard({
   onChange?: (r: Routine) => void;
   onOpen: () => void;
 }) {
-  const { colors, kinds, dark } = useTheme();
+  const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const done = isDoneOn(r, today);
   const skipped = isSkipped(r, today);
@@ -260,17 +318,13 @@ export function RoutineCard({
   const tickLabel =
     counter && !done ? `Add one to ${r.name}, ${count} of ${r.target}` : done ? `${r.name} done, tap to undo` : `Mark ${r.name} done`;
   return (
-    <Press
+    <Glass
       style={[styles.card, { width }]}
+      receded={done || skipped}
       onPress={onOpen}
-      accessibilityLabel={`${r.name}, ${routineSubtitle(r, today)}. Opens the editor`}
+      accessibilityLabel={`${r.name}, ${routineSubtitle(r, today)}`}
+      accessibilityHint="Opens the editor"
     >
-      <LinearGradient
-        colors={dark ? ['#15463C', '#0E2F28'] : ['#FFFFFF', '#F6F6F2']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.7, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
       <View style={styles.watermark} pointerEvents="none">
         <Ionicons name={iconFor(r) as 'sunny'} size={96} color={colors.text} />
       </View>
@@ -284,17 +338,21 @@ export function RoutineCard({
               tick();
               onChange!(tapRoutine(r, today));
             }}
-            style={[styles.tick, done && { backgroundColor: kinds.routines.color, borderColor: kinds.routines.color }]}
-            hitSlop={6}
+            outerStyle={styles.tickSpot}
+            style={styles.tick}
+            overlay={colors.material.pressFill}
             accessibilityRole={counter ? 'button' : 'checkbox'}
             accessibilityState={counter ? undefined : { checked: done }}
             accessibilityLabel={tickLabel}
           >
-            {done ? (
-              <Ionicons name="checkmark" size={16} color={colors.onKind} />
-            ) : counter && count > 0 ? (
-              <Text style={styles.tickCount}>{count}</Text>
-            ) : null}
+            <SelectFade on={done} color={kinds.routines.color} radius={22} bleed={2} />
+            <Pop done={done}>
+              <FadeSwap
+                on={done}
+                off={counter && count > 0 ? <Text style={styles.tickCount}>{count}</Text> : null}
+                onContent={<Ionicons name="checkmark" size={18} color={colors.onKind} />}
+              />
+            </Pop>
           </Press>
         )}
       </View>
@@ -315,12 +373,12 @@ export function RoutineCard({
         <View style={styles.meta}>
           {r.duration ? (
             <>
-              <Ionicons name="time-outline" size={12} color={colors.muted} />
+              <Ionicons name="time-outline" size={14} color={colors.muted} />
               <Text style={styles.metaText}>{r.duration} min</Text>
             </>
           ) : r.reminder ? (
             <>
-              <Ionicons name="notifications-outline" size={12} color={colors.muted} />
+              <Ionicons name="notifications-outline" size={14} color={colors.muted} />
               <Text style={styles.metaText}>
                 {String(r.reminder.hour).padStart(2, '0')}:{String(r.reminder.minute).padStart(2, '0')}
               </Text>
@@ -328,11 +386,11 @@ export function RoutineCard({
           ) : null}
         </View>
       </View>
-    </Press>
+    </Glass>
   );
 }
 
-const makeStyles = ({ colors, fonts, radius, dark }: Theme) =>
+const makeStyles = ({ colors, fonts, type, dark }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     trough: { padding: 4 },
@@ -359,7 +417,7 @@ const makeStyles = ({ colors, fonts, radius, dark }: Theme) =>
     segmentCount: { fontFamily: fonts.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
     filter: { gap: 6 },
     chipScroll: { marginHorizontal: -16 },
-    chips: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 40 },
+    chips: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 24 },
     chip: {
       minHeight: 44,
       paddingHorizontal: 14,
@@ -373,8 +431,7 @@ const makeStyles = ({ colors, fonts, radius, dark }: Theme) =>
     chipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     chosen: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     chipText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
-    hubHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 24, marginBottom: 12 },
-    hubBar: { width: 3, height: 20, borderRadius: 2 },
+    hubHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 28, marginBottom: 12 },
     hubIcon: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
     count: {
       minWidth: 28,
@@ -383,46 +440,38 @@ const makeStyles = ({ colors, fonts, radius, dark }: Theme) =>
       paddingHorizontal: 8,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.chip,
+      backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
-      borderColor: colors.cardBorder,
+      borderColor: colors.material.inset.border,
     },
-    countText: { fontFamily: fonts.monoMedium, fontSize: 12, color: colors.text },
-    card: {
-      borderRadius: radius,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      padding: 14,
-      minHeight: 182,
-      overflow: 'hidden',
-      boxShadow: colors.shadow,
-      backgroundColor: colors.card,
-    },
+    countText: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
+    card: { padding: 14, minHeight: 182 },
     watermark: { position: 'absolute', right: -22, bottom: -26, opacity: dark ? 0.06 : 0.05, transform: [{ rotate: '-12deg' }] },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
     cardBadge: {
-      backgroundColor: dark ? 'rgba(6,27,23,0.7)' : colors.chip,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
       borderRadius: 999,
       paddingHorizontal: 9,
       minHeight: 22,
       justifyContent: 'center',
     },
-    cardBadgeText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.muted },
+    cardBadgeText: { ...type.badge, color: colors.muted },
+    tickSpot: { marginTop: -8, marginRight: -6 },
     tick: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       borderWidth: 2,
-      borderColor: colors.border,
+      borderColor: colors.controlBorder,
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: -6,
-      marginRight: -4,
     },
-    tickCount: { fontFamily: fonts.monoMedium, fontSize: 12, color: colors.text },
+    tickCount: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
     cardTitle: { fontFamily: fonts.bodyBold, fontSize: 17, lineHeight: 22, color: colors.text, letterSpacing: -0.2 },
     cardTitleDone: { color: colors.faint, textDecorationLine: 'line-through' },
-    cardSub: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 4, flexGrow: 1 },
+    cardSub: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 4, flexGrow: 1 },
     cardBottom: { marginTop: 12, gap: 8 },
     level: {
       alignSelf: 'flex-start',
@@ -430,11 +479,11 @@ const makeStyles = ({ colors, fonts, radius, dark }: Theme) =>
       paddingHorizontal: 9,
       minHeight: 22,
       justifyContent: 'center',
-      backgroundColor: colors.chip,
+      backgroundColor: colors.material.inset.fill,
     },
-    levelHot: { backgroundColor: colors.selected },
-    levelText: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.1, textTransform: 'uppercase', color: colors.text },
-    levelTextHot: { color: colors.onSelected },
-    meta: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 16 },
-    metaText: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
+    levelHot: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
+    levelText: { ...type.badge, color: colors.text },
+    levelTextHot: { color: colors.onPrimary },
+    meta: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 19 },
+    metaText: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
   });

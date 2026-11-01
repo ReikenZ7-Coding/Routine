@@ -41,7 +41,7 @@ const LOOKS = LOOKS_JSON.looks as unknown as Record<ThemeName, LookArt>;
 export const AMBIENCE: Record<ThemeName, Pick<LookArt, 'scrim' | 'topVeil' | 'veilEnd'>> = LOOKS;
 
 // The sharp world behind every screen (1080x2340).
-const BACKDROPS: Record<ThemeName, ImageSourcePropType> = {
+export const BACKDROPS: Record<ThemeName, ImageSourcePropType> = {
   lavender: require('../../assets/art/lavender-bg.jpg'),
   stone: require('../../assets/art/stone-bg.jpg'),
   paper: require('../../assets/art/paper-bg.jpg'),

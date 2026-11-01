@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Button } from '../components/Button';
 import { Divider, Section } from '../components/Section';
 import { PageTitle } from '../components/PageTitle';
 import { SessionForm } from '../components/SessionForm';
@@ -24,17 +25,26 @@ import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
-import { FadeSwap, Press, SelectFade } from '../components/Motion';
+import { ActionChip } from '../components/Chip';
+import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import { Bar, EASE_OUT, Enter, FadeSwap, Press, SelectFade } from '../components/Motion';
+import { useContentBottom, useFabBottom } from '../components/NowPlaying';
+import { Skeleton } from '../components/Skeleton';
+import { plural } from '../lib/plural';
 
 const REST_SECONDS = 90;
+const TIMER_IN = FadeInDown.duration(240).easing(EASE_OUT);
+const TIMER_OUT = FadeOut.duration(160).easing(EASE_OUT);
 const WEIGHT_STEP = 2.5;
 // Monday-first week for the plan list.
 const WEEK = [1, 2, 3, 4, 5, 6, 0];
 
 export default function GymScreen() {
-  const { colors, kinds } = useTheme();
+  const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, gym, updateGym } = useStore();
+  const fabBottom = useFabBottom();
+  const contentBottom = useContentBottom();
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [restEnd, setRestEnd] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -52,7 +62,7 @@ export default function GymScreen() {
     if (restEnd !== null && restLeft === 0) setRestEnd(null);
   }, [restEnd, restLeft]);
 
-  if (!ready) return null;
+  if (!ready) return <Skeleton label="Loading your training plan" />;
 
   const session = sessionFor(gym, today);
   const upcoming = session ? undefined : nextSession(gym, today);
@@ -94,7 +104,7 @@ export default function GymScreen() {
 
   if (gym.sessions.length === 0) {
     return (
-      <GlassScroll contentContainerStyle={styles.content}>
+      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}>
         <PageTitle title="Gym" subtitle="Pick a plan to start with, or build your own" />
         <Glass style={styles.welcome}>
           <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
@@ -103,22 +113,22 @@ export default function GymScreen() {
             Pick a starter plan and adjust it, or build your own. Each day you'll see exactly what to train, and what you lifted last time.
           </Text>
           {STARTER_PLANS.map((p) => (
-            <Pressable
-              accessibilityRole="button"
+            <Press
               key={p.id}
+              outerStyle={styles.planSlot}
               style={styles.planOption}
+              overlay={colors.material.pressFill}
               onPress={() => updateGym((g) => ({ ...g, sessions: buildSessions(p.sessions, newId) }))}
+              accessibilityLabel={`${p.title}. ${p.summary}`}
             >
               <View style={styles.flex}>
                 <Text style={styles.planTitle}>{p.title}</Text>
                 <Text style={styles.planSummary}>{p.summary}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.muted} />
-            </Pressable>
+            </Press>
           ))}
-          <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => openSession()}>
-            <Text style={styles.secondaryText}>Build my own</Text>
-          </Pressable>
+          <Button label="Build my own" icon="add" variant="plain" onPress={() => openSession()} style={styles.buildOwn} />
         </Glass>
         <SessionForm visible={formOpen} session={editing} takenDays={[]} onClose={() => setFormOpen(false)} onSave={saveSession} />
       </GlassScroll>
@@ -129,102 +139,107 @@ export default function GymScreen() {
 
   return (
     <View style={styles.flex}>
-      <GlassScroll contentContainerStyle={[styles.content, restEnd !== null && styles.contentWithTimer]}>
-        <PageTitle
-          title="Gym"
-          subtitle="Your training plan, one day at a time"
-          badge={`${gym.sessions.length} ${gym.sessions.length === 1 ? 'session' : 'sessions'}`}
-        />
+      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom + (restEnd !== null ? 68 : 0) }]}>
+        <PageTitle title="Gym" subtitle="Your training plan, one day at a time" badge={plural(gym.sessions.length, 'session')} />
         {session && progress ? (
           <>
-            <Glass tier="hero" bloom style={styles.todayCard}>
-              <Text style={styles.eyebrow}>Today's session</Text>
-              <Text style={styles.sessionName}>{session.name}</Text>
-              <Text style={styles.progressText}>
-                {progress.done === progress.total ? 'Workout complete. Nice work!' : `${progress.done} of ${progress.total} sets`}
-              </Text>
-              <View style={styles.track}>
-                <View style={[styles.fill, { width: `${(progress.done / Math.max(1, progress.total)) * 100}%` }]} />
-              </View>
-            </Glass>
+            <Enter index={0}>
+              <Glass tier="hero" bloom style={styles.todayCard}>
+                <Text style={styles.sessionName} accessibilityRole="header">
+                  {session.name}
+                </Text>
+                <Text style={styles.progressText}>
+                  {progress.done === progress.total
+                    ? 'Workout complete. Nice work!'
+                    : `Today · ${progress.done} of ${plural(progress.total, 'set')}`}
+                </Text>
+                <View style={styles.track}>
+                  <Bar progress={progress.done / Math.max(1, progress.total)} color={kinds.gym.color} track={colors.track} height={8} />
+                </View>
+                <Text style={[type.hint, styles.cardHint]}>Tap a set when you finish it. A rest timer starts on its own.</Text>
+              </Glass>
+            </Enter>
 
-            {session.exercises.map((e) => {
+            {session.exercises.map((e, ei) => {
               const last = lastTime(gym, e.name, today);
               const weight = weightFor(session, e);
               return (
-                <Glass key={e.id} style={styles.exercise}>
-                  <View style={styles.exHeader}>
-                    <View style={styles.flex}>
-                      <View style={styles.exTitleRow}>
-                        <Text style={styles.exName}>{e.name}</Text>
-                        {isRecord(gym.logs, e.name, today) && (
-                          <View style={styles.prBadge}>
-                            <Text style={styles.prText}>🏆 New best</Text>
-                          </View>
-                        )}
+                <Enter key={e.id} index={ei + 1}>
+                  <Glass style={styles.exercise}>
+                    <View style={styles.exHeader}>
+                      <View style={styles.flex}>
+                        <View style={styles.exTitleRow}>
+                          <Text style={styles.exName}>{e.name}</Text>
+                          {isRecord(gym.logs, e.name, today) && (
+                            <View style={styles.prBadge}>
+                              <Ionicons name="trophy" size={12} color={kinds.gym.text} />
+                              <Text style={styles.prText}>New best</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.exPlan}>
+                          {e.sets} × {e.reps}
+                          {last ? `  ·  Last: ${formatWeight(last.weight)} × ${last.reps}, ${friendlyDate(last.date, today)}` : ''}
+                        </Text>
                       </View>
-                      <Text style={styles.exPlan}>
-                        {e.sets} × {e.reps}
-                        {last ? `  ·  Last: ${formatWeight(last.weight)} × ${last.reps}, ${friendlyDate(last.date, today)}` : ''}
-                      </Text>
                     </View>
-                  </View>
-                  <View style={styles.exControls}>
-                    <View style={styles.stepper}>
-                      <Press
-                        onPress={() => changeWeight(session, e, -WEIGHT_STEP)}
-                        style={styles.stepBtn}
-                        overlay={colors.material.pressFill}
-                        haptic
-                        accessibilityLabel={`Lower ${e.name} weight`}
-                      >
-                        <Ionicons name="remove" size={18} color={colors.text} />
-                      </Press>
-                      <Text style={styles.weight}>{formatWeight(weight)}</Text>
-                      <Press
-                        onPress={() => changeWeight(session, e, WEIGHT_STEP)}
-                        style={styles.stepBtn}
-                        overlay={colors.material.pressFill}
-                        haptic
-                        accessibilityLabel={`Raise ${e.name} weight`}
-                      >
-                        <Ionicons name="add" size={18} color={colors.text} />
-                      </Press>
+                    <View style={styles.exControls}>
+                      <View style={styles.stepper}>
+                        <Press
+                          onPress={() => changeWeight(session, e, -WEIGHT_STEP)}
+                          style={styles.stepBtn}
+                          overlay={colors.material.pressFill}
+                          haptic
+                          accessibilityLabel={`Lower ${e.name} weight`}
+                        >
+                          <Ionicons name="remove" size={18} color={colors.text} />
+                        </Press>
+                        <Text style={styles.weight}>{formatWeight(weight)}</Text>
+                        <Press
+                          onPress={() => changeWeight(session, e, WEIGHT_STEP)}
+                          style={styles.stepBtn}
+                          overlay={colors.material.pressFill}
+                          haptic
+                          accessibilityLabel={`Raise ${e.name} weight`}
+                        >
+                          <Ionicons name="add" size={18} color={colors.text} />
+                        </Press>
+                      </View>
+                      <View style={styles.sets}>
+                        {Array.from({ length: e.sets }, (_, i) => {
+                          const done = isSetDone(gym, today, session.id, e.id, i);
+                          return (
+                            <Press
+                              key={i}
+                              onPress={() => tapSet(session, e, i)}
+                              style={styles.setBubble}
+                              overlay={colors.material.pressFill}
+                              haptic
+                              accessibilityRole="checkbox"
+                              accessibilityState={{ checked: done }}
+                              accessibilityLabel={`${e.name} set ${i + 1}`}
+                            >
+                              <SelectFade on={done} color={kinds.gym.color} radius={22} bleed={1.5} />
+                              <FadeSwap
+                                on={done}
+                                off={<Text style={styles.setText}>{i + 1}</Text>}
+                                onContent={<Text style={[styles.setText, styles.setTextDone]}>{e.reps}</Text>}
+                              />
+                            </Press>
+                          );
+                        })}
+                      </View>
                     </View>
-                    <View style={styles.sets}>
-                      {Array.from({ length: e.sets }, (_, i) => {
-                        const done = isSetDone(gym, today, session.id, e.id, i);
-                        return (
-                          <Press
-                            key={i}
-                            onPress={() => tapSet(session, e, i)}
-                            style={styles.setBubble}
-                            overlay={colors.material.pressFill}
-                            haptic
-                            accessibilityRole="checkbox"
-                            accessibilityState={{ checked: done }}
-                            accessibilityLabel={`${e.name} set ${i + 1}`}
-                          >
-                            <SelectFade on={done} color={kinds.gym.color} radius={22} bleed={1.5} />
-                            <FadeSwap
-                              on={done}
-                              off={<Text style={styles.setText}>{i + 1}</Text>}
-                              onContent={<Text style={[styles.setText, styles.setTextDone]}>{e.reps}</Text>}
-                            />
-                          </Press>
-                        );
-                      })}
-                    </View>
-                  </View>
-                </Glass>
+                  </Glass>
+                </Enter>
               );
             })}
-            <Text style={styles.hint}>Tap a set when you finish it. A rest timer starts automatically.</Text>
           </>
         ) : (
           <Glass style={styles.todayCard}>
-            <Text style={styles.eyebrow}>Today</Text>
-            <Text style={styles.sessionName}>Rest day</Text>
+            <Text style={styles.sessionName} accessibilityRole="header">
+              Rest day
+            </Text>
             <Text style={styles.progressText}>
               {upcoming
                 ? `Next: ${upcoming.session.name}, ${friendlyDate(upcoming.date, today).toLowerCase()}`
@@ -233,14 +248,7 @@ export default function GymScreen() {
           </Glass>
         )}
 
-        <Section
-          title="Weekly plan"
-          right={
-            <Pressable accessibilityRole="button" onPress={() => openSession()} hitSlop={8}>
-              <Text style={styles.link}>Add session</Text>
-            </Pressable>
-          }
-        >
+        <Section title="Weekly plan" right={<ActionChip icon="add" label="Add session" onPress={() => openSession()} />}>
           {WEEK.map((d, i) => {
             const s = gym.sessions.find((x) => x.days.includes(d));
             return (
@@ -252,12 +260,14 @@ export default function GymScreen() {
                   onPress={() => s && openSession(s)}
                   disabled={!s}
                   accessibilityLabel={
-                    s ? `${WEEKDAY_SHORT[d]}, ${s.name}, ${s.exercises.length} exercises. Edit session` : `${WEEKDAY_SHORT[d]}, rest`
+                    s
+                      ? `${WEEKDAY_SHORT[d]}, ${s.name}, ${plural(s.exercises.length, 'exercise')}. Edit session`
+                      : `${WEEKDAY_SHORT[d]}, rest`
                   }
                 >
                   <Text style={styles.planDay}>{WEEKDAY_SHORT[d]}</Text>
                   <Text style={[styles.planName, !s && styles.rest]}>{s ? s.name : 'Rest'}</Text>
-                  {s && <Text style={styles.planCount}>{s.exercises.length} exercises</Text>}
+                  {s && <Text style={styles.planCount}>{plural(s.exercises.length, 'exercise')}</Text>}
                 </Press>
               </View>
             );
@@ -273,11 +283,15 @@ export default function GymScreen() {
                   <View style={styles.flex}>
                     <Text style={styles.planName}>{w.sessionName}</Text>
                     <Text style={styles.exPlan}>
-                      {friendlyDate(w.date, today)} · {w.sets} {w.sets === 1 ? 'set' : 'sets'} · {Math.round(w.volume).toLocaleString('en')}{' '}
-                      kg
+                      {friendlyDate(w.date, today)} · {plural(w.sets, 'set')} · {Math.round(w.volume).toLocaleString('en')} kg
                     </Text>
                   </View>
-                  {w.records > 0 && <Text style={styles.historyPr}>🏆 {w.records}</Text>}
+                  {w.records > 0 && (
+                    <View style={styles.historyPr} accessible accessibilityLabel={plural(w.records, 'new best', 'new bests')}>
+                      <Ionicons name="trophy" size={14} color={kinds.gym.text} />
+                      <Text style={styles.historyPrText}>{w.records}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
             ))}
@@ -286,13 +300,20 @@ export default function GymScreen() {
       </GlassScroll>
 
       {restEnd !== null && (
-        <Pressable accessibilityRole="button" style={styles.timer} onPress={() => setRestEnd(null)} accessibilityLabel="Dismiss rest timer">
-          <Ionicons name="timer-outline" size={22} color={colors.onPrimary} />
-          <Text style={styles.timerText}>
-            Rest {Math.floor(restLeft / 60)}:{String(restLeft % 60).padStart(2, '0')}
-          </Text>
-          <Text style={styles.timerSkip}>Skip</Text>
-        </Pressable>
+        <Animated.View entering={TIMER_IN} exiting={TIMER_OUT} style={[styles.timerSpot, { bottom: fabBottom }]}>
+          <Press
+            style={styles.timer}
+            overlay={colors.material.pressFill}
+            onPress={() => setRestEnd(null)}
+            accessibilityLabel={`Rest timer, ${restLeft} seconds left. Skip rest`}
+          >
+            <Ionicons name="timer-outline" size={22} color={colors.onPrimary} />
+            <Text style={styles.timerText}>
+              Rest {Math.floor(restLeft / 60)}:{String(restLeft % 60).padStart(2, '0')}
+            </Text>
+            <Text style={styles.timerSkip}>Skip</Text>
+          </Press>
+        </Animated.View>
       )}
 
       <SessionForm
@@ -317,13 +338,21 @@ export default function GymScreen() {
 const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
   StyleSheet.create({
     exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-    prBadge: { backgroundColor: kinds.gym.soft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
-    prText: { fontFamily: fonts.bodyMedium, fontSize: 12, color: kinds.gym.color },
+    prBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: kinds.gym.soft,
+      borderRadius: 999,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    prText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: kinds.gym.text },
     historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
-    historyPr: { fontFamily: fonts.monoMedium, fontSize: 13, color: kinds.gym.color },
+    historyPr: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    historyPrText: { fontFamily: fonts.monoMedium, fontSize: 14, color: kinds.gym.text, fontVariant: ['tabular-nums'] },
     flex: { flex: 1 },
-    content: { padding: 16, paddingBottom: 150 },
-    contentWithTimer: { paddingBottom: 190 },
+    content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
     welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
     welcomeText: {
@@ -335,6 +364,8 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
       marginTop: 8,
       marginBottom: 12,
     },
+    planSlot: { alignSelf: 'stretch', marginTop: 10 },
+    buildOwn: { alignSelf: 'stretch', marginTop: 4 },
     planOption: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -343,28 +374,19 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
       borderColor: colors.border,
       borderRadius: radius,
       padding: 14,
-      marginTop: 10,
+      minHeight: 56,
     },
     planTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
-    planSummary: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-    secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center', marginTop: 4 },
-    secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
+    planSummary: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
     todayCard: { padding: 16 },
-    eyebrow: {
-      fontFamily: fonts.monoMedium,
-      fontSize: 12,
-      color: glass ? colors.muted : kinds.gym.color,
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
-    },
-    sessionName: { fontFamily: fonts.display, fontSize: 26, color: colors.text, marginTop: 4 },
+    sessionName: { fontFamily: fonts.display, fontSize: 26, lineHeight: 31, color: colors.text },
+    cardHint: { marginTop: 12 },
     progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
-    track: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.soft, marginTop: 10, overflow: 'hidden' },
-    fill: { height: 8, borderRadius: 4, backgroundColor: kinds.gym.color },
+    track: { marginTop: 12 },
     exercise: { padding: 14, marginTop: 10 },
     exHeader: { flexDirection: 'row', alignItems: 'center' },
     exName: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
-    exPlan: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
+    exPlan: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 2 },
     exControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 },
     stepper: {
       flexDirection: 'row',
@@ -374,7 +396,14 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
       borderRadius: 10,
     },
     stepBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-    weight: { minWidth: 84, textAlign: 'center', fontFamily: fonts.monoMedium, fontSize: 15, color: colors.text },
+    weight: {
+      minWidth: 84,
+      textAlign: 'center',
+      fontFamily: fonts.monoMedium,
+      fontSize: 15,
+      color: colors.text,
+      fontVariant: ['tabular-nums'],
+    },
     sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
     setBubble: {
       width: 44,
@@ -385,28 +414,26 @@ const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted },
+    setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     setTextDone: { color: colors.onKind },
-    hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 14 },
-    link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
     planRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingVertical: 12, paddingHorizontal: 14 },
     planDay: { width: 52, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
     planName: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
     rest: { color: colors.muted },
-    planCount: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    planCount: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    timerSpot: { position: 'absolute', left: 16, right: 16 },
     timer: {
-      position: 'absolute',
-      left: 16,
-      right: 16,
-      bottom: 16,
+      minHeight: 52,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 10,
       backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: colors.material.shadowPane,
       borderRadius: radius,
       paddingVertical: 14,
       paddingHorizontal: 16,
     },
-    timerText: { flex: 1, color: colors.onPrimary, fontFamily: fonts.monoMedium, fontSize: 18 },
-    timerSkip: { color: colors.onPrimary, opacity: 0.7, fontWeight: '600' },
+    timerText: { flex: 1, color: colors.onPrimary, fontFamily: fonts.monoMedium, fontSize: 18, fontVariant: ['tabular-nums'] },
+    timerSkip: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 15 },
   });

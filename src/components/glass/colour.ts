@@ -31,3 +31,9 @@ export function softenGradient(g: string): string {
   const first = RGBA.exec(g);
   return first ? g.replace(/\btransparent\b/g, clearOf(first[0])) : g;
 }
+
+/** The colour at alpha `a` (a pastel wash of a kind's colour, say). */
+export function alphaOf(c: string, a: number): string {
+  const p = parse(c);
+  return p ? `rgba(${p[0]},${p[1]},${p[2]},${a})` : c;
+}

@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { AMBIENCE, BACKDROPS } from './Art';
 import { calendarSupported, connectPhoneCalendar } from '../lib/deviceCalendar';
 import { useStore } from '../lib/store';
-import { THEME_OPTIONS, type Theme, themeFor, useStyles, useTheme } from '../theme';
+import { THEME_OPTIONS, type Theme, type ThemeName, themeFor, useStyles, useTheme } from '../theme';
 import { Field, Input } from './Field';
 import { FadeSwap, Press, SelectFade } from './Motion';
 import { Divider, Section } from './Section';
@@ -45,24 +45,18 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
               accessibilityLabel={`${o.label} look. ${o.description}`}
             >
               <SelectFade on={active} radius={radii.inset} bleed={1} style={styles.themeRing} />
-              <LinearGradient colors={t.colors.gradient} style={styles.swatch}>
-                <View style={[styles.swatchCard, { backgroundColor: t.colors.card, borderColor: t.colors.cardBorder }]}>
-                  <View style={[styles.swatchDot, { backgroundColor: t.kinds.routines.color }]} />
-                  <View style={[styles.swatchLine, { backgroundColor: t.colors.text }]} />
-                </View>
-                <View style={[styles.swatchButton, { backgroundColor: t.colors.primary }]} />
-              </LinearGradient>
+              <Swatch look={o.name} />
               <Text style={styles.themeName}>{o.label}</Text>
               <Text style={styles.themeDesc} numberOfLines={2}>
                 {o.description}
               </Text>
               <View style={styles.check} pointerEvents="none">
-                <SelectFade on={active} radius={12} color={colors.selected} />
+                <SelectFade on={active} radius={12} style={styles.checkOn} />
                 <FadeSwap
                   on={active}
                   style={StyleSheet.absoluteFill}
                   off={null}
-                  onContent={<Ionicons name="checkmark" size={14} color={colors.onSelected} />}
+                  onContent={<Ionicons name="checkmark" size={16} color={colors.onPrimary} />}
                 />
               </View>
             </Press>
@@ -116,6 +110,50 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
   );
 }
 
+/**
+ * A look as it really is: a crop of its own world under its scrim, a small card of its glass (base, body, rims
+ * and top line) and its primary button.
+ */
+function Swatch({ look }: { look: ThemeName }) {
+  const styles = useStyles(makeStyles);
+  const t = themeFor(look);
+  const m = t.colors.material;
+  return (
+    <View style={styles.swatch}>
+      <Image source={BACKDROPS[look]} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: AMBIENCE[look].scrim }]} />
+      <View
+        style={[
+          styles.swatchCard,
+          {
+            backgroundImage: `linear-gradient(${m.bodyAngle}deg, ${m.body[0]}, ${m.body[1]}), linear-gradient(${m.base}, ${m.base})`,
+            borderTopColor: m.rimTop,
+            borderLeftColor: m.rimLeft,
+            borderRightColor: m.rimRight,
+            borderBottomColor: m.rimBottom,
+            boxShadow: `inset 0px 1px 0px ${m.innerTop}, ${m.shadowPane}`,
+          },
+        ]}
+      >
+        <View style={[styles.swatchDot, { backgroundColor: t.kinds.routines.color }]} />
+        <View style={styles.flex}>
+          <View style={[styles.swatchLine, { backgroundColor: t.colors.text }]} />
+          <View style={[styles.swatchLine, styles.swatchLineShort, { backgroundColor: t.colors.muted }]} />
+        </View>
+      </View>
+      <View
+        style={[
+          styles.swatchButton,
+          {
+            backgroundColor: t.colors.primary,
+            backgroundImage: `linear-gradient(180deg, ${t.colors.primaryGradient[0]}, ${t.colors.primaryGradient[1]})`,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
 const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
@@ -132,10 +170,20 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
     },
     themeRing: { borderWidth: 2, borderColor: colors.text },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
-    swatchCard: { borderRadius: 8, borderWidth: 1, padding: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
-    swatchDot: { width: 10, height: 10, borderRadius: 5 },
-    swatchLine: { flex: 1, height: 4, borderRadius: 2, opacity: 0.8 },
-    swatchButton: { alignSelf: 'flex-end', width: 22, height: 22, borderRadius: 11 },
+    swatchCard: {
+      borderRadius: 10,
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingVertical: 7,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+    },
+    swatchDot: { width: 12, height: 12, borderRadius: 6 },
+    swatchLine: { height: 4, borderRadius: 2, width: '80%' },
+    swatchLineShort: { width: '50%', marginTop: 4 },
+    swatchButton: { alignSelf: 'flex-end', width: 24, height: 24, borderRadius: 12 },
+    checkOn: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     themeName: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text, marginTop: 8 },
     themeDesc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     check: { position: 'absolute', top: 14, right: 14, width: 24, height: 24 },

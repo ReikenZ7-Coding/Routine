@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Chip } from '../components/Chip';
+import { StyleSheet, Text, View } from 'react-native';
+import { Button } from '../components/Button';
+import { ActionChip, Chip } from '../components/Chip';
 import { FocusTimer } from '../components/FocusTimer';
 import { Divider, Section } from '../components/Section';
 import { PageTitle } from '../components/PageTitle';
@@ -12,7 +13,10 @@ import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
 import { Segmented } from '../components/Hub';
-import { Press } from '../components/Motion';
+import { Bar, Enter, Press } from '../components/Motion';
+import { Skeleton } from '../components/Skeleton';
+import { useContentBottom } from '../components/NowPlaying';
+import { plural } from '../lib/plural';
 
 const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
@@ -21,12 +25,13 @@ export default function ChineseScreen() {
   const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, chinese, updateChinese } = useStore();
+  const contentBottom = useContentBottom();
   const [queue, setQueue] = useState<string[] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [editing, setEditing] = useState<Word | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
-  if (!ready) return null;
+  if (!ready) return <Skeleton label="Loading your practice" />;
 
   const log = todaysLog(chinese, today);
   const due = dueWords(chinese, today);
@@ -50,10 +55,8 @@ export default function ChineseScreen() {
         <View style={styles.reviewScreen}>
           <Ionicons name="checkmark-circle" size={56} color={kinds.chinese.color} />
           <Text style={styles.reviewDoneTitle}>Review done</Text>
-          <Text style={styles.reviewDoneText}>{log.reviewed} cards reviewed today. 加油!</Text>
-          <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={finish}>
-            <Text style={styles.primaryText}>Back</Text>
-          </Pressable>
+          <Text style={styles.reviewDoneText}>{plural(log.reviewed, 'card')} reviewed today. 加油!</Text>
+          <Button label="Back to practice" onPress={finish} style={styles.doneButton} />
         </View>
       );
     }
@@ -67,11 +70,15 @@ export default function ChineseScreen() {
       <View style={styles.reviewScreen}>
         <View style={styles.reviewTop}>
           <Text style={styles.reviewCount}>{queue.length} left</Text>
-          <Pressable accessibilityRole="button" onPress={finish} hitSlop={8}>
-            <Text style={styles.link}>Stop</Text>
-          </Pressable>
+          <Button label="Stop" variant="plain" icon="close" onPress={finish} accessibilityLabel="Stop the review" />
         </View>
-        <Pressable accessibilityRole="button" style={styles.card} onPress={() => setRevealed(true)} disabled={revealed}>
+        <Glass
+          tier="hero"
+          style={styles.card}
+          onPress={revealed ? undefined : () => setRevealed(true)}
+          accessibilityRole={revealed ? undefined : 'button'}
+          accessibilityLabel={revealed ? undefined : `${current.hanzi}. Show the answer`}
+        >
           <Text style={styles.cardHanzi}>{current.hanzi}</Text>
           {revealed ? (
             <>
@@ -81,7 +88,7 @@ export default function ChineseScreen() {
           ) : (
             <Text style={styles.cardHint}>Tap to show the answer</Text>
           )}
-        </Pressable>
+        </Glass>
         {revealed && (
           <View style={styles.grades}>
             <GradeButton label="Again" sub="see it again" onPress={() => grade('again')} tone="danger" />
@@ -94,87 +101,107 @@ export default function ChineseScreen() {
   }
 
   return (
-    <GlassScroll contentContainerStyle={styles.content}>
-      <PageTitle
-        title="Chinese"
-        subtitle="Daily practice and flashcards"
-        badge={`${chinese.words.length} ${chinese.words.length === 1 ? 'word' : 'words'}`}
-      />
-      <Glass style={styles.todayCard}>
-        <View style={styles.row}>
-          <Text style={styles.eyebrow}>Today's practice</Text>
-          {streak > 0 && <Text style={styles.streak}>{streak}-day streak</Text>}
-        </View>
-        <Text style={styles.minutes}>
-          {log.minutes} <Text style={styles.minutesOf}>/ {chinese.target} min</Text>
-        </Text>
-        <View style={styles.track}>
-          <View style={[styles.fill, { width: `${pct * 100}%` }]} />
-        </View>
-        <Text style={styles.small}>Log the time you practised:</Text>
-        <View style={styles.chips}>
-          {QUICK_MINUTES.map((m) => (
-            <Chip key={m} label={`+${m} min`} active={false} onPress={() => updateChinese((c) => addMinutes(c, today, m))} />
-          ))}
-          {log.minutes > 0 && <Chip label="Undo 5" active={false} onPress={() => updateChinese((c) => addMinutes(c, today, -5))} />}
-        </View>
-        <Text style={styles.small}>Daily target</Text>
-        <Segmented
-          accessibilityLabel="Daily target"
-          options={TARGETS.map((t) => ({ key: String(t), label: `${t} min` }))}
-          value={String(chinese.target)}
-          onChange={(k) => updateChinese((c) => ({ ...c, target: Number(k) }))}
-        />
-      </Glass>
-
-      <FocusTimer onLog={(m) => updateChinese((c) => addMinutes(c, today, m))} />
-
-      <View style={styles.reviewCard}>
-        <View style={styles.flex}>
-          <Text style={styles.reviewTitle}>
-            {chinese.words.length === 0 ? 'Flashcards' : due.length ? `${due.length} words to review` : 'All caught up'}
+    <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}>
+      <PageTitle title="Chinese" subtitle="Daily practice and flashcards" badge={plural(chinese.words.length, 'word')} />
+      <Enter index={0}>
+        <Glass style={styles.todayCard}>
+          <View style={styles.row}>
+            <Text style={styles.cardTitle} accessibilityRole="header">
+              Today's practice
+            </Text>
+            {streak > 0 && (
+              <View style={styles.streakPill}>
+                <Ionicons name="flame" size={14} color={colors.streak} />
+                <Text style={styles.streak}>{plural(streak, 'day')}</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.minutes} accessibilityLabel={`${log.minutes} of ${chinese.target} minutes`}>
+            {log.minutes} <Text style={styles.minutesOf}>/ {chinese.target} min</Text>
           </Text>
-          <Text style={styles.small}>
-            {chinese.words.length === 0
-              ? 'Add words and they come back for review just before you forget them.'
-              : due.length
-                ? 'Words come back for review just before you forget them.'
-                : 'Come back tomorrow for your next review.'}
-          </Text>
-        </View>
-        {due.length > 0 && (
-          <Pressable accessibilityRole="button" style={styles.startButton} onPress={() => setQueue(due.map((w) => w.id))}>
-            <Text style={styles.primaryText}>Start</Text>
-          </Pressable>
-        )}
-      </View>
+          <View style={styles.track}>
+            <Bar progress={pct} color={kinds.chinese.color} track={colors.track} height={8} />
+          </View>
+          <Text style={styles.small}>Log the time you practised</Text>
+          <View style={styles.chips}>
+            {QUICK_MINUTES.map((m) => (
+              <Chip
+                key={m}
+                label={`+${m}`}
+                active={false}
+                outerStyle={styles.flex}
+                accessibilityLabel={`Log ${m} minutes`}
+                onPress={() => updateChinese((c) => addMinutes(c, today, m))}
+              />
+            ))}
+            <Press
+              style={[styles.undo, log.minutes === 0 && styles.undoOff]}
+              overlay={colors.material.pressFill}
+              disabled={log.minutes === 0}
+              onPress={() => updateChinese((c) => addMinutes(c, today, -5))}
+              accessibilityLabel="Undo last 5 minutes"
+            >
+              <Ionicons name="arrow-undo" size={18} color={colors.text} />
+            </Press>
+          </View>
+          <Text style={styles.small}>Daily target</Text>
+          <Segmented
+            accessibilityLabel="Daily target"
+            options={TARGETS.map((t) => ({ key: String(t), label: `${t} min` }))}
+            value={String(chinese.target)}
+            onChange={(k) => updateChinese((c) => ({ ...c, target: Number(k) }))}
+          />
+        </Glass>
+      </Enter>
+
+      <Enter index={1}>
+        <FocusTimer onLog={(m) => updateChinese((c) => addMinutes(c, today, m))} />
+      </Enter>
+
+      <Enter index={2}>
+        <Glass style={styles.reviewCard}>
+          <View style={styles.flex}>
+            <Text style={styles.reviewTitle}>
+              {chinese.words.length === 0 ? 'Flashcards' : due.length ? `${plural(due.length, 'word')} to review` : 'All caught up'}
+            </Text>
+            <Text style={styles.small}>
+              {chinese.words.length === 0
+                ? 'Add words and they come back for review just before you forget them.'
+                : due.length
+                  ? 'Words come back for review just before you forget them.'
+                  : 'Come back tomorrow for your next review.'}
+            </Text>
+          </View>
+          {due.length > 0 && (
+            <Button
+              label="Review"
+              variant="secondary"
+              onPress={() => setQueue(due.map((w) => w.id))}
+              accessibilityLabel={`Review ${plural(due.length, 'word')}`}
+            />
+          )}
+        </Glass>
+      </Enter>
 
       {chinese.words.length === 0 ? (
         <View style={styles.starter}>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.primaryButton}
+          <Button
+            label="Start with 10 beginner words"
+            variant="secondary"
             onPress={() =>
               updateChinese((c) => ({
                 ...c,
                 words: [...c.words, ...STARTER_WORDS.map(([h, p, m]) => newWord(newId(), h, p, m, today))],
               }))
             }
-          >
-            <Text style={styles.primaryText}>Start with 10 beginner words</Text>
-          </Pressable>
-          <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={() => openWord()}>
-            <Text style={styles.secondaryText}>Add my own words</Text>
-          </Pressable>
+          />
+          <Button label="Add my own words" variant="plain" icon="add" onPress={() => openWord()} />
         </View>
       ) : (
         <Section
+          enter={3}
           title={`My words · ${chinese.words.length}`}
-          right={
-            <Pressable accessibilityRole="button" onPress={() => openWord()} hitSlop={8}>
-              <Text style={styles.link}>Add word</Text>
-            </Pressable>
-          }
+          right={<ActionChip icon="add" label="Add word" onPress={() => openWord()} />}
         >
           {[...chinese.words]
             .sort((a, b) => a.due.localeCompare(b.due))
@@ -237,92 +264,77 @@ function GradeButton({
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
-  const color = tone === 'danger' ? colors.danger : tone === 'primary' ? colors.link : colors.muted;
+  const color = tone === 'danger' ? colors.danger : tone === 'primary' ? colors.link : colors.text;
   return (
-    <Pressable accessibilityRole="button" style={[styles.gradeButton, { borderColor: color }]} onPress={onPress}>
+    <Glass tier="control" style={styles.gradeButton} onPress={onPress} accessibilityLabel={`${label}, ${sub}`}>
       <Text style={[styles.gradeLabel, { color }]}>{label}</Text>
       <Text style={styles.gradeSub}>{sub}</Text>
-    </Pressable>
+    </Glass>
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius, glass }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    content: { padding: 16, paddingBottom: 150 },
-    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    content: { padding: 16 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
     todayCard: { padding: 16 },
-    eyebrow: {
-      fontFamily: fonts.monoMedium,
-      fontSize: 12,
-      color: glass ? colors.muted : kinds.chinese.color,
-      textTransform: 'uppercase',
-      letterSpacing: 1.2,
-    },
-    streak: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.text },
-    minutes: { fontFamily: fonts.display, fontSize: 32, color: colors.text, marginTop: 6, fontVariant: ['tabular-nums'] },
+    cardTitle: { ...type.sectionTitle, flexShrink: 1 },
+    streakPill: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    streak: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
+    minutes: { fontFamily: fonts.display, fontSize: 34, lineHeight: 40, color: colors.text, marginTop: 8, fontVariant: ['tabular-nums'] },
     minutesOf: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.muted },
-    track: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.soft, marginTop: 10, overflow: 'hidden' },
-    fill: { height: 8, borderRadius: 4, backgroundColor: kinds.chinese.color },
-    small: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 12, marginBottom: 8 },
-    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-    reviewCard: {
-      backgroundColor: colors.card,
-      borderRadius: radius,
-      padding: 16,
-      marginTop: 12,
-      flexDirection: 'row',
+    track: { marginTop: 10 },
+    small: { ...type.hint, marginTop: 16, marginBottom: 8 },
+    chips: { flexDirection: 'row', gap: 8 },
+    undo: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       alignItems: 'center',
-      gap: 12,
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+      backgroundColor: colors.material.inset.fill,
     },
+    undoOff: { opacity: 0.45 },
+    reviewCard: { padding: 16, marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
     reviewTitle: { fontFamily: fonts.bodyMedium, fontSize: 17, color: colors.text },
-    startButton: { backgroundColor: colors.primary, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
-    starter: { marginTop: 8 },
-    primaryButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 999,
-      paddingVertical: 14,
-      paddingHorizontal: 24,
-      alignSelf: 'stretch',
-      alignItems: 'center',
-      marginTop: 12,
-    },
-    primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-    secondaryButton: { paddingVertical: 14, alignItems: 'center' },
-    secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
-    link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text, textDecorationLine: 'underline' },
+    starter: { marginTop: 16, gap: 8 },
     wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingVertical: 10, paddingHorizontal: 14 },
     wordHanzi: { fontFamily: fonts.body, fontSize: 24, color: colors.text, minWidth: 52 },
-    wordPinyin: { fontFamily: fonts.body, fontSize: 14, color: colors.text },
-    wordMeaning: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 1 },
-    wordDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
+    wordPinyin: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
+    wordMeaning: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 1 },
+    wordDue: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
     reviewScreen: { flex: 1, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 12 },
-    reviewTop: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' },
+    reviewTop: {
+      position: 'absolute',
+      top: 16,
+      left: 16,
+      right: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
     reviewCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
     card: {
       alignSelf: 'stretch',
-      backgroundColor: colors.card,
-      borderRadius: 20,
+      borderRadius: radii.hero,
       paddingVertical: 48,
       paddingHorizontal: 20,
       alignItems: 'center',
       gap: 10,
     },
-    cardHanzi: { fontFamily: fonts.body, fontSize: 64, color: colors.text },
-    cardPinyin: { fontFamily: fonts.display, fontSize: 22, color: kinds.chinese.color },
+    cardHanzi: { fontFamily: fonts.body, fontSize: 64, lineHeight: 80, color: colors.text },
+    cardPinyin: { fontFamily: fonts.display, fontSize: 22, color: kinds.chinese.text },
     cardMeaning: { fontFamily: fonts.body, fontSize: 18, color: colors.text },
-    cardHint: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 8 },
+    cardHint: { ...type.hint, marginTop: 8 },
     grades: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
-    gradeButton: {
-      flex: 1,
-      borderWidth: 1.5,
-      borderRadius: radius,
-      paddingVertical: 12,
-      alignItems: 'center',
-      backgroundColor: colors.card,
-    },
+    gradeButton: { flex: 1, minHeight: 64, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
     gradeLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
-    gradeSub: { fontFamily: fonts.body, fontSize: 12, color: colors.muted, marginTop: 2 },
+    gradeSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
     reviewDoneTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
-    reviewDoneText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted },
+    reviewDoneText: { fontFamily: fonts.body, fontSize: 16, color: colors.muted },
+    doneButton: { alignSelf: 'stretch', marginTop: 12 },
   });

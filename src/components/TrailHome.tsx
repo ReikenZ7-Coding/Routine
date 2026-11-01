@@ -4,12 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { HeaderScene } from './Art';
 import { Glass, LensHeaderContext, useGlassScroll } from './Glass';
-import { Bar, Chevron, Collapse, EASE_OUT, Pop, Press, Ring } from './Motion';
+import { Bar, Chevron, Collapse, Enter, FadeSwap, Pop, Press, Ring, SelectFade } from './Motion';
+import { plural } from '../lib/plural';
 
 export interface TrailItem {
   key: string;
@@ -121,20 +121,22 @@ export function TrailHome(p: Props) {
         </View>
 
         <Collapse open={p.calendarOpen}>
-          <View style={styles.calendar}>{p.calendar}</View>
+          <Glass style={styles.calendar}>{p.calendar}</Glass>
         </Collapse>
 
-        <View style={styles.streak}>
-          <Ionicons name="flame" size={16} color={p.streak > 0 ? '#E8793A' : colors.faint} />
+        <Glass tier="control" radius={999} style={styles.streak}>
+          <Ionicons name={p.streak > 0 ? 'flame' : 'flame-outline'} size={16} color={p.streak > 0 ? colors.streak : colors.muted} />
           <Text style={styles.streakText}>
-            {p.streak > 0 ? `${p.streak} day streak` : 'Start a streak'}
+            {p.streak > 0 ? `${plural(p.streak, 'day')} streak` : 'Start a streak'}
             <Text style={styles.streakMuted}>{p.total > 0 ? `  ·  ${p.done}/${p.total} today` : ''}</Text>
           </Text>
-        </View>
+        </Glass>
 
         <View style={styles.sectionHead}>
-          <Text style={type.sectionTitle}>{p.isToday ? "Today's trail" : `${p.dateLabel} trail`}</Text>
-          <View style={styles.badge}>
+          <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
+            {p.isToday ? "Today's trail" : `${p.dateLabel} trail`}
+          </Text>
+          <View style={styles.badge} accessible accessibilityLabel={`${p.done} of ${p.total} done`}>
             <Text style={styles.badgeText}>
               {p.done}/{p.total}
             </Text>
@@ -182,7 +184,9 @@ export function TrailHome(p: Props) {
         )}
 
         <View style={styles.sectionHead}>
-          <Text style={type.sectionTitle}>Balance</Text>
+          <Text style={type.sectionTitle} accessibilityRole="header">
+            Balance
+          </Text>
         </View>
         <Glass>
           <View style={styles.balanceHead}>
@@ -249,13 +253,6 @@ function TrailRow({
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
-  const entering = useMemo(
-    () =>
-      FadeInDown.duration(260)
-        .delay(Math.min(index, 8) * 45)
-        .easing(EASE_OUT),
-    [index],
-  );
   const press = () => {
     if (Platform.OS !== 'web' && !item.nav) Haptics.selectionAsync().catch(() => {});
     item.onPress();
@@ -269,60 +266,63 @@ function TrailRow({
         ? currentLabel
         : item.meta;
   return (
-    <Animated.View entering={entering} style={styles.row} onLayout={(e) => onLayout(Math.round(e.nativeEvent.layout.height))}>
-      <View style={styles.nodeCol}>
-        <Pop
-          done={item.done}
-          style={[
-            styles.node,
-            item.done && styles.nodeDone,
-            current && !item.done && styles.nodeCurrent,
-            item.skipped && styles.nodeSkipped,
-          ]}
+    <Enter index={index}>
+      <View style={styles.row} onLayout={(e) => onLayout(Math.round(e.nativeEvent.layout.height))}>
+        <View style={styles.nodeCol}>
+          <Pop
+            done={item.done}
+            style={[
+              styles.node,
+              item.done && styles.nodeDone,
+              current && !item.done && styles.nodeCurrent,
+              item.skipped && styles.nodeSkipped,
+            ]}
+          >
+            {item.done ? (
+              <Ionicons name="checkmark" size={16} color={colors.onNode} />
+            ) : current ? (
+              <View style={styles.nodeDot} />
+            ) : item.skipped ? (
+              <Ionicons name="remove" size={12} color={colors.faint} />
+            ) : null}
+          </Pop>
+        </View>
+        <Glass
+          onPress={press}
+          onLongPress={item.onLongPress}
+          receded={finished}
+          style={[styles.flex, styles.rowCard]}
+          accessibilityRole={item.nav ? 'button' : 'checkbox'}
+          accessibilityState={item.nav ? undefined : { checked: item.done }}
+          accessibilityLabel={`${item.title}, ${meta}`}
         >
-          {item.done ? (
-            <Ionicons name="checkmark" size={16} color={colors.onNode} />
-          ) : current ? (
-            <View style={styles.nodeDot} />
-          ) : item.skipped ? (
-            <Ionicons name="remove" size={12} color={colors.faint} />
-          ) : null}
-        </Pop>
-      </View>
-      <Glass
-        onPress={press}
-        onLongPress={item.onLongPress}
-        receded={finished}
-        style={[styles.flex, styles.rowCard]}
-        accessibilityRole={item.nav ? 'button' : 'checkbox'}
-        accessibilityState={item.nav ? undefined : { checked: item.done }}
-        accessibilityLabel={`${item.title}, ${meta}`}
-      >
-        <View style={[styles.tile, { backgroundColor: colors.tile }]}>
-          <Ionicons name={item.icon as 'sunny'} size={20} color={finished ? colors.faint : item.color} />
-        </View>
-        <View style={styles.flex}>
-          <Text style={[styles.rowTitle, finished && styles.rowTitleDone]} numberOfLines={2}>
-            {item.title}
-          </Text>
-          {item.progress && !finished ? (
-            <View style={styles.progress}>
-              <Bar progress={item.progress.value / Math.max(1, item.progress.total)} color={item.color} track={colors.tile} />
-            </View>
-          ) : null}
-          <Text style={[styles.rowMeta, current && !finished && { color: colors.text }]} numberOfLines={2}>
-            {meta}
-          </Text>
-        </View>
-        {item.nav ? (
-          <Ionicons name="chevron-forward" size={18} color={colors.faint} />
-        ) : (
-          <View style={[styles.check, item.done && { backgroundColor: item.color, borderColor: item.color }]}>
-            {item.done && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+          <View style={[styles.tile, { backgroundColor: colors.tile }]}>
+            <Ionicons name={item.icon as 'sunny'} size={20} color={finished ? colors.faint : item.color} />
           </View>
-        )}
-      </Glass>
-    </Animated.View>
+          <View style={styles.flex}>
+            <Text style={[styles.rowTitle, finished && styles.rowTitleDone]} numberOfLines={2}>
+              {item.title}
+            </Text>
+            {item.progress && !finished ? (
+              <View style={styles.progress}>
+                <Bar progress={item.progress.value / Math.max(1, item.progress.total)} color={item.color} track={colors.tile} />
+              </View>
+            ) : null}
+            <Text style={[styles.rowMeta, current && !finished && { color: colors.text }]} numberOfLines={2}>
+              {meta}
+            </Text>
+          </View>
+          {item.nav ? (
+            <Ionicons name="chevron-forward" size={18} color={colors.faint} />
+          ) : (
+            <Pop done={item.done} style={styles.check}>
+              <SelectFade on={item.done} color={item.color} radius={13} bleed={2} />
+              <FadeSwap on={item.done} off={null} onContent={<Ionicons name="checkmark" size={15} color={colors.onKind} />} />
+            </Pop>
+          )}
+        </Glass>
+      </View>
+    </Enter>
   );
 }
 
@@ -347,7 +347,7 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
     top: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginTop: 8 },
     greet: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 20, color: colors.muted },
     hello: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.6, marginTop: 1 },
-    dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 32 },
+    dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 44 },
     date: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.muted },
     topButtons: { flexDirection: 'row', gap: 8 },
     round: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
@@ -358,25 +358,14 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: '#E8513A',
-      borderWidth: 1.5,
-      borderColor: colors.card,
+      backgroundColor: colors.streak,
     },
-    calendar: {
-      marginTop: 14,
-      backgroundColor: colors.card,
-      borderRadius: radius,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      padding: 8,
-    },
+    calendar: { marginTop: 14, padding: 8 },
     streak: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
       alignSelf: 'flex-start',
-      backgroundColor: colors.chip,
-      borderRadius: 999,
       paddingLeft: 12,
       paddingRight: 14,
       minHeight: 38,
@@ -386,7 +375,7 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
     streakMuted: { fontFamily: fonts.body, color: colors.muted },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 26, marginBottom: 12 },
     badge: { backgroundColor: colors.node, borderRadius: 999, paddingHorizontal: 10, minHeight: 26, justifyContent: 'center' },
-    badgeText: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.onNode },
+    badgeText: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.onNode, fontVariant: ['tabular-nums'] },
     trail: { marginLeft: -4 },
     rail: { position: 'absolute', left: 0, top: 0, width: RAIL },
     row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 5 },
@@ -405,13 +394,6 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
     nodeCurrent: { width: 30, height: 30, borderRadius: 15, borderWidth: 2.5, borderColor: colors.node },
     nodeSkipped: { borderStyle: 'dashed' },
     nodeDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: colors.node },
-    card: {
-      backgroundColor: colors.card,
-      borderRadius: radius,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      boxShadow: colors.shadow,
-    },
     rowCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingRight: 14, minHeight: 72 },
     tile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     rowTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 21, color: colors.text },
@@ -449,7 +431,7 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
     rings: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 8, paddingBottom: 18, paddingTop: 4 },
     ringWrap: { alignItems: 'center', gap: 10 },
     ringValue: { fontFamily: fonts.display, fontSize: 22, lineHeight: 26 },
-    ringUnit: { fontFamily: fonts.body, fontSize: 12, color: colors.muted },
+    ringUnit: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
     ringLabel: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     label: type.label,
   });

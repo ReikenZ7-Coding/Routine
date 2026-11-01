@@ -1,12 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
-import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { Button } from '../components/Button';
+import { ActionChip } from '../components/Chip';
+import { Fab } from '../components/Fab';
+import { Skeleton } from '../components/Skeleton';
+import { useContentBottom } from '../components/NowPlaying';
 import { CheckRow } from '../components/CheckRow';
 import { GroceryForm } from '../components/GroceryForm';
-import { Divider, Section } from '../components/Section';
+import { Divider, NoMatch, Section } from '../components/Section';
 import { STARTER_STAPLES, useStore } from '../lib/store';
 import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListText, needsBuying, nextDue } from '../lib/schedule';
-import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
 import { Press } from '../components/Motion';
@@ -28,10 +32,19 @@ function subtitle(item: GroceryItem): string {
   return [item.quantity, describeRepeat(item.repeat)].filter(Boolean).join(' · ');
 }
 
-export default function GroceriesScreen({ query = '', header }: { query?: string; header?: ReactNode }) {
-  const { colors, kinds, type } = useTheme();
+export default function GroceriesScreen({
+  query = '',
+  header,
+  onClearQuery,
+}: {
+  query?: string;
+  header?: ReactNode;
+  onClearQuery?: () => void;
+}) {
+  const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
-  const fabBottom = useFabBottom();
+  const [copied, setCopied] = useState(false);
+  const contentBottom = useContentBottom(true);
   const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
   const q = query.trim().toLowerCase();
   const groceries = q ? all.filter((g) => g.name.toLowerCase().includes(q)) : all;
@@ -59,16 +72,17 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
     try {
       if (Platform.OS === 'web' && navigator.clipboard) {
         await navigator.clipboard.writeText(message);
-        Alert.alert('Copied', 'Your list is on the clipboard.');
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2400);
       } else await Share.share({ message });
     } catch {}
   };
 
-  if (!ready) return null;
+  if (!ready) return <Skeleton label="Loading your shopping list" />;
 
   return (
     <View style={styles.screen}>
-      <GlassScroll contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]} keyboardShouldPersistTaps="handled">
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -77,29 +91,25 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
             <Text style={styles.welcomeText}>
               Add the things you buy regularly and how often. They come back on your list when it's time to buy them again.
             </Text>
-            <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => addGroceries(STARTER_STAPLES)}>
-              <Text style={styles.primaryText}>Start with common staples</Text>
-            </Pressable>
-            <Pressable accessibilityRole="button" style={styles.secondaryButton} onPress={openNew}>
-              <Text style={styles.secondaryText}>Add my own item</Text>
-            </Pressable>
+            <Button label="Start with common staples" onPress={() => addGroceries(STARTER_STAPLES)} style={styles.welcomeButton} />
+            <Button label="Add my own item" icon="add" variant="plain" onPress={openNew} />
           </Glass>
+        ) : q && groceries.length === 0 ? (
+          <NoMatch query={query} onClear={onClearQuery} />
         ) : (
           <>
             <Section
+              enter={0}
               title={`To buy · ${toBuy.length}`}
+              footer={toBuy.length > 0 ? 'Tap to tick off. Press and hold an item to edit it.' : undefined}
               right={
                 toBuy.length > 0 ? (
-                  <Pressable
-                    accessibilityRole="button"
+                  <ActionChip
+                    icon={copied ? 'checkmark' : 'share-outline'}
+                    label={copied ? 'Copied' : 'Share'}
                     onPress={share}
-                    hitSlop={8}
-                    accessibilityLabel="Share shopping list"
-                    style={styles.shareLink}
-                  >
-                    <Ionicons name="share-outline" size={14} color={colors.text} />
-                    <Text style={type.link}>Share</Text>
-                  </Pressable>
+                    accessibilityLabel={copied ? 'List copied to the clipboard' : 'Share shopping list'}
+                  />
                 ) : undefined
               }
             >
@@ -128,7 +138,7 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
             </Section>
 
             {bought.length > 0 && (
-              <Section title={`Bought today · ${bought.length}`}>
+              <Section enter={1} title={`Bought today · ${bought.length}`}>
                 {bought.map((g, i) => (
                   <View key={g.id}>
                     {i > 0 && <Divider />}
@@ -146,7 +156,7 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
             )}
 
             {later.length > 0 && (
-              <Section title="Coming up">
+              <Section enter={2} title="Coming up">
                 {later.map(({ item, due }, i) => (
                   <View key={item.id}>
                     {i > 0 && <Divider />}
@@ -166,22 +176,11 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
                 ))}
               </Section>
             )}
-
-            <Text style={styles.hint}>Tap to tick off. Press and hold an item to edit it.</Text>
           </>
         )}
       </GlassScroll>
 
-      {all.length > 0 && (
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.fab, { bottom: fabBottom }]}
-          onPress={openNew}
-          accessibilityLabel="Add grocery item"
-        >
-          <Ionicons name="add" size={30} color={colors.onPrimary} />
-        </Pressable>
-      )}
+      {all.length > 0 && <Fab onPress={openNew} accessibilityLabel="Add a grocery item" />}
 
       <GroceryForm
         visible={formOpen}
@@ -205,55 +204,19 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, type }: Theme) =>
   StyleSheet.create({
     screen: { flex: 1 },
-    shareLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    content: { padding: 16, paddingBottom: 170 },
+    content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
     welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
-    welcomeText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, textAlign: 'center', lineHeight: 21, marginTop: 8 },
-    primaryButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 999,
-      paddingVertical: 14,
-      alignSelf: 'stretch',
-      alignItems: 'center',
-      marginTop: 20,
-    },
-    primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
-    secondaryButton: { paddingVertical: 14, alignSelf: 'stretch', alignItems: 'center' },
-    secondaryText: { color: colors.link, fontFamily: fonts.bodyMedium, fontSize: 16 },
-    emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
-    aisle: {
-      fontFamily: fonts.monoMedium,
-      fontSize: 12,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-      color: kinds.groceries.color,
-      paddingHorizontal: 16,
-      paddingTop: 14,
-    },
-    laterRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
+    welcomeText: { fontFamily: fonts.body, fontSize: 16, color: colors.muted, textAlign: 'center', lineHeight: 22, marginTop: 8 },
+    welcomeButton: { alignSelf: 'stretch', marginTop: 20, marginBottom: 4 },
+    emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 16 },
+    aisle: { ...type.label, color: kinds.groceries.text, paddingHorizontal: 16, paddingTop: 14 },
+    laterRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 54 },
     laterText: { flex: 1 },
     laterName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-    laterSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-    laterDue: { fontFamily: fonts.bodyMedium, fontSize: 13, color: colors.muted },
-    hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
-    fab: {
-      position: 'absolute',
-      right: 20,
-      bottom: 24,
-      width: 60,
-      height: 60,
-      borderRadius: 18,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 3 },
-    },
+    laterSub: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
+    laterDue: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
   });

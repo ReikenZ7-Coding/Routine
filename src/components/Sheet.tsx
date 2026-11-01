@@ -37,6 +37,7 @@ import { Button } from './Button';
 import { Glass, GlassScrollContext } from './Glass';
 import { useKeyboardHeight } from './glass/keyboard';
 import { EASE_OUT, FADE, useReduceMotion } from './Motion';
+import { ThemeFade } from './ThemeFade';
 
 const SHEET_IN = { duration: 320, easing: Easing.bezier(0.32, 0.72, 0, 1) };
 const SHEET_OUT = { duration: 220, easing: EASE_OUT };
@@ -331,6 +332,7 @@ function SheetPanel({
             </Glass>
           </GlassScrollContext.Provider>
         </Animated.View>
+        <ThemeFade />
       </View>
     </Modal>
   );

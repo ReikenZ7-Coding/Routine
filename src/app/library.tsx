@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Glass } from '../components/Glass';
+import { Press } from '../components/Motion';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FilterRow, Segmented } from '../components/Hub';
 import { PageTitle } from '../components/PageTitle';
@@ -14,7 +16,7 @@ type Shelf = 'routines' | 'groceries';
 
 /** Everything you keep: routines and the grocery list, with search. The page looks add filters, hub style. */
 export default function LibraryScreen() {
-  const { colors, type, glass } = useTheme();
+  const { colors, type, glass, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ shelf?: string }>();
@@ -35,23 +37,33 @@ export default function LibraryScreen() {
   const placeholder = shelf === 'routines' ? 'Search routines' : 'Search groceries';
 
   const search = (
-    <View style={styles.search}>
-      <Ionicons name="search" size={17} color={colors.muted} />
-      <TextInput
-        style={styles.searchInput}
-        value={query}
-        onChangeText={setQuery}
-        placeholder={placeholder}
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={placeholder}
-      />
-      {query ? (
-        <Pressable accessibilityRole="button" onPress={() => setQuery('')} style={styles.clear} accessibilityLabel="Clear search">
-          <Ionicons name="close-circle" size={17} color={colors.muted} />
-        </Pressable>
-      ) : null}
+    <View>
+      <Text style={styles.label} nativeID="library-search-label">
+        {placeholder}
+      </Text>
+      <Glass tier="control" radius={radii.pill} style={styles.search}>
+        <Ionicons name="search" size={18} color={colors.muted} />
+        <TextInput
+          style={styles.searchInput}
+          value={query}
+          onChangeText={setQuery}
+          placeholder={shelf === 'routines' ? 'Name of a routine' : 'Name of an item'}
+          placeholderTextColor={colors.faint}
+          selectionColor={colors.link}
+          cursorColor={colors.text}
+          returnKeyType="search"
+          accessibilityLabel={placeholder}
+          accessibilityLabelledBy="library-search-label"
+        />
+        {query ? (
+          <Press onPress={() => setQuery('')} style={styles.clear} overlay={colors.material.pressFill} accessibilityLabel="Clear search">
+            <Ionicons name="close-circle" size={20} color={colors.muted} />
+          </Press>
+        ) : null}
+      </Glass>
     </View>
   );
+  const clear = () => setQuery('');
 
   if (glass) {
     return (
@@ -66,7 +78,11 @@ export default function LibraryScreen() {
             onChange={setShelf}
           />
         </View>
-        {shelf === 'routines' ? <RoutinesScreen query={query} /> : <GroceriesScreen query={query} />}
+        {shelf === 'routines' ? (
+          <RoutinesScreen query={query} onClearQuery={clear} />
+        ) : (
+          <GroceriesScreen query={query} onClearQuery={clear} />
+        )}
       </View>
     );
   }
@@ -113,30 +129,21 @@ export default function LibraryScreen() {
   return (
     <View style={styles.flex}>
       {shelf === 'routines' ? (
-        <RoutinesScreen query={query} when={when} repeat={repeat} header={header} />
+        <RoutinesScreen query={query} when={when} repeat={repeat} header={header} onClearQuery={clear} />
       ) : (
-        <GroceriesScreen query={query} header={header} />
+        <GroceriesScreen query={query} header={header} onClearQuery={clear} />
       )}
     </View>
   );
 }
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     top: { paddingHorizontal: 16, gap: 14 },
     hub: { gap: 14, paddingTop: 4 },
-    search: {
-      flexDirection: 'row',
-      minHeight: 48,
-      alignItems: 'center',
-      gap: 8,
-      backgroundColor: colors.input,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      borderRadius: 999,
-      paddingHorizontal: 14,
-    },
-    searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text, height: 48 },
-    clear: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -12 },
+    label: { ...type.label, marginBottom: 8 },
+    search: { flexDirection: 'row', minHeight: 50, alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 3 },
+    searchInput: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text, minHeight: 48 },
+    clear: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   });

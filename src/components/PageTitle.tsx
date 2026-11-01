@@ -23,7 +23,7 @@ export function PageTitle({ title, subtitle, badge }: { title: string; subtitle?
   );
 }
 
-const makeStyles = ({ type, colors, fonts, glass }: Theme) =>
+const makeStyles = ({ type, colors, fonts }: Theme) =>
   StyleSheet.create({
     wrap: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, marginTop: 4 },
     flex: { flex: 1 },
@@ -34,9 +34,10 @@ const makeStyles = ({ type, colors, fonts, glass }: Theme) =>
       paddingHorizontal: 12,
       minHeight: 30,
       justifyContent: 'center',
-      backgroundColor: glass ? colors.chip : colors.primarySoft,
+      backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
-      borderColor: glass ? colors.cardBorder : colors.accent + '55',
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
     },
-    badgeText: { fontFamily: fonts.monoMedium, fontSize: 13, color: glass ? colors.text : colors.accent },
+    badgeText: { ...type.badge, color: colors.text, fontVariant: ['tabular-nums'] },
   });

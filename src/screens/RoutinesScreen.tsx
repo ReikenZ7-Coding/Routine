@@ -1,12 +1,14 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Button } from '../components/Button';
+import { Fab } from '../components/Fab';
+import { Skeleton } from '../components/Skeleton';
+import { useContentBottom } from '../components/NowPlaying';
 import { HubHeader, RoutineCard } from '../components/Hub';
-import { Press } from '../components/Motion';
+import { Enter, FadeSwap, Pop, Press, SelectFade } from '../components/Motion';
 import { RoutineForm } from '../components/RoutineForm';
-import { RoutineRow } from '../components/RoutineRow';
-import { Divider, Section } from '../components/Section';
+import { HintPane, NoMatch } from '../components/Section';
 import {
   ROUTINE_IDEAS,
   type Routine,
@@ -23,21 +25,11 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
-import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
 import { SceneArt } from '../components/Art';
 
 const ART = ['calm', 'rain', 'waves', 'brown'];
-/** Vivid tile colours for Lavender rows, like album art. */
-const TILES: [string, string][] = [
-  ['#FF8AD8', '#7B5CFF'],
-  ['#5EE7FF', '#4F6BFF'],
-  ['#FFB38A', '#FF5FA2'],
-  ['#8CF5C8', '#2FA4D9'],
-  ['#C7A6FF', '#5B3FD9'],
-  ['#FFE08A', '#FF8A5B'],
-];
 
 export type WhenFilter = 'all' | Routine['time'];
 export type RepeatFilter = 'all' | 'daily' | 'some' | 'once';
@@ -54,18 +46,20 @@ export default function RoutinesScreen({
   when = 'all',
   repeat = 'all',
   header,
+  onClearQuery,
 }: {
   query?: string;
   when?: WhenFilter;
   repeat?: RepeatFilter;
   header?: ReactNode;
+  onClearQuery?: () => void;
 }) {
   const { colors, kinds, glass } = useTheme();
   const styles = useStyles(makeStyles);
-  const fabBottom = useFabBottom();
   const { width } = useWindowDimensions();
   const cardWidth = Math.floor((width - 32 - 10) / 2);
   const { ready, today, routines: all, updateRoutines } = useStore();
+  const contentBottom = useContentBottom(!glass);
   const q = query.trim().toLowerCase();
   const filtered = all.filter((r) => (when === 'all' || r.time === when) && matchesRepeat(r, repeat));
   const routines = q ? filtered.filter((r) => r.name.toLowerCase().includes(q)) : filtered;
@@ -73,7 +67,7 @@ export default function RoutinesScreen({
   const [editing, setEditing] = useState<Routine | undefined>();
   const [formOpen, setFormOpen] = useState(false);
 
-  if (!ready) return null;
+  if (!ready) return <Skeleton label="Loading your routines" />;
 
   const todays = sortByTime(routines.filter((r) => isScheduled(r, today)));
   const others = sortByTime(routines.filter((r) => !isScheduled(r, today) && r.repeat.kind !== 'once'));
@@ -89,7 +83,7 @@ export default function RoutinesScreen({
 
   return (
     <View style={styles.flex}>
-      <GlassScroll contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]} keyboardShouldPersistTaps="handled">
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -99,7 +93,14 @@ export default function RoutinesScreen({
               Anything you want to do regularly: stretching, reading, cleaning, taking vitamins. Tap an idea to add it, or make your own.
             </Text>
             {ROUTINE_IDEAS.map((idea) => (
-              <Pressable accessibilityRole="button" key={idea.name} style={styles.idea} onPress={() => addIdea(idea)}>
+              <Press
+                key={idea.name}
+                outerStyle={styles.ideaSlot}
+                style={styles.idea}
+                overlay={colors.material.pressFill}
+                onPress={() => addIdea(idea)}
+                accessibilityLabel={`Add ${idea.name}, ${TIME_LABELS[idea.time]}, ${describeRepeat(idea.repeat)}`}
+              >
                 <Ionicons name="add-circle-outline" size={22} color={colors.link} />
                 <View style={styles.flex}>
                   <Text style={styles.ideaName}>{idea.name}</Text>
@@ -107,12 +108,12 @@ export default function RoutinesScreen({
                     {TIME_LABELS[idea.time]} · {describeRepeat(idea.repeat)}
                   </Text>
                 </View>
-              </Pressable>
+              </Press>
             ))}
-            <Pressable accessibilityRole="button" style={styles.primaryButton} onPress={() => open()}>
-              <Text style={styles.primaryText}>Make my own routine</Text>
-            </Pressable>
+            <Button label="Make my own routine" icon="add" onPress={() => open()} style={styles.welcomeButton} />
           </Glass>
+        ) : q && routines.length === 0 ? (
+          <NoMatch query={query} onClear={onClearQuery} />
         ) : glass ? (
           <View style={styles.shelf}>
             <Glass radius={20} style={styles.create} onPress={() => open()} accessibilityLabel="Create a new routine">
@@ -127,7 +128,9 @@ export default function RoutinesScreen({
             <Text style={styles.shelfTitle}>{`Today · ${planned.filter((r) => isDoneOn(r, today)).length}/${planned.length} done`}</Text>
             {todays.length === 0 ? <Text style={styles.emptyText}>Nothing scheduled today.</Text> : null}
             {todays.map((r, i) => (
-              <ArtRow key={r.id} routine={r} index={i} today={today} onChange={replace} onMore={() => open(r)} />
+              <Enter key={r.id} index={i + 1}>
+                <ArtRow routine={r} index={i} today={today} onChange={replace} onMore={() => open(r)} />
+              </Enter>
             ))}
             {others.length > 0 && <Text style={styles.shelfTitle}>Not today</Text>}
             {others.map((r, i) => (
@@ -171,8 +174,10 @@ export default function RoutinesScreen({
               <Text style={styles.emptyGrid}>{filtering ? 'Nothing here matches.' : 'Nothing scheduled today.'}</Text>
             ) : (
               <View style={styles.grid}>
-                {todays.map((r) => (
-                  <RoutineCard key={r.id} routine={r} today={today} width={cardWidth} onChange={replace} onOpen={() => open(r)} />
+                {todays.map((r, i) => (
+                  <Enter key={r.id} index={i}>
+                    <RoutineCard routine={r} today={today} width={cardWidth} onChange={replace} onOpen={() => open(r)} />
+                  </Enter>
                 ))}
               </View>
             )}
@@ -188,7 +193,7 @@ export default function RoutinesScreen({
             )}
             {ideasLeft.length > 0 && !filtering && (
               <>
-                <HubHeader icon="sparkles-outline" title="Ideas" count={ideasLeft.length} color={kinds.inbox.color} />
+                <HubHeader icon="bulb-outline" title="Ideas" count={ideasLeft.length} color={kinds.inbox.color} />
                 <View style={styles.grid}>
                   {ideasLeft.map((idea) => (
                     <Press
@@ -211,21 +216,12 @@ export default function RoutinesScreen({
                 </View>
               </>
             )}
-            <Text style={styles.hint}>Tap to tick off. Press and hold to edit, skip a day or set a reminder.</Text>
+            <HintPane>Tap the circle on a card to tick it off. Tap the card to edit it, skip a day or set a reminder.</HintPane>
           </>
         )}
       </GlassScroll>
 
-      {all.length > 0 && !glass && (
-        <Pressable
-          accessibilityRole="button"
-          style={[styles.fab, { bottom: fabBottom }]}
-          onPress={() => open()}
-          accessibilityLabel="Add routine"
-        >
-          <Ionicons name="add" size={30} color={colors.onPrimary} />
-        </Pressable>
-      )}
+      {all.length > 0 && !glass && <Fab onPress={() => open()} accessibilityLabel="Add a routine" />}
 
       <RoutineForm
         visible={formOpen}
@@ -260,8 +256,8 @@ export default function RoutinesScreen({
 }
 
 /**
- * A routine as a library row on the glass looks: artwork, name and schedule, a round button to
- * tick it off (or +1 for counters) and a visible ⋯ button for editing, skipping and reminders.
+ * A routine as a library row on the glass looks: its art (Stone) or icon tile (Lavender), name and schedule, a
+ * round button to tick it off (or +1 for counters) and a visible more button for editing, skipping and reminders.
  */
 function ArtRow({
   routine: r,
@@ -276,30 +272,31 @@ function ArtRow({
   onChange?: (r: Routine) => void;
   onMore: () => void;
 }) {
-  const { colors, name } = useTheme();
+  const { colors, kinds, name } = useTheme();
   const styles = useStyles(makeStyles);
   const done = isDoneOn(r, today);
   const skipped = isSkipped(r, today);
   const counter = !!r.target && r.target > 1;
   const canTick = !!onChange && !skipped;
+  const idle =
+    counter && !done ? (
+      <Text style={styles.tickText}>+1</Text>
+    ) : (
+      <Ionicons name="play" size={16} color={colors.text} style={styles.playNudge} />
+    );
   return (
-    <Glass radius={20} style={styles.artRow}>
+    <Glass radius={20} style={styles.artRow} receded={done || skipped}>
       {name === 'stone' ? (
         <View style={styles.thumb}>
           <SceneArt width={56} height={56} variant={ART[index % ART.length]} />
         </View>
       ) : (
-        <LinearGradient
-          colors={TILES[index % TILES.length]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.thumb, styles.tile]}
-        >
-          <Ionicons name={iconFor(r) as 'sunny'} size={24} color="#FFFFFF" />
-        </LinearGradient>
+        <View style={[styles.thumb, styles.tile, { backgroundColor: kinds.routines.soft }]}>
+          <Ionicons name={iconFor(r) as 'sunny'} size={24} color={colors.text} />
+        </View>
       )}
       <View style={styles.flex}>
-        <Text style={[styles.rowTitle, done && styles.rowDone]} numberOfLines={1}>
+        <Text style={[styles.rowTitle, (done || skipped) && styles.rowDone]} numberOfLines={1}>
           {r.name}
         </Text>
         <Text style={styles.rowMeta} numberOfLines={1}>
@@ -308,28 +305,29 @@ function ArtRow({
         </Text>
       </View>
       {canTick && (
-        <Pressable
+        <Press
           onPress={() => onChange!(tapRoutine(r, today))}
-          style={[styles.tick, done && styles.tickDone]}
+          style={styles.tick}
+          overlay={colors.material.pressFill}
+          haptic
           accessibilityRole={counter ? 'button' : 'checkbox'}
           accessibilityState={counter ? undefined : { checked: done }}
-          accessibilityLabel={counter ? `Add one to ${r.name}` : `${r.name} done`}
+          accessibilityLabel={counter ? `Add one to ${r.name}, ${countOn(r, today)} of ${r.target}` : `Mark ${r.name} done`}
         >
-          {counter && !done ? (
-            <Text style={styles.tickText}>+1</Text>
-          ) : (
-            <Ionicons name={done ? 'checkmark' : 'play'} size={16} color={colors.onSelected} style={done ? undefined : styles.playNudge} />
-          )}
-        </Pressable>
+          <SelectFade on={done} color={kinds.routines.color} radius={22} bleed={1} />
+          <Pop done={done}>
+            <FadeSwap on={done} off={idle} onContent={<Ionicons name="checkmark" size={18} color={colors.onKind} />} />
+          </Pop>
+        </Press>
       )}
-      <Pressable onPress={onMore} style={styles.more} accessibilityRole="button" accessibilityLabel={`More options for ${r.name}`}>
+      <Press onPress={onMore} style={styles.more} overlay={colors.material.pressFill} accessibilityLabel={`Edit ${r.name}`}>
         <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
-      </Pressable>
+      </Press>
     </Glass>
   );
 }
 
-const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radius, name }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     shelf: { gap: 10 },
@@ -342,7 +340,7 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
       justifyContent: 'center',
       borderWidth: 1,
       borderStyle: 'dashed',
-      borderColor: colors.rim,
+      borderColor: colors.controlBorder,
     },
     shelfTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text, marginTop: 14, marginBottom: 2 },
     artRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10 },
@@ -354,40 +352,30 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
       borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.primarySoft,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
     },
     rowTitle: {
-      fontFamily: fonts.bodyBold,
-      fontSize: 16,
+      fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold,
+      fontSize: name === 'stone' ? 17 : 16,
       color: colors.text,
-      ...(name === 'lavender'
-        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
-        : null),
     },
-    rowMeta: {
-      marginTop: 2,
-      fontFamily: fonts.body,
-      fontSize: 14,
-      color: colors.muted,
-      ...(name === 'lavender'
-        ? { textShadowColor: 'rgba(28,14,110,0.55)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } }
-        : null),
-    },
-    rowDone: { textDecorationLine: 'line-through', opacity: 0.75 },
+    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    rowDone: { textDecorationLine: 'line-through', color: colors.faint, fontFamily: fonts.body },
     tick: {
       width: 44,
       height: 44,
       borderRadius: 22,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.selected,
-      boxShadow: `0px 4px 14px ${colors.glow}88`,
+      borderWidth: 1.5,
+      borderColor: colors.controlBorder,
     },
-    tickDone: { backgroundColor: colors.accent },
-    tickText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onSelected },
+    tickText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, fontVariant: ['tabular-nums'] },
     playNudge: { marginLeft: 2 },
-    more: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginLeft: -4 },
-    content: { padding: 16, paddingBottom: 170 },
+    more: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
     welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
     welcomeText: {
@@ -399,6 +387,7 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
       marginTop: 8,
       marginBottom: 8,
     },
+    ideaSlot: { alignSelf: 'stretch', marginTop: 8 },
     idea: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -408,34 +397,18 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
       borderColor: colors.border,
       borderRadius: radius,
       padding: 12,
-      marginTop: 8,
+      minHeight: 56,
     },
-    ideaName: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.text },
-    ideaSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-    primaryButton: {
-      backgroundColor: colors.primary,
-      borderRadius: 999,
-      paddingVertical: 14,
-      alignSelf: 'stretch',
-      alignItems: 'center',
-      marginTop: 16,
-    },
-    primaryText: { color: colors.onPrimary, fontFamily: fonts.bodyBold, fontSize: 16 },
+    ideaName: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+    ideaSub: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
+    welcomeButton: { alignSelf: 'stretch', marginTop: 16 },
     emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 15 },
     ideaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 14 },
     otherRow: { paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 52 },
     otherName: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-    otherSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
-    hint: { textAlign: 'center', color: colors.muted, fontFamily: fonts.body, fontSize: 13, marginTop: 20 },
-    countLine: {
-      fontFamily: fonts.monoMedium,
-      fontSize: 12,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-      color: colors.muted,
-      marginTop: 18,
-    },
-    hubMeta: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    otherSub: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
+    countLine: { ...type.label, marginTop: 18 },
+    hubMeta: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
     grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     emptyGrid: { color: colors.muted, fontFamily: fonts.body, fontSize: 15, paddingVertical: 8 },
     ideaCard: {
@@ -452,26 +425,12 @@ const makeStyles = ({ colors, fonts, radius, name }: Theme) =>
       width: 32,
       height: 32,
       borderRadius: 16,
-      backgroundColor: colors.chip,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
       alignItems: 'center',
       justifyContent: 'center',
       marginBottom: 'auto',
     },
     ideaCardName: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 21, color: colors.text },
-    fab: {
-      position: 'absolute',
-      right: 20,
-      bottom: 24,
-      width: 60,
-      height: 60,
-      borderRadius: 18,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      elevation: 4,
-      shadowColor: '#000',
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 3 },
-    },
   });

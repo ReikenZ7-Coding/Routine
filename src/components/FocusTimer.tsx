@@ -5,13 +5,14 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass } from './Glass';
 import { Segmented } from './Hub';
-import { Press } from './Motion';
+import { Button } from './Button';
+import { Bar, Press } from './Motion';
 
 const LENGTHS = [15, 25];
 
 /** A focus countdown that logs the minutes practised when it ends or is stopped. */
 export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
-  const { colors, type } = useTheme();
+  const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const [length, setLength] = useState(15);
   const [run, setRun] = useState<{ start: number; end: number } | null>(null);
@@ -58,7 +59,9 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
   return (
     <Glass style={styles.card}>
       <View style={styles.row}>
-        <Text style={type.label}>Focus session</Text>
+        <Text style={styles.title} accessibilityRole="header">
+          Focus session
+        </Text>
         {!run && (
           <View style={styles.lengths}>
             <Segmented
@@ -71,7 +74,7 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
         )}
       </View>
       <View style={styles.row}>
-        <Text style={styles.clock}>
+        <Text style={styles.clock} accessibilityLabel={`${Math.floor(secs / 60)} minutes ${secs % 60} seconds ${run ? 'left' : ''}`}>
           {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, '0')}
         </Text>
         {run ? (
@@ -85,55 +88,46 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
             <Text style={styles.stopText}>Stop & log</Text>
           </Press>
         ) : (
-          <Press
-            style={styles.btn}
-            overlay={colors.material.pressFill}
-            haptic
+          <Button
+            label="Start"
+            icon="play"
             onPress={() => {
               const start = Date.now();
               setNow(start);
               setRun({ start, end: start + length * 60000 });
             }}
-            accessibilityLabel="Start focus session"
-          >
-            <Ionicons name="play" size={16} color={colors.onKind} />
-            <Text style={styles.btnText}>Start</Text>
-          </Press>
+            accessibilityLabel={`Start a ${length} minute focus session`}
+          />
         )}
       </View>
-      <View style={styles.track}>
-        <View style={[styles.fill, { width: `${(1 - left / total) * 100}%` }]} />
-      </View>
-      <Text style={type.small}>
+      <Bar progress={1 - left / total} color={kinds.chinese.color} track={colors.track} height={4} />
+      <Text style={type.hint}>
         {run ? 'Phone down, books open. Minutes are logged for you.' : 'Minutes are added to today when it ends.'}
       </Text>
     </Glass>
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts }: Theme) =>
+const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
-    card: { padding: 16, marginTop: 12, gap: 10 },
-    lengths: { width: 188 },
+    card: { padding: 16, marginTop: 12, gap: 12 },
+    title: { ...type.sectionTitle, flexShrink: 1 },
+    lengths: { width: 164 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    clock: { fontFamily: fonts.monoMedium, fontSize: 40, color: colors.text, letterSpacing: -1 },
-    btn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-      backgroundColor: kinds.chinese.color,
-      borderRadius: 999,
-      paddingHorizontal: 18,
-      minHeight: 44,
+    clock: {
+      fontFamily: fonts.monoMedium,
+      fontSize: 40,
+      lineHeight: 48,
+      color: colors.text,
+      letterSpacing: -1,
+      fontVariant: ['tabular-nums'],
     },
-    btnText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onKind },
+    btn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 18, minHeight: 48 },
     stop: {
       backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
     },
-    stopText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
-    track: { height: 3, borderRadius: 2, backgroundColor: colors.border, overflow: 'hidden' },
-    fill: { height: 3, backgroundColor: kinds.chinese.color },
+    stopText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text },
   });

@@ -1,11 +1,15 @@
+import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { weekStats } from '../lib/stats';
 import { personalRecords } from '../lib/records';
 import { formatWeight } from '../lib/gym';
+import { plural } from '../lib/plural';
 import { WEEKDAY_SHORT, friendlyDate, parseKey } from '../lib/schedule';
 import { useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass } from './Glass';
+import { EASE_OUT, useReduceMotion } from './Motion';
 import { Divider, Section } from './Section';
 import { Sheet } from './Sheet';
 
@@ -30,14 +34,20 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
       </View>
 
       <View style={styles.bars}>
-        {s.days.map((d) => (
-          <View key={d.date} style={styles.barCol}>
-            <View style={styles.barTrack}>
-              <View style={[styles.barFill, { height: `${Math.round((d.share ?? 0) * 100)}%`, backgroundColor: kinds.routines.color }]} />
+        {s.days.map((d, i) => {
+          const day = parseKey(d.date).toLocaleDateString('en', { weekday: 'long' });
+          return (
+            <View
+              key={d.date}
+              style={styles.barCol}
+              accessible
+              accessibilityLabel={d.planned ? `${day}, ${d.done} of ${plural(d.planned, 'routine')}` : `${day}, nothing planned`}
+            >
+              <DayBar share={d.share ?? 0} index={i} shown={visible} />
+              <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
             </View>
-            <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
-          </View>
-        ))}
+          );
+        })}
       </View>
 
       {s.gymVolume > 0 && (
@@ -89,9 +99,37 @@ function Tile({ value, label, color }: { value: string; label: string; color: st
   const styles = useStyles(makeStyles);
   return (
     <Glass style={styles.tile}>
-      <Text style={[styles.tileValue, { color }]}>{value}</Text>
+      <View style={[styles.tileLine, { backgroundColor: color }]} />
+      <Text style={styles.tileValue}>{value}</Text>
       <Text style={type.small}>{label}</Text>
     </Glass>
+  );
+}
+
+const GROW = { duration: 600, easing: EASE_OUT };
+
+/**
+ * One day's bar: the fill grows up from the bottom (scaleY from a 2% sliver to its share, 600ms, each day 40ms
+ * after the one before) each time the sheet opens. A day with nothing done keeps only its track. Under reduced
+ * motion the bars are simply drawn at their share.
+ */
+function DayBar({ share, index, shown }: { share: number; index: number; shown: boolean }) {
+  const { kinds } = useTheme();
+  const styles = useStyles(makeStyles);
+  const reduced = useReduceMotion();
+  const target = Math.max(0, Math.min(1, share));
+  const scale = useSharedValue(reduced ? target : 0.02);
+  useEffect(() => {
+    if (!shown || target === 0) return;
+    if (reduced) return scale.set(target);
+    scale.set(0.02);
+    scale.set(withDelay(index * 40, withTiming(target, GROW)));
+  }, [shown, target, reduced, index, scale]);
+  const grow = useAnimatedStyle(() => ({ transform: [{ scaleY: scale.get() }] }));
+  return (
+    <View style={styles.barTrack}>
+      {target > 0 && <Animated.View style={[styles.barFill, { backgroundColor: kinds.routines.color }, grow]} />}
+    </View>
   );
 }
 
@@ -101,21 +139,21 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     gap: { marginTop: 12 },
     tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
     tile: { flex: 1, padding: 12, gap: 2 },
-    tileValue: { fontFamily: fonts.display, fontSize: 26 },
-    bars: { flexDirection: 'row', gap: 8, height: 90, marginTop: 16 },
+    tileLine: { width: 20, height: 3, borderRadius: 2, marginBottom: 8 },
+    tileValue: { fontFamily: fonts.display, fontSize: 26, lineHeight: 32, color: colors.text, fontVariant: ['tabular-nums'] },
+    bars: { flexDirection: 'row', gap: 8, height: 96, marginTop: 16 },
     barCol: { flex: 1, alignItems: 'center', gap: 6 },
     barTrack: {
       flex: 1,
       width: '100%',
       borderRadius: 6,
-      backgroundColor: colors.primarySoft,
-      justifyContent: 'flex-end',
+      backgroundColor: colors.track,
       overflow: 'hidden',
     },
-    barFill: { width: '100%', borderRadius: 6 },
-    barLabel: { fontFamily: fonts.mono, fontSize: 12, color: colors.muted },
+    barFill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 6, transformOrigin: 'bottom' },
+    barLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },
     barToday: { color: colors.text, fontFamily: fonts.monoMedium },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
-    num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text },
-    empty: { padding: 16, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text, fontVariant: ['tabular-nums'] },
+    empty: { padding: 16, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
   });

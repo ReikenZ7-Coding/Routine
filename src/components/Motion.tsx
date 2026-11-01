@@ -13,6 +13,8 @@ import {
   StyleSheet,
   Text,
   View,
+  type AccessibilityActionEvent,
+  type AccessibilityActionInfo,
   type AccessibilityRole,
   type AccessibilityState,
   type StyleProp,
@@ -21,6 +23,8 @@ import {
 import Animated, {
   Easing,
   FadeIn,
+  FadeInDown,
+  Keyframe,
   FadeOut,
   LinearTransition,
   useAnimatedProps,
@@ -86,6 +90,8 @@ interface PressProps {
   accessibilityHint?: string;
   accessibilityRole?: AccessibilityRole;
   accessibilityState?: AccessibilityState;
+  accessibilityActions?: AccessibilityActionInfo[];
+  onAccessibilityAction?: (e: AccessibilityActionEvent) => void;
   children: ReactNode;
 }
 
@@ -109,6 +115,8 @@ export function Press({
   accessibilityHint,
   accessibilityRole = 'button',
   accessibilityState,
+  accessibilityActions,
+  onAccessibilityAction,
   children,
 }: PressProps) {
   const scale = useSharedValue(1);
@@ -160,6 +168,8 @@ export function Press({
       accessibilityHint={accessibilityHint}
       accessibilityRole={accessibilityRole}
       accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
+      accessibilityActions={accessibilityActions}
+      onAccessibilityAction={onAccessibilityAction}
     >
       <Animated.View style={[style, animated]}>
         {overlay ? (
@@ -421,7 +431,34 @@ export function Chevron({ open, color, size = 20 }: { open: boolean; color: stri
   );
 }
 
-/** A small uppercase caption, the way the hubs label a group of filters. */
+/**
+ * A card arriving on a screen's first mount: it rises 10px and fades in over 280ms, each one 40ms after the one
+ * before (the first six; the rest arrive with the sixth). It plays once, when the card first mounts, so returning
+ * to a tab shows the screen as it was. Under reduced motion the card is simply there.
+ */
+export function Enter({ index = 0, style, children }: { index?: number; style?: StyleProp<ViewStyle>; children: ReactNode }) {
+  const reduced = useReduceMotion();
+  const [entering] = useState(() => (reduced ? undefined : rise().delay(Math.min(index, 6) * 40)));
+  return (
+    <Animated.View entering={entering} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
+
+/** The arrival: up 10px and in, 280ms, ease-out. A keyframe, so it is the same on every platform; a new one each
+ *  time, since a keyframe's delay is set on the object itself. */
+export function rise() {
+  // Reanimated's web renderer pins custom entering animations to absolute positions when they end, so the web
+  // build (a preview only) uses the built-in rise, which travels a little further.
+  if (Platform.OS === 'web') return FadeInDown.duration(280).easing(EASE_OUT);
+  return new Keyframe({
+    0: { opacity: 0, transform: [{ translateY: 10 }] },
+    100: { opacity: 1, transform: [{ translateY: 0 }], easing: EASE_OUT },
+  }).duration(280);
+}
+
+/** A small caption in the look's label voice, the way the hubs name a group of filters. */
 export function Micro({ children, color }: { children: ReactNode; color?: string }) {
   const styles = useStyles(makeStyles);
   return <Text style={[styles.micro, color ? { color } : null]}>{children}</Text>;
@@ -432,7 +469,7 @@ const styles = StyleSheet.create({
   swap: { alignItems: 'center', justifyContent: 'center' },
 });
 
-const makeStyles = ({ colors, fonts }: Theme) =>
+const makeStyles = ({ type }: Theme) =>
   StyleSheet.create({
-    micro: { fontFamily: fonts.monoMedium, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.muted },
+    micro: type.label,
   });

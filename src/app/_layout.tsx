@@ -23,6 +23,7 @@ import { useBar } from '../components/glass/chrome';
 import type { BlurTarget } from '../components/glass/targets';
 import { GlassTabBar } from '../components/GlassTabBar';
 import { MiniPlayer, NowPlaying } from '../components/NowPlaying';
+import { ThemeFade } from '../components/ThemeFade';
 import { syncReminders } from '../lib/reminders';
 import { SoundProvider } from '../lib/sounds';
 import { StoreProvider, useStore } from '../lib/store';
@@ -155,6 +156,7 @@ function Shell() {
         </Tabs>
         <MiniPlayer bottom={bar.bottom + bar.height + 10} />
         <NowPlaying />
+        <ThemeFade />
       </View>
     </ActiveBlurTargetContext.Provider>
   );

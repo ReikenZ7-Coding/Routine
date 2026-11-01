@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { FadeSwap, Press, SelectFade } from './Motion';
+import { FadeSwap, Pop, Press, SelectFade } from './Motion';
 
 interface Props {
   title: string;
@@ -43,15 +43,15 @@ export function CheckRow({ title, subtitle, done, tint: tintProp, meta, disabled
       accessibilityLabel={title}
       accessibilityHint={onLongPress ? 'Long press to edit' : undefined}
     >
-      <View style={[styles.box, partial && { borderColor: tint }, (skipped || (disabled && !done)) && styles.boxDisabled]}>
-        <SelectFade on={done} color={tint} radius={7} bleed={1.5} />
+      <Pop done={done} style={[styles.box, partial && { borderColor: tint }, (skipped || (disabled && !done)) && styles.boxDisabled]}>
+        <SelectFade on={done} color={tint} radius={8} bleed={1.75} />
         <FadeSwap
           on={done}
           style={StyleSheet.absoluteFill}
           off={mark}
-          onContent={<Ionicons name="checkmark" size={16} color={colors.onKind} />}
+          onContent={<Ionicons name="checkmark" size={17} color={colors.onKind} />}
         />
-      </View>
+      </Pop>
       <View style={styles.text}>
         <Text style={[type.bodyMedium, (done || skipped) && styles.doneTitle, skipped && styles.skippedTitle]} numberOfLines={2}>
           {title}
@@ -75,15 +75,16 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
-      paddingVertical: 13,
+      minHeight: 52,
+      paddingVertical: 12,
       paddingHorizontal: 16,
     },
     box: {
-      width: 22,
-      height: 22,
-      borderRadius: 7,
-      borderWidth: 1.5,
-      borderColor: colors.faint,
+      width: 24,
+      height: 24,
+      borderRadius: 8,
+      borderWidth: 1.75,
+      borderColor: colors.controlBorder,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -91,6 +92,6 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
     text: { flex: 1, gap: 1 },
     doneTitle: { color: colors.faint, textDecorationLine: 'line-through' },
     skippedTitle: { textDecorationLine: 'none' },
-    count: { fontFamily: fonts.monoMedium, fontSize: 12 },
-    meta: { ...type.small, fontFamily: type.num.fontFamily },
+    count: { fontFamily: fonts.monoMedium, fontSize: 12, fontVariant: ['tabular-nums'] },
+    meta: { ...type.small, fontFamily: type.num.fontFamily, fontVariant: ['tabular-nums'] },
   });

@@ -17,6 +17,8 @@ export type ThemeName = 'lavender' | 'stone' | 'paper' | 'pine';
 export interface GlassMaterial {
   /** Live blur, used only by chrome that floats over scrolling content (tab bar, mini player). */
   live: { tint: BlurTint; intensity: number; reduction: number; webBlur: number; webSaturate: number };
+  /** A tint laid over chrome's live blur (tab bar, mini player), for its labels. */
+  chromeTint: string;
   /** Saturation baked into the look's pre-blurred lens image (informational; set in assets/art/looks.json). */
   lensSaturation: number;
   /** Solid legibility tint laid straight over the lens. */
@@ -77,12 +79,6 @@ export interface Palette {
   /** Background gradient, top to bottom (painted under the backdrop image). */
   gradient: [string, string, string];
   bg: string;
-  /** Solid surface fallback; glass uses `material`. */
-  card: string;
-  cardBorder: string;
-  /** Solid fallback for bottom sheets and forms; glass sheets use material.sheet. */
-  sheet: string;
-  input: string;
   text: string;
   muted: string;
   faint: string;
@@ -96,8 +92,6 @@ export interface Palette {
   onPrimary: string;
   /** The primary action's fill, top to bottom; onPrimary is its ink. */
   primaryGradient: [string, string];
-  /** Pressed rows, tracks, unselected fills. */
-  primarySoft: string;
   /** Glyphs and numbers drawn on a kind's colour fill. */
   onKind: string;
   /** Unchecked outlines (checkboxes, rings, set bubbles): at least 3:1 on glass. */
@@ -107,28 +101,16 @@ export interface Palette {
   danger: string;
   /** Dims the world under a sheet. */
   backdrop: string;
-  tabBar: string;
   statusBar: 'light' | 'dark';
   /** Scroll edges: content fades under the status bar (top) and before the tab bar (bottom). */
   edgeTop: [string, string];
   edgeBottom: [string, string];
-  /** Coloured glow under the main buttons. */
-  glow: string;
-  /** Bright rim colour (legacy; glass uses material rims). */
-  rim: string;
   /** Progress bars, sliders and other small bright accents. */
   accent: string;
-  /** Selected pills and chips, and their label colour. */
-  selected: string;
-  onSelected: string;
-  /** Plain outset shadow for the few non-glass pieces (CSS box-shadow syntax). */
-  shadow: string;
   /** The streak flame. */
   streak: string;
   /** Page looks: the light square behind a row's icon. */
   tile: string;
-  /** Page looks: small pills and chips at rest (streak, filters). */
-  chip: string;
   /** The filled trail node and the count badge. */
   node: string;
   onNode: string;
@@ -176,10 +158,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     colors: {
       gradient: ['#B4B4FF', '#6A55DA', '#2C1D8C'],
       bg: '#6A55DA',
-      card: 'rgba(40,70,160,0.32)',
-      cardBorder: 'rgba(255,255,255,0.28)',
-      sheet: '#4A3BB8',
-      input: 'rgba(255,255,255,0.10)',
       text: '#FFFFFF',
       muted: '#FBFAFF',
       faint: '#FAF9FF',
@@ -189,25 +167,17 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       primary: '#5638CC',
       onPrimary: '#FFFFFF',
       primaryGradient: ['#7458E8', '#5638CC'],
-      primarySoft: 'rgba(147,141,238,0.6)',
       onKind: '#2A1A78',
       controlBorder: 'rgba(255,255,255,0.70)',
       track: 'rgba(24,12,90,0.32)',
       danger: '#FFF8FA',
       backdrop: 'rgba(28,16,96,0.45)',
-      tabBar: 'rgba(46,30,150,0.30)',
       statusBar: 'light',
       edgeTop: ['rgba(64,48,176,0.92)', 'rgba(64,48,176,0)'],
       edgeBottom: ['rgba(44,29,140,0)', 'rgba(44,29,140,0.55)'],
-      glow: '#CD94E6',
-      rim: 'rgba(255,255,255,0.62)',
       accent: '#FFB3E6',
-      selected: '#6E5FD3',
-      onSelected: '#FFFFFF',
-      shadow: '0px 14px 34px rgba(26,14,96,0.38)',
       streak: '#FFB3E6',
       tile: 'rgba(255,255,255,0.18)',
-      chip: 'rgba(255,255,255,0.14)',
       node: '#FFFFFF',
       onNode: '#4A35C8',
       warmTile: 'rgba(255,179,230,0.30)',
@@ -217,6 +187,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       litGlow: '0px 6px 18px rgba(190,150,255,0.45)',
       material: {
         live: { tint: 'default', intensity: 8, reduction: 0.33, webBlur: 24, webSaturate: 1.6 },
+        chromeTint: 'rgba(46,30,150,0.30)',
         lensSaturation: 1.12,
         base: 'rgba(64,44,178,0.26)',
         body: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'],
@@ -276,10 +247,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     colors: {
       gradient: ['#6E6C5A', '#4F4E43', '#36362D'],
       bg: '#4F4E43',
-      card: 'rgba(255,250,235,0.08)',
-      cardBorder: 'rgba(255,250,235,0.10)',
-      sheet: '#3F403A',
-      input: 'rgba(255,246,226,0.06)',
       text: '#FFFBE9',
       muted: '#EDE7DA',
       faint: '#DFD8C7',
@@ -289,25 +256,17 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       primary: '#E6D6B3',
       onPrimary: '#2E2D24',
       primaryGradient: ['#F3E9D2', '#D3C39F'],
-      primarySoft: 'rgba(255,251,233,0.12)',
       onKind: '#2E2D24',
       controlBorder: 'rgba(255,247,228,0.50)',
       track: 'rgba(255,246,226,0.07)',
       danger: '#F3D1C9',
       backdrop: 'rgba(14,13,8,0.50)',
-      tabBar: 'rgba(24,24,18,0.36)',
       statusBar: 'light',
       edgeTop: ['rgba(40,40,30,0.55)', 'rgba(40,40,30,0)'],
       edgeBottom: ['rgba(36,36,28,0)', 'rgba(36,36,28,0.55)'],
-      glow: '#E6D6B3',
-      rim: 'rgba(255,248,230,0.24)',
       accent: '#E6D6B3',
-      selected: '#E6D6B3',
-      onSelected: '#2E2D24',
-      shadow: '0px 12px 30px rgba(0,0,0,0.3)',
       streak: '#E6D6B3',
       tile: 'rgba(255,250,235,0.1)',
-      chip: 'rgba(255,250,235,0.1)',
       node: '#E6D6B3',
       onNode: '#2E2D24',
       warmTile: 'rgba(230,214,179,0.30)',
@@ -317,6 +276,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       litGlow: '0px 8px 22px rgba(230,208,160,0.30)',
       material: {
         live: { tint: 'systemUltraThinMaterialDark', intensity: 10, reduction: 0.42, webBlur: 28, webSaturate: 1.1 },
+        chromeTint: 'rgba(24,24,18,0.36)',
         lensSaturation: 1.0,
         base: 'rgba(30,29,22,0.30)',
         body: ['rgba(40,38,29,0.42)', 'rgba(18,18,13,0.52)'],
@@ -372,10 +332,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     colors: {
       gradient: ['#F8F7F3', '#EEEFEA', '#E4E7E1'],
       bg: '#F1F1EC',
-      card: '#FFFFFF',
-      cardBorder: '#E9E9E4',
-      sheet: '#FAFAF7',
-      input: 'rgba(255,255,255,0.65)',
       text: '#131512',
       muted: '#4F5550',
       faint: '#5C625D',
@@ -385,25 +341,17 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       primary: '#1A1C19',
       onPrimary: '#FFFFFF',
       primaryGradient: ['rgba(26,28,25,0.86)', 'rgba(26,28,25,0.94)'],
-      primarySoft: '#ECECE7',
       onKind: '#FFFFFF',
       controlBorder: 'rgba(30,34,28,0.50)',
       track: 'rgba(30,34,28,0.08)',
       danger: '#B8281A',
       backdrop: 'rgba(24,28,22,0.22)',
-      tabBar: 'rgba(255,255,255,0.62)',
       statusBar: 'dark',
       edgeTop: ['rgba(248,247,243,0.92)', 'rgba(248,247,243,0)'],
       edgeBottom: ['rgba(228,231,225,0)', 'rgba(228,231,225,0.9)'],
-      glow: 'transparent',
-      rim: '#E9E9E4',
       accent: '#1A1C19',
-      selected: '#1A1C19',
-      onSelected: '#FFFFFF',
-      shadow: '0px 1px 2px rgba(20,22,18,0.04), 0px 8px 24px rgba(20,22,18,0.06)',
       streak: '#E0601F',
       tile: '#F1F1ED',
-      chip: '#ECECE7',
       node: '#2F3A33',
       onNode: '#FFFFFF',
       warmTile: '#FFE2C8',
@@ -413,6 +361,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       litGlow: '0px 10px 24px -6px rgba(26,28,25,0.32)',
       material: {
         live: { tint: 'light', intensity: 8, reduction: 0.33, webBlur: 22, webSaturate: 1.2 },
+        chromeTint: 'rgba(255,255,255,0.62)',
         lensSaturation: 1.1,
         base: 'rgba(255,255,255,0)',
         body: ['rgba(255,255,255,0.84)', 'rgba(255,255,255,0.70)'],
@@ -469,10 +418,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     colors: {
       gradient: ['#0B2A24', '#071D19', '#03110E'],
       bg: '#071D19',
-      card: '#11352E',
-      cardBorder: 'rgba(214,240,228,0.1)',
-      sheet: '#0F3129',
-      input: 'rgba(6,27,23,0.6)',
       text: '#F1F7F3',
       muted: '#C4DBD1',
       faint: '#C0D8CE',
@@ -482,25 +427,17 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       primary: '#7CE3BC',
       onPrimary: '#06201A',
       primaryGradient: ['#A3F0D3', '#7CE3BC'],
-      primarySoft: 'rgba(124,227,188,0.14)',
       onKind: '#06201A',
       controlBorder: 'rgba(214,240,228,0.58)',
       track: 'rgba(214,240,228,0.08)',
       danger: '#F7C8C0',
       backdrop: 'rgba(0,10,8,0.55)',
-      tabBar: 'rgba(4,18,15,0.55)',
       statusBar: 'light',
       edgeTop: ['rgba(11,42,36,0.90)', 'rgba(11,42,36,0)'],
       edgeBottom: ['rgba(3,17,14,0)', 'rgba(3,17,14,0.90)'],
-      glow: '#7CE3BC',
-      rim: 'rgba(214,240,228,0.16)',
       accent: '#7CE3BC',
-      selected: '#5ED0A8',
-      onSelected: '#06201A',
-      shadow: '0px 10px 28px rgba(0,8,6,0.4)',
       streak: '#7CE3BC',
       tile: 'rgba(124,227,188,0.1)',
-      chip: 'rgba(214,240,228,0.07)',
       node: '#7CE3BC',
       onNode: '#06201A',
       warmTile: 'rgba(124,227,188,0.16)',
@@ -510,6 +447,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       litGlow: '0px 0px 24px rgba(124,227,188,0.28)',
       material: {
         live: { tint: 'systemUltraThinMaterialDark', intensity: 10, reduction: 0.42, webBlur: 24, webSaturate: 1.3 },
+        chromeTint: 'rgba(4,18,15,0.55)',
         lensSaturation: 1.15,
         base: 'rgba(6,26,22,0.30)',
         body: ['rgba(26,80,66,0.40)', 'rgba(6,26,22,0.66)'],

@@ -9,7 +9,7 @@ export interface WeekStats {
   routinesDone: number;
   routinesPlanned: number;
   /** One bar per day, oldest first: share of that day's routines done (0..1), or null if nothing was planned. */
-  days: { date: string; share: number | null }[];
+  days: { date: string; share: number | null; done: number; planned: number }[];
   gymDays: number;
   gymVolume: number;
   chineseMinutes: number;
@@ -25,7 +25,7 @@ export function weekStats(routines: Routine[], gym: GymState, chinese: ChineseSt
     const done = planned.filter((r) => isDoneOn(r, date)).length;
     routinesDone += done;
     routinesPlanned += planned.length;
-    return { date, share: planned.length ? done / planned.length : null };
+    return { date, share: planned.length ? done / planned.length : null, done, planned: planned.length };
   });
   const from = dates[0];
   const weekLogs = gym.logs.filter((l) => l.date >= from && l.date <= today);

@@ -9,16 +9,19 @@ export interface DayEntry {
 
 export type Journal = Record<string, DayEntry>;
 
-export const MOODS: { value: Mood; face: string; label: string }[] = [
-  { value: 1, face: '😞', label: 'Rough' },
-  { value: 2, face: '😕', label: 'Meh' },
-  { value: 3, face: '🙂', label: 'Okay' },
-  { value: 4, face: '😊', label: 'Good' },
-  { value: 5, face: '🤩', label: 'Great' },
+/** The five moods, worst to best. `curve` bends the drawn face's mouth: -6 is a frown, +6 a wide smile. */
+export const MOODS: { value: Mood; label: string; curve: number }[] = [
+  { value: 1, label: 'Rough', curve: -6 },
+  { value: 2, label: 'Meh', curve: -3 },
+  { value: 3, label: 'Okay', curve: 0 },
+  { value: 4, label: 'Good', curve: 3.5 },
+  { value: 5, label: 'Great', curve: 6 },
 ];
 
-export function moodFace(mood?: Mood): string | undefined {
-  return MOODS.find((m) => m.value === mood)?.face;
+/** A saved mood read back safely: the stored 1 to 5 (also when an older copy stored it as text), else undefined. */
+export function moodOf(saved: unknown): Mood | undefined {
+  const n = typeof saved === 'string' ? Number(saved) : saved;
+  return typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 5 ? (n as Mood) : undefined;
 }
 
 /** Set or clear part of a day's entry. Empty entries are removed so the journal stays small. */
