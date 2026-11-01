@@ -28,9 +28,6 @@ import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
-import { SceneArt } from '../components/Art';
-
-const ART = ['calm', 'rain', 'waves', 'brown'];
 
 export type WhenFilter = 'all' | Routine['time'];
 export type RepeatFilter = 'all' | 'daily' | 'some' | 'once';
@@ -130,12 +127,12 @@ export default function RoutinesScreen({
             {todays.length === 0 ? <Text style={styles.emptyText}>Nothing scheduled today.</Text> : null}
             {todays.map((r, i) => (
               <Enter key={r.id} index={i + 1}>
-                <ArtRow routine={r} index={i} today={today} onChange={replace} onMore={() => open(r)} />
+                <ArtRow routine={r} today={today} onChange={replace} onMore={() => open(r)} />
               </Enter>
             ))}
             {others.length > 0 && <Text style={styles.shelfTitle}>Not today</Text>}
             {others.map((r, i) => (
-              <ArtRow key={r.id} routine={r} index={todays.length + i} today={today} quiet onMore={() => open(r)} />
+              <ArtRow key={r.id} routine={r} today={today} quiet onMore={() => open(r)} />
             ))}
             {ideasLeft.length > 0 && <Text style={styles.shelfTitle}>Ideas</Text>}
             {ideasLeft.map((idea) => (
@@ -262,14 +259,12 @@ export default function RoutinesScreen({
  */
 function ArtRow({
   routine: r,
-  index,
   today,
   onChange,
   onMore,
   quiet,
 }: {
   routine: Routine;
-  index: number;
   today: string;
   onChange?: (r: Routine) => void;
   onMore: () => void;
@@ -283,19 +278,24 @@ function ArtRow({
   const counter = !!r.target && r.target > 1;
   const canTick = !!onChange && !skipped;
   const days = streak(r, today);
-  const pill = name === 'lavender' && !skipped && days > 1;
+  const stone = name === 'stone';
+  const pill = (name === 'lavender' || stone) && !skipped && days > 1;
   const idle =
     counter && !done ? (
       <Text style={styles.tickText}>+1</Text>
+    ) : stone ? (
+      <Ionicons name="checkmark-outline" size={18} color={colors.accent} />
     ) : (
       <Ionicons name="play" size={16} color={colors.text} style={styles.playNudge} />
     );
+  const meta = `${counter ? `${countOn(r, today)} of ${r.target} · ` : ''}${routineSubtitle(r, today, !pill)}`;
   return (
     <Glass radius={20} style={styles.artRow} receded={done || skipped}>
-      {name === 'stone' ? (
-        <View style={styles.thumb}>
-          <SceneArt width={56} height={56} variant={ART[index % ART.length]} />
-        </View>
+      {stone ? (
+        // Stone: a quiet glass tile with the routine's glyph in champagne.
+        <Dim on={done || skipped || !!quiet} to={quiet && !done && !skipped ? 0.85 : 0.6} style={styles.stoneTile}>
+          <Ionicons name={iconFor(r) as 'sunny'} size={22} color={colors.accent} />
+        </Dim>
       ) : (
         // Lavender: the kind's pastel tile with a deep-indigo glyph, like the art on a playlist row.
         <Dim on={done || skipped || !!quiet} to={quiet && !done && !skipped ? 0.85 : 0.55} style={[styles.thumb, styles.tile]}>
@@ -307,7 +307,7 @@ function ArtRow({
           <Text style={[styles.rowTitle, styles.shrink, (done || skipped) && styles.rowDone]} numberOfLines={1}>
             {r.name}
           </Text>
-          {/* Lavender lifts the streak out of the meta line into a small pill, so the schedule never truncates. */}
+          {/* Lavender and Stone lift the streak out of the meta line into a small pill, so the schedule never truncates. */}
           {pill ? (
             <View style={styles.streakPill} accessibilityLabel={`${days} in a row`}>
               <Ionicons name="flame" size={12} color={colors.streak} />
@@ -315,9 +315,8 @@ function ArtRow({
             </View>
           ) : null}
         </View>
-        <Text style={styles.rowMeta} numberOfLines={1}>
-          {counter ? `${countOn(r, today)} of ${r.target} · ` : ''}
-          {routineSubtitle(r, today, !pill)}
+        <Text style={styles.rowMeta} numberOfLines={stone ? 2 : 1}>
+          {meta}
         </Text>
       </View>
       {canTick && (
@@ -359,7 +358,7 @@ const makeStyles = ({ colors, kinds, fonts, type, radius, name }: Theme) =>
       borderTopColor: colors.material.inset.borderTop,
       backgroundColor: colors.material.inset.fill,
     },
-    shelfTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text, marginTop: 14, marginBottom: 2 },
+    shelfTitle: { fontFamily: fonts.bodyBold, fontSize: name === 'stone' ? 16 : 17, color: colors.text, marginTop: 14, marginBottom: 2 },
     artRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10 },
     thumb: { width: 56, height: 56, borderRadius: 14, overflow: 'hidden' },
     tile: {
@@ -393,12 +392,19 @@ const makeStyles = ({ colors, kinds, fonts, type, radius, name }: Theme) =>
       borderWidth: 1,
       borderColor: colors.material.inset.border,
     },
-    rowTitle: {
-      fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold,
-      fontSize: name === 'stone' ? 17 : 16,
-      color: colors.text,
+    rowTitle: { fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold, fontSize: 16, lineHeight: 22, color: colors.text },
+    stoneTile: {
+      width: 48,
+      height: 48,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
     },
-    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, color: colors.muted },
+    rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
     rowDone: { textDecorationLine: 'line-through', color: colors.faint, fontFamily: fonts.body },
     tick: {
       width: 44,

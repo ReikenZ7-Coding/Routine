@@ -87,11 +87,12 @@ export function lightBox(light: LightSpec, frameW: number, frameH: number) {
   return { left: (frameW - width) / 2, top, width, height };
 }
 
-/** Stone's magnolia: the sharp flower, its frosted copy for inside glass, and the open bloom for a done day. */
+/** Stone's magnolia: the sharp bud, the open bloom for a done day, and a frosted copy of each for inside glass. */
 export const MAGNOLIA = {
   closed: require('../../assets/art/stone-magnolia.png') as ImageSourcePropType,
   blur: require('../../assets/art/stone-magnolia-blur.png') as ImageSourcePropType,
   open: require('../../assets/art/stone-magnolia-open.png') as ImageSourcePropType,
+  openBlur: require('../../assets/art/stone-magnolia-open-blur.png') as ImageSourcePropType,
 };
 /** Height over width of the magnolia images (420x700). */
 export const MAGNOLIA_RATIO = 700 / 420;
@@ -188,7 +189,7 @@ export function Ambience() {
   );
 }
 
-/** Stone's magnolia at a given width (the Stone stage places it behind the hero glass). */
+/** Stone's magnolia at a given width (Today places it behind the hero glass). */
 export function Magnolia({ width, open = false }: { width: number; open?: boolean }) {
   return (
     <Image

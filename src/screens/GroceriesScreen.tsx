@@ -161,7 +161,7 @@ export default function GroceriesScreen({
               <Section
                 enter={0}
                 title={`To buy · ${toBuy.length}`}
-                footer={toBuy.length > 0 ? 'Tap to tick off. Press and hold an item to edit it.' : undefined}
+                footer={toBuy.length > 0 ? 'Tap to tick off. Hold to edit.' : undefined}
                 right={
                   toBuy.length > 0 ? (
                     <ActionChip

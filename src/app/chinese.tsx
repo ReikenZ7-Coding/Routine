@@ -121,7 +121,7 @@ export default function ChineseScreen() {
             {log.minutes} <Text style={styles.minutesOf}>/ {chinese.target} min</Text>
           </Text>
           <View style={styles.track}>
-            <Bar progress={pct} color={kinds.chinese.color} track={colors.track} height={8} />
+            <Bar progress={pct} color={kinds.chinese.color} track={colors.track} height={name === 'stone' ? 4 : 8} />
           </View>
           <Text style={styles.small}>Log the time you practised</Text>
           <View style={styles.chips}>
@@ -350,7 +350,10 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
       alignItems: 'center',
       gap: 10,
     },
-    cardHanzi: { fontFamily: fonts.body, fontSize: 64, lineHeight: 80, color: colors.text },
+    cardHanzi:
+      name === 'stone'
+        ? { fontFamily: 'DMSans_300Light', fontSize: 72, lineHeight: 88, color: colors.text }
+        : { fontFamily: fonts.body, fontSize: 64, lineHeight: 80, color: colors.text },
     cardPinyin: { fontFamily: fonts.display, fontSize: 22, color: kinds.chinese.text },
     cardMeaning: { fontFamily: fonts.body, fontSize: 18, color: colors.text },
     cardHint: { ...type.hint, marginTop: 8 },

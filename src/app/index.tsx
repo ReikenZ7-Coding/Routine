@@ -307,6 +307,7 @@ export default function TodayScreen() {
             dateLabel={
               isToday ? `Today, ${date.getDate()} ${date.toLocaleDateString('en', { month: 'long' })}` : friendlyDate(selected, today)
             }
+            dayLine={date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
             calendarOpen={calendarOpen}
             onToggleCalendar={() => setCalendarOpen((o) => !o)}
             calendar={calendar}

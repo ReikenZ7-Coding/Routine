@@ -114,15 +114,15 @@ const makeStyles = ({ colors, fonts, type, name }: Theme) =>
     title: { ...type.sectionTitle, flexShrink: 1 },
     lengths: { width: 164 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    // Lavender's clock is a light display numeral, never a typewriter face.
+    // Lavender's and Stone's clock is a light display numeral, never a typewriter face.
     clock:
-      name === 'lavender'
+      name === 'lavender' || name === 'stone'
         ? {
             fontFamily: 'DMSans_300Light',
-            fontSize: 56,
-            lineHeight: 60,
+            fontSize: name === 'stone' ? 52 : 56,
+            lineHeight: name === 'stone' ? 56 : 60,
             color: colors.text,
-            letterSpacing: -1.5,
+            letterSpacing: name === 'stone' ? -1 : -1.5,
             fontVariant: ['tabular-nums'],
           }
         : {

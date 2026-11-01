@@ -154,7 +154,7 @@ function Swatch({ look }: { look: ThemeName }) {
   );
 }
 
-const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     label: { ...type.label, marginTop: 12, marginBottom: 10 },
@@ -168,7 +168,8 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
       borderTopColor: colors.material.inset.borderTop,
       backgroundColor: colors.material.inset.fill,
     },
-    themeRing: { borderWidth: 2, borderColor: colors.text },
+    // Stone's chosen look is ringed in champagne; the other looks use their text colour.
+    themeRing: name === 'stone' ? { borderWidth: 1.5, borderColor: colors.litRim } : { borderWidth: 2, borderColor: colors.text },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
     swatchCard: {
       borderRadius: 10,
@@ -184,7 +185,7 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
     swatchLineShort: { width: '50%', marginTop: 4 },
     swatchButton: { alignSelf: 'flex-end', width: 24, height: 24, borderRadius: 12 },
     checkOn: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
-    themeName: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text, marginTop: 8 },
+    themeName: { fontFamily: fonts.bodyBold, fontSize: name === 'stone' ? 15 : 14, color: colors.text, marginTop: 8 },
     themeDesc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     check: { position: 'absolute', top: 14, right: 14, width: 24, height: 24 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingVertical: 14, paddingHorizontal: 16 },

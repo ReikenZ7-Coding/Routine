@@ -23,12 +23,18 @@ export function PageTitle({ title, subtitle, badge }: { title: string; subtitle?
   );
 }
 
-const makeStyles = ({ type, colors, fonts }: Theme) =>
+const makeStyles = ({ type, colors, fonts, name }: Theme) =>
   StyleSheet.create({
     wrap: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, marginTop: 4 },
     flex: { flex: 1 },
     title: type.title,
-    subtitle: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 2 },
+    subtitle: {
+      fontFamily: fonts.body,
+      fontSize: name === 'stone' ? 15 : 14,
+      lineHeight: name === 'stone' ? 20 : 19,
+      color: colors.muted,
+      marginTop: name === 'stone' ? 4 : 2,
+    },
     badge: {
       borderRadius: 999,
       paddingHorizontal: 12,

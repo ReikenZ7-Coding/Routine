@@ -136,16 +136,17 @@ function DayBar({ share, index, shown }: { share: number; index: number; shown: 
 
 const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
   const lavender = name === 'lavender';
+  const stone = name === 'stone';
   return StyleSheet.create({
     flex: { flex: 1 },
     gap: { marginTop: 12 },
     tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
-    tile: { flex: 1, padding: 12, gap: 2 },
+    tile: { flex: 1, padding: 12, gap: 2, ...(stone ? { borderRadius: 20 } : null) },
     tileLine: { width: 20, height: 3, borderRadius: 2, marginBottom: 8 },
     tileValue: {
       fontFamily: fonts.display,
-      fontSize: lavender ? 30 : 26,
-      lineHeight: lavender ? 36 : 32,
+      fontSize: lavender ? 30 : stone ? 34 : 26,
+      lineHeight: lavender ? 36 : stone ? 38 : 32,
       color: colors.text,
       fontVariant: ['tabular-nums'],
     },
@@ -154,19 +155,25 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
     barTrack: {
       flex: 1,
       width: '100%',
-      borderRadius: 6,
-      backgroundColor: colors.track,
+      borderRadius: stone ? 8 : 6,
+      // Stone's empty days are frosted glass slots, not dark grooves.
+      backgroundColor: stone ? colors.material.inset.fill : colors.track,
+      ...(stone ? { borderWidth: 1, borderColor: colors.material.inset.border, borderTopColor: colors.material.inset.borderTop } : null),
       overflow: 'hidden',
     },
     barFill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 6, transformOrigin: 'bottom' },
     // Lavender's bars are lit from the top: white fading into the routine pastel.
-    barLight: lavender ? { backgroundImage: `linear-gradient(180deg, ${colors.node}, ${kinds.routines.color})` } : {},
+    barLight: lavender
+      ? { backgroundImage: `linear-gradient(180deg, ${colors.node}, ${kinds.routines.color})` }
+      : stone
+        ? { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` }
+        : {},
     todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.text, marginBottom: -2 },
     hidden: { opacity: 0 },
     barLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },
     barToday: { color: colors.text, fontFamily: fonts.monoMedium },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
-    num: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.text, fontVariant: ['tabular-nums'] },
+    num: { fontFamily: fonts.monoMedium, fontSize: stone ? 15 : 14, color: colors.text, fontVariant: ['tabular-nums'] },
     empty: { padding: 16, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
   });
 };

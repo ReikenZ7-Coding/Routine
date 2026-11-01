@@ -3,11 +3,11 @@
 // Stone follows the meditation home (light greeting with a flower, recommendation card, category tiles).
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { type ReactNode, useEffect, useRef } from 'react';
-import { type AccessibilityActionEvent, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type AccessibilityActionEvent, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { type Kind, type Theme, useStyles, useTheme } from '../theme';
-import { Magnolia, SceneArt } from './Art';
+import { MAGNOLIA, MAGNOLIA_RATIO, Magnolia, SceneArt } from './Art';
 import { Glass } from './Glass';
 import { alphaOf } from './glass/colour';
 import { Dim, EASE_OUT, Enter, FadeSwap, Pop, Press, SelectFade, useReduceMotion } from './Motion';
@@ -44,6 +44,8 @@ interface Props {
   greeting: string;
   tagline: string;
   dateLabel: string;
+  /** Stone: the day under the greeting ('Sunday 1 November'). */
+  dayLine?: string;
   calendarOpen: boolean;
   calendar: ReactNode;
   onToggleCalendar: () => void;
@@ -268,13 +270,12 @@ function DoneBloom({ on }: { on: boolean }) {
 
 /** The round tick at a row's end: a play glyph until done, then the look's done fill fades in with a check. */
 function RowCheck({ item: it }: { item: HomeItem }) {
-  const { colors, name } = useTheme();
+  const { colors } = useTheme();
   const styles = useStyles(makeStyles);
-  const stone = name === 'stone';
   return (
     <Press
       onPress={it.onPress}
-      style={stone ? styles.stoneRowButton : styles.rowButton}
+      style={styles.rowButton}
       overlay={colors.material.pressFill}
       haptic
       accessibilityRole="checkbox"
@@ -285,7 +286,7 @@ function RowCheck({ item: it }: { item: HomeItem }) {
       <Pop done={it.done}>
         <FadeSwap
           on={it.done}
-          off={<Ionicons name={stone ? 'play-outline' : 'play'} size={14} color={colors.text} style={styles.playNudge} />}
+          off={<Ionicons name="play" size={14} color={colors.text} style={styles.playNudge} />}
           onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />}
         />
       </Pop>
@@ -293,73 +294,113 @@ function RowCheck({ item: it }: { item: HomeItem }) {
   );
 }
 
+// Stone's magnolia stands behind the hero card: the sharp flower over the room, its leaves passing under the
+// glass, where a frosted copy (the same image, pre-blurred) lines up with it exactly.
+const MAG_W = 170;
+const MAG_TOP = 112;
+const MAG_RIGHT = -34;
+
 function StoneHome(p: Props) {
-  const { colors } = useTheme();
+  const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
+  const [heroY, setHeroY] = useState<number | null>(null);
+  const allDone = p.total > 0 && p.done === p.total;
+  const magH = Math.round(MAG_W * MAGNOLIA_RATIO);
+  // Inside the hero, children sit within its 1px rim.
+  const frosted = heroY === null ? null : { top: MAG_TOP - heroY - 1, right: MAG_RIGHT - 1, width: MAG_W, height: magH };
   return (
     <View>
+      {/* The flower steps out while the calendar is open: the calendar pane would cut its leaves with no frost. */}
+      <Dim on={p.calendarOpen} to={0} style={[styles.magnolia, { width: MAG_W, height: magH }]}>
+        <View pointerEvents="none">
+          <FadeSwap on={allDone} duration={400} off={<Magnolia width={MAG_W} />} onContent={<Magnolia width={MAG_W} open />} />
+        </View>
+      </Dim>
+
       <View style={styles.bar}>
-        <Press onPress={p.onStats} style={styles.iconBtnStart} accessibilityLabel="Your week">
-          <Ionicons name="pulse" size={28} color={colors.text} />
-        </Press>
-        <Glass tier="control" radius={22} style={styles.round} onPress={p.onSettings} accessibilityLabel="Settings">
-          <Ionicons name="menu" size={20} color={colors.text} />
+        <Glass tier="control" radius={22} style={styles.round} onPress={p.onStats} accessibilityLabel="Your week">
+          <Ionicons name="stats-chart-outline" size={18} color={colors.text} />
         </Glass>
+        <View style={styles.barEnd}>
+          <Glass
+            tier="control"
+            radius={22}
+            style={styles.round}
+            onPress={p.onToggleCalendar}
+            accessibilityLabel={p.calendarOpen ? 'Hide calendar' : 'Show calendar'}
+            accessibilityState={{ expanded: p.calendarOpen }}
+          >
+            <FadeSwap
+              on={p.calendarOpen}
+              off={<Ionicons name="calendar-outline" size={18} color={colors.text} />}
+              onContent={<Ionicons name="close" size={18} color={colors.text} />}
+            />
+          </Glass>
+          <Glass tier="control" radius={22} style={styles.round} onPress={p.onSettings} accessibilityLabel="Settings">
+            <Ionicons name="menu" size={18} color={colors.text} />
+          </Glass>
+        </View>
       </View>
 
       <View style={styles.stoneTop}>
-        <View style={styles.flex}>
-          <Text style={styles.stoneGreet} accessibilityRole="header">
-            {p.greeting},{'\n'}
-            {p.name}
-          </Text>
-          <Text style={styles.stoneTagline}>{p.tagline}</Text>
-        </View>
-        <View style={styles.stoneBloom} pointerEvents="none">
-          <Magnolia width={92} />
-        </View>
+        <Text style={styles.stoneGreet} accessibilityRole="header">
+          {p.greeting},{'\n'}
+          {p.name}
+        </Text>
+        {p.dayLine ? <Text style={styles.stoneDay}>{p.dayLine}</Text> : null}
+        <Text style={styles.stoneTagline}>{p.tagline}</Text>
       </View>
 
-      <Enter index={0}>
-        <Glass tier="hero" style={styles.stoneCard}>
-          <View style={styles.stoneCardHead}>
-            <Text style={[styles.stoneTitle, styles.flex]} numberOfLines={2}>
-              {p.hero.title}
+      {p.calendarOpen && <Glass style={styles.calendar}>{p.calendar}</Glass>}
+
+      <View onLayout={(e) => setHeroY(e.nativeEvent.layout.y)}>
+        <Enter index={0}>
+          <Glass tier="hero" radius={radii.hero} style={styles.stoneCard}>
+            {frosted && (
+              <View pointerEvents="none" style={[styles.frost, frosted]}>
+                <Dim on={p.calendarOpen} to={0}>
+                  <FadeSwap
+                    on={allDone}
+                    duration={400}
+                    off={<Image source={MAGNOLIA.blur} style={frostSize(magH)} resizeMode="contain" accessibilityIgnoresInvertColors />}
+                    onContent={
+                      <Image source={MAGNOLIA.openBlur} style={frostSize(magH)} resizeMode="contain" accessibilityIgnoresInvertColors />
+                    }
+                  />
+                </Dim>
+              </View>
+            )}
+            <Text style={styles.stoneTitle} numberOfLines={2}>
+              {allDone ? 'All done' : p.hero.title}
             </Text>
-            <Press
-              onPress={p.onToggleCalendar}
-              style={styles.iconBtnEnd}
-              accessibilityLabel={p.calendarOpen ? 'Hide calendar' : 'Show calendar'}
-              accessibilityState={{ expanded: p.calendarOpen }}
-            >
-              <FadeSwap
-                on={p.calendarOpen}
-                off={<Ionicons name="calendar-outline" size={20} color={colors.link} />}
-                onContent={<Ionicons name="close" size={20} color={colors.link} />}
-              />
-            </Press>
-          </View>
-          <Text style={styles.stoneMeta} numberOfLines={2}>
-            {p.hero.eyebrow} · {p.hero.meta}
-          </Text>
-          <Press
-            onPress={p.hero.onAction}
-            style={styles.stonePill}
-            overlay={colors.material.pressFill}
-            haptic
-            accessibilityLabel={p.hero.action}
-          >
-            <Ionicons name={p.hero.icon === 'play' ? 'play-outline' : p.hero.icon} size={16} color={colors.onPrimary} />
-            <Text style={styles.stonePillText}>{p.hero.action}</Text>
-          </Press>
-        </Glass>
-      </Enter>
-      {p.calendarOpen && (
-        <Glass style={styles.calendar}>
-          <Text style={styles.stoneDate}>{p.dateLabel}</Text>
-          {p.calendar}
-        </Glass>
-      )}
+            <Text style={styles.stoneHeroMeta} numberOfLines={2}>
+              {allDone ? `Rest well, ${p.name}` : p.hero.icon === 'play' ? `${p.hero.eyebrow} · ${p.hero.meta}` : p.hero.meta}
+            </Text>
+            {allDone ? (
+              <Press
+                onPress={p.onAdd}
+                style={styles.ghostPill}
+                overlay={colors.material.pressFill}
+                accessibilityLabel="Add a routine or a to-do"
+              >
+                <Ionicons name="add" size={18} color={colors.text} />
+                <Text style={styles.ghostPillText}>Add something</Text>
+              </Press>
+            ) : (
+              <Press
+                onPress={p.hero.onAction}
+                style={styles.stonePill}
+                overlay={colors.material.pressFill}
+                haptic
+                accessibilityLabel={p.hero.action}
+              >
+                <Ionicons name={p.hero.icon === 'play' ? 'checkmark' : p.hero.icon} size={18} color={colors.onPrimary} />
+                <Text style={styles.stonePillText}>{p.hero.action}</Text>
+              </Press>
+            )}
+          </Glass>
+        </Enter>
+      </View>
 
       <Enter index={1}>
         <Glass style={styles.stonePanel}>
@@ -367,21 +408,27 @@ function StoneHome(p: Props) {
             Categories
           </Text>
           <View style={styles.tiles}>
-            {p.categories.map((c, i) => {
-              const warm = c.active || i >= p.categories.length - 2;
+            {p.categories.map((c) => {
+              const warm = !!c.active;
               return (
-                <Press key={c.label} outerStyle={styles.tileSlot} style={styles.tileItem} onPress={c.onPress} accessibilityLabel={c.label}>
+                <Press
+                  key={c.label}
+                  outerStyle={styles.tileSlot}
+                  style={styles.tileItem}
+                  onPress={c.onPress}
+                  accessibilityLabel={c.active ? `${c.label}, done today` : c.label}
+                >
                   <View style={styles.tile}>
                     <SelectFade on={warm} radius={16} bleed={1} style={styles.tileWarm} />
-                    <FadeSwap
-                      on={warm}
-                      off={<Ionicons name={c.icon} size={20} color={colors.text} />}
-                      onContent={<Ionicons name={c.active ? 'checkmark' : c.icon} size={20} color={colors.onWarmTile} />}
-                    />
+                    <Pop done={warm}>
+                      <FadeSwap
+                        on={warm}
+                        off={<Ionicons name={c.icon} size={22} color={colors.text} />}
+                        onContent={<Ionicons name="checkmark" size={22} color={colors.onWarmTile} />}
+                      />
+                    </Pop>
                   </View>
-                  <Text style={styles.tileLabel} numberOfLines={2}>
-                    {c.label}
-                  </Text>
+                  <Text style={styles.tileLabel}>{c.label}</Text>
                 </Press>
               );
             })}
@@ -390,22 +437,17 @@ function StoneHome(p: Props) {
       </Enter>
 
       <Enter index={2}>
-        <Glass style={styles.stonePanel}>
-          <View style={styles.stoneCardHead}>
+        <Glass style={styles.stoneList}>
+          <View style={styles.stoneListHead}>
             <Text style={styles.stonePanelTitle} accessibilityRole="header">
               Today
             </Text>
-            {p.total > 0 && <Text style={styles.stoneMeta}>{`${p.done}/${p.total} done`}</Text>}
+            {p.total > 0 && <Text style={styles.stoneCount}>{`${p.done} of ${p.total} done`}</Text>}
           </View>
-          {p.items.length === 0 ? (
-            <Press onPress={p.onAdd} style={styles.stoneRow} accessibilityLabel="Plan your day">
-              <Ionicons name="add-circle-outline" size={20} color={colors.text} />
-              <Text style={styles.stoneMeta}>Plan your day: add a routine or a to-do</Text>
-            </Press>
-          ) : (
-            p.items.map((it, i) => (
+          {p.items.map((it) => (
+            <View key={it.key}>
+              <View style={styles.divider} />
               <Press
-                key={it.key}
                 style={styles.stoneRow}
                 overlay={colors.material.pressFill}
                 haptic={!it.nav}
@@ -413,44 +455,69 @@ function StoneHome(p: Props) {
                 onLongPress={it.onLongPress}
                 accessibilityRole={it.nav ? 'button' : 'checkbox'}
                 accessibilityState={it.nav ? undefined : { checked: it.done }}
-                accessibilityLabel={it.nav ? `${it.title}, ${it.meta}` : `${it.title}, ${it.meta}`}
+                accessibilityLabel={`${it.title}, ${it.meta}`}
                 accessibilityHint={it.nav ? 'Opens it' : it.onLongPress ? 'Press and hold to edit' : undefined}
                 accessibilityActions={it.onLongPress ? [{ name: 'activate' }, { name: 'longpress', label: 'Edit' }] : undefined}
                 onAccessibilityAction={
                   it.onLongPress ? (e) => (e.nativeEvent.actionName === 'longpress' ? it.onLongPress?.() : it.onPress()) : undefined
                 }
               >
-                <View style={[styles.thumbStone, it.done && styles.thumbDone]}>
-                  <SceneArt width={46} height={46} variant={['calm', 'rain', 'waves', 'brown'][i % 4]} />
-                </View>
+                <Dim on={it.done} to={0.6} style={styles.stoneTile}>
+                  <Ionicons name={(it.icon ?? 'ellipse-outline') as 'sunny'} size={20} color={colors.accent} />
+                </Dim>
                 <View style={styles.flex}>
-                  <Text style={[styles.stoneRowTitle, it.done && styles.rowDone]} numberOfLines={1}>
+                  <Text style={[styles.stoneRowTitle, it.done && styles.stoneRowDone]} numberOfLines={1}>
                     {it.title}
                   </Text>
-                  <Text style={styles.stoneMeta} numberOfLines={1}>
+                  <Text style={[styles.stoneRowMeta, it.done && styles.stoneMetaDone]} numberOfLines={1}>
                     {it.meta}
                   </Text>
                 </View>
                 {it.nav ? (
-                  <Ionicons name="chevron-forward" size={20} color={colors.muted} style={styles.chevron} />
-                ) : (
-                  <View style={styles.stoneRowButton}>
-                    <SelectFade on={it.done} radius={22} bleed={1} style={styles.doneFill} />
+                  <View style={styles.stoneNav}>
+                    <SelectFade on={it.done} radius={20} style={styles.doneFill} />
                     <FadeSwap
                       on={it.done}
-                      off={<Ionicons name="play-outline" size={14} color={colors.text} style={styles.playNudge} />}
+                      off={<Ionicons name="chevron-forward" size={18} color={colors.muted} />}
                       onContent={<Ionicons name="checkmark" size={16} color={colors.onDone} />}
                     />
                   </View>
+                ) : (
+                  <View style={styles.stoneRing}>
+                    <SelectFade on={it.done} radius={20} bleed={1.5} style={styles.doneFill} />
+                    <Pop done={it.done}>
+                      <FadeSwap
+                        on={it.done}
+                        off={<View style={styles.ringEmpty} />}
+                        onContent={<Ionicons name="checkmark" size={16} color={colors.onDone} />}
+                      />
+                    </Pop>
+                  </View>
                 )}
               </Press>
-            ))
-          )}
+            </View>
+          ))}
+          <View style={styles.divider} />
+          <Press
+            style={styles.stoneRow}
+            overlay={colors.material.pressFill}
+            onPress={p.onAdd}
+            accessibilityLabel="Add a routine or a to-do"
+          >
+            <View style={styles.stoneTile}>
+              <Ionicons name="add" size={22} color={colors.accent} />
+            </View>
+            <Text style={[styles.stoneRowMeta, styles.flex]}>
+              {p.items.length === 0 ? 'Plan your day: add a routine or a to-do' : 'Add a routine or a to-do'}
+            </Text>
+          </Press>
         </Glass>
       </Enter>
     </View>
   );
 }
+
+const frostSize = (h: number) => ({ width: MAG_W, height: h });
 
 function SectionHead({ title, action, onAction, pill }: { title: string; action?: string; onAction?: () => void; pill?: boolean }) {
   const styles = useStyles(makeStyles);
@@ -483,8 +550,6 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     avatarText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
     round: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     iconBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-    iconBtnStart: { width: 44, height: 44, alignItems: 'flex-start', justifyContent: 'center' },
-    iconBtnEnd: { width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center', marginTop: -6, marginRight: -4 },
     sectionActionBtn: { minHeight: 44, minWidth: 44, alignItems: 'flex-end', justifyContent: 'center' },
     calendar: { marginTop: 14, padding: 8 },
     chevron: { marginRight: 8 },
@@ -589,37 +654,53 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     playNudge: { marginLeft: 2 },
 
     // Stone
-    stoneTop: { flexDirection: 'row', marginTop: 22 },
-    stoneGreet: { fontFamily: fonts.display, fontSize: 32, lineHeight: 38, color: colors.text, letterSpacing: 0.2 },
-    stoneTagline: { marginTop: 10, fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.muted, maxWidth: 220 },
-    stoneBloom: { position: 'absolute', right: -6, top: -6 },
-    stoneCard: { marginTop: 22, padding: 20 },
-    stoneCardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    stoneTitle: { fontFamily: fonts.display, fontSize: 26, lineHeight: 31, color: colors.text },
-    stoneMeta: { marginTop: 4, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
+    magnolia: { position: 'absolute', top: MAG_TOP, right: MAG_RIGHT, pointerEvents: 'none' },
+    barEnd: { flexDirection: 'row', gap: 10 },
+    stoneTop: { marginTop: 26, paddingRight: 96 },
+    stoneGreet: { fontFamily: 'DMSans_300Light', fontSize: 32, lineHeight: 38, color: colors.text, letterSpacing: -0.2 },
+    stoneDay: { marginTop: 6, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
+    stoneTagline: { marginTop: 14, fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.muted, maxWidth: 210 },
+    stoneCard: { marginTop: 26, paddingHorizontal: 22, paddingTop: 22, paddingBottom: 20 },
+    frost: { position: 'absolute', opacity: 0.8 },
+    stoneTitle: { fontFamily: 'DMSans_300Light', fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.2, maxWidth: '76%' },
+    stoneHeroMeta: { marginTop: 6, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, maxWidth: '76%' },
     stonePill: {
-      marginTop: 18,
+      marginTop: 20,
       alignSelf: 'flex-start',
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      paddingHorizontal: 18,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.primary,
+      paddingHorizontal: 20,
+      height: 46,
+      borderRadius: 23,
+      borderWidth: 1,
+      borderColor: alphaOf(colors.text, 0.55),
       backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
-      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
+      boxShadow: `inset 0px 1px 0px ${alphaOf(colors.text, 0.75)}, ${colors.litGlow}`,
     },
     stonePillText: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.onPrimary },
-    stoneDate: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginBottom: 6, marginHorizontal: 8, marginTop: 6 },
-    stonePanel: { marginTop: 14, padding: 16 },
-    stonePanelTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+    ghostPill: {
+      marginTop: 20,
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 20,
+      height: 46,
+      borderRadius: 23,
+      borderWidth: 1,
+      borderColor: colors.controlBorder,
+      backgroundColor: colors.material.inset.fill,
+    },
+    ghostPillText: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
+    stonePanel: { marginTop: 14, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 },
+    stonePanelTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 22, color: colors.text },
     tiles: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
-    tileSlot: { flex: 1, maxWidth: 72 },
-    tileItem: { alignItems: 'center', gap: 8, minHeight: 44, borderRadius: radii.inset },
+    tileSlot: { width: 64 },
+    tileItem: { alignItems: 'center', gap: 8, minHeight: 44, borderRadius: radii.inset, paddingBottom: 2 },
     tile: {
-      width: 50,
-      height: 50,
+      width: 52,
+      height: 52,
       borderRadius: 16,
       alignItems: 'center',
       justifyContent: 'center',
@@ -627,29 +708,39 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
       borderWidth: 1,
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}`,
     },
-    tileWarm: { backgroundColor: colors.warmTile },
+    tileWarm: { backgroundColor: colors.warmTile, borderWidth: 1, borderColor: alphaOf(colors.onWarmTile, 0.45) },
     tileLabel: { fontFamily: fonts.body, fontSize: 13, lineHeight: 17, color: colors.muted, textAlign: 'center' },
-    stoneRow: {
-      flexDirection: 'row',
+    stoneList: { marginTop: 14, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 6 },
+    stoneListHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 },
+    stoneCount: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
+    divider: { height: StyleSheet.hairlineWidth, marginLeft: 58, backgroundColor: colors.material.inset.border },
+    stoneRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, paddingVertical: 10, borderRadius: radii.inset },
+    stoneTile: {
+      width: 44,
+      height: 44,
+      borderRadius: 14,
       alignItems: 'center',
-      gap: 12,
-      marginTop: 8,
-      minHeight: 56,
-      paddingVertical: 5,
-      borderRadius: radii.inset,
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
     },
-    thumbStone: { width: 46, height: 46, borderRadius: 12, overflow: 'hidden' },
-    thumbDone: { opacity: 0.6 },
-    stoneRowTitle: { fontFamily: fonts.body, fontSize: 16, color: colors.text },
-    stoneRowButton: {
+    stoneRowTitle: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.text },
+    stoneRowMeta: { marginTop: 1, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
+    stoneRowDone: { color: colors.faint, textDecorationLine: 'line-through' },
+    stoneMetaDone: { color: colors.faint },
+    stoneRing: {
       width: 40,
       height: 40,
       borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.controlBorder,
     },
+    ringEmpty: { width: 16, height: 16 },
+    stoneNav: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   });

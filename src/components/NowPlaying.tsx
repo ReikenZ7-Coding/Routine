@@ -234,9 +234,10 @@ function GlassPlayer() {
 
           <View style={styles.artWrap}>
             {stone ? (
-              <Glass radius={26} style={styles.frame}>
-                <View style={[styles.artClip, { width: art - 16, height: art - 16, borderRadius: 20 }]}>
-                  <SceneArt width={art - 16} height={art - 16} variant={s.current.id} />
+              // Stone frames the stones in a lit glass mount; the scene crossfades when the sound changes.
+              <Glass tier="hero" radius={30} style={styles.frame}>
+                <View style={[styles.artClip, { width: art - 20, height: art - 20, borderRadius: 22 }]}>
+                  <FadeSwapScene id={s.current.id} size={art - 20} />
                 </View>
               </Glass>
             ) : (
@@ -361,7 +362,7 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     topTitle: { fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold, fontSize: 16, color: colors.text },
     topSub: { marginTop: 2, fontFamily: fonts.body, fontSize: 13, color: colors.muted },
     artWrap: { alignItems: 'center', marginTop: 24 },
-    frame: { padding: 8 },
+    frame: { padding: 9 },
     artClip: { overflow: 'hidden' },
     // Lavender's art is the hero: its rose light spills down into the world below it.
     artGlow: { boxShadow: `${colors.material.shadowPane}, 0px 24px 56px -10px ${alphaOf(colors.accent, 0.5)}` },
@@ -375,8 +376,8 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     info: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 28 },
     title: {
       fontFamily: fonts.display,
-      fontSize: name === 'stone' ? 32 : 26,
-      lineHeight: name === 'stone' ? 38 : 32,
+      fontSize: name === 'stone' ? 34 : 26,
+      lineHeight: name === 'stone' ? 40 : 32,
       color: colors.text,
       letterSpacing: name === 'stone' ? 0 : -0.4,
     },

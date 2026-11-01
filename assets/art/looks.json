@@ -45,8 +45,8 @@
     },
     "stone": {
       "scrim": "rgba(0,0,0,0)",
-      "topVeil": ["rgba(24,24,16,0.40)", "rgba(24,24,16,0)"],
-      "veilEnd": 0.22,
+      "topVeil": ["rgba(24,24,16,0.26)", "rgba(24,24,16,0)"],
+      "veilEnd": 0.18,
       "lensSaturation": 1.0,
       "lights": [
         {

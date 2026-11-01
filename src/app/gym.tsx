@@ -108,7 +108,14 @@ export default function GymScreen() {
       <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}>
         <PageTitle title="Gym" subtitle="Pick a plan to start with, or build your own" />
         <Glass style={styles.welcome}>
-          <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
+          {name === 'stone' ? (
+            // Stone: the barbell in champagne on its own small glass tile.
+            <View style={styles.welcomeTile}>
+              <Ionicons name="barbell-outline" size={28} color={colors.accent} />
+            </View>
+          ) : (
+            <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
+          )}
           <Text style={styles.welcomeTitle}>Your training plan</Text>
           <Text style={styles.welcomeText}>
             Pick a starter plan and adjust it, or build your own. Each day you'll see exactly what to train, and what you lifted last time.
@@ -165,7 +172,12 @@ export default function GymScreen() {
                   )}
                 </View>
                 <View style={styles.track}>
-                  <Bar progress={progress.done / Math.max(1, progress.total)} color={kinds.gym.color} track={colors.track} height={8} />
+                  <Bar
+                    progress={progress.done / Math.max(1, progress.total)}
+                    color={kinds.gym.color}
+                    track={colors.track}
+                    height={name === 'stone' ? 4 : 8}
+                  />
                 </View>
                 <Text style={[type.hint, styles.cardHint]}>Tap a set when you finish it. A rest timer starts on its own.</Text>
               </Glass>
@@ -183,7 +195,7 @@ export default function GymScreen() {
                           <Text style={styles.exName}>{e.name}</Text>
                           {isRecord(gym.logs, e.name, today) && (
                             <View style={styles.prBadge}>
-                              <Ionicons name="trophy" size={13} color={styles.prText.color} />
+                              <Ionicons name={name === 'stone' ? 'trophy-outline' : 'trophy'} size={13} color={styles.prText.color} />
                               <Text style={styles.prText}>New best</Text>
                             </View>
                           )}
@@ -349,6 +361,8 @@ export default function GymScreen() {
 const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme) => {
   // Lavender's best-ever badge is a solid pastel pill with deep-indigo ink; the other looks keep a soft wash.
   const solidBadge = name === 'lavender';
+  // Stone: a thin editorial session name, a capsule stepper and larger tabular numerals.
+  const stone = name === 'stone';
   return StyleSheet.create({
     exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     prBadge: {
@@ -367,7 +381,24 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
     flex: { flex: 1 },
     content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
-    welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
+    welcomeTitle: {
+      fontFamily: fonts.display,
+      fontSize: stone ? 24 : 20,
+      lineHeight: stone ? 30 : undefined,
+      color: colors.text,
+      marginTop: 12,
+    },
+    welcomeTile: {
+      width: 64,
+      height: 64,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
     welcomeText: {
       fontFamily: fonts.body,
       fontSize: 15,
@@ -394,7 +425,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
     todayCard: { padding: 16 },
     sessionHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
     sessionArt: { width: 64, height: 64, borderRadius: radii.inset, overflow: 'hidden', boxShadow: colors.material.control.shadow },
-    sessionName: { fontFamily: fonts.display, fontSize: 26, lineHeight: 31, color: colors.text },
+    sessionName: { fontFamily: fonts.display, fontSize: stone ? 30 : 26, lineHeight: stone ? 36 : 31, color: colors.text },
     cardHint: { marginTop: 12 },
     progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
     track: { marginTop: 12 },
@@ -410,14 +441,14 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
       backgroundColor: colors.material.inset.fill,
-      borderRadius: 14,
+      borderRadius: stone ? 22 : 14,
     },
-    stepBtn: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+    stepBtn: { width: 44, height: 44, borderRadius: stone ? 21 : 13, alignItems: 'center', justifyContent: 'center' },
     weight: {
       minWidth: 84,
       textAlign: 'center',
       fontFamily: fonts.monoMedium,
-      fontSize: 15,
+      fontSize: stone ? 16 : 15,
       color: colors.text,
       fontVariant: ['tabular-nums'],
     },
@@ -431,7 +462,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
       alignItems: 'center',
       justifyContent: 'center',
     },
-    setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
+    setText: { fontFamily: fonts.monoMedium, fontSize: stone ? 15 : 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     setTextDone: { color: colors.onKind },
     planRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingVertical: 12, paddingHorizontal: 14 },
     planDay: { width: 52, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },

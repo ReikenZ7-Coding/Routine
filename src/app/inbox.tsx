@@ -39,6 +39,8 @@ export default function InboxScreen() {
   const done = recentlyDone(inbox, today);
   // Lavender: nothing to sort and nothing planned gets one scene card in place of the empty list.
   const clearDay = lavender && waiting.length === 0 && planned.length === 0;
+  // Stone: the same moment as one quiet pane, with the tray in champagne.
+  const stoneClear = name === 'stone' && waiting.length === 0 && planned.length === 0;
 
   const add = () => {
     const title = draft.trim();
@@ -173,7 +175,19 @@ export default function InboxScreen() {
         </Glass>
       ) : null}
 
-      {!clearDay && (
+      {stoneClear ? (
+        <Glass style={styles.stoneClear}>
+          <View style={styles.stoneTray}>
+            <Ionicons name="file-tray-outline" size={28} color={colors.accent} />
+          </View>
+          <Text style={styles.stoneClearTitle}>Nothing to sort</Text>
+          <Text style={styles.stoneClearText}>
+            When something crosses your mind, write it above. It waits here until you give it a day.
+          </Text>
+        </Glass>
+      ) : null}
+
+      {!clearDay && !stoneClear && (
         <Section
           enter={0}
           title={`To sort · ${waiting.length}`}
@@ -242,6 +256,21 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
     },
     whitePillText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onNode },
     empty: { padding: 16, fontFamily: fonts.body, fontSize: 16, color: colors.muted },
+    stoneClear: { marginTop: 24, padding: 22, alignItems: 'flex-start', gap: 6 },
+    stoneTray: {
+      width: 56,
+      height: 56,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 10,
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    stoneClearTitle: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.text },
+    stoneClearText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.muted },
     actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingLeft: 52, paddingRight: 16, paddingBottom: 12 },
     action: {
       minHeight: 44,

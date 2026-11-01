@@ -4,6 +4,7 @@ import { MOODS, moodOf, setEntry } from '../lib/journal';
 import { useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Field, Input } from './Field';
+import { alphaOf } from './glass/colour';
 import { MoodGlyph } from './MoodGlyph';
 import { FadeSwap, Pop, Press, SelectFade } from './Motion';
 import { Section } from './Section';
@@ -12,8 +13,10 @@ import { Section } from './Section';
 export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
   const { colors, radii, name } = useTheme();
   const styles = useStyles(makeStyles);
-  // Lavender draws each mood as a frosted disc with its name beneath; the chosen disc fills with the done colour.
-  const discs = name === 'lavender';
+  // Lavender and Stone draw each mood as a disc with its name beneath. Lavender's chosen disc fills with the done
+  // colour; Stone's faces are drawn in champagne and the chosen one sits in a champagne glass disc.
+  const discs = name === 'lavender' || name === 'stone';
+  const stone = name === 'stone';
   const { journal, updateJournal } = useStore();
   const entry = journal[date] ?? {};
   const mood = moodOf(entry.mood);
@@ -48,13 +51,13 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
                 accessibilityLabel={m.label}
                 accessibilityState={{ checked: active }}
               >
-                <View style={styles.disc}>
-                  <SelectFade on={active} radius={24} bleed={1} style={styles.discOn} />
+                <View style={stone ? styles.stoneDisc : styles.disc}>
+                  <SelectFade on={active} radius={25} bleed={1} style={stone ? styles.stoneDiscOn : styles.discOn} />
                   <Pop done={active}>
                     <FadeSwap
                       on={active}
-                      off={<MoodGlyph curve={m.curve} color={colors.text} />}
-                      onContent={<MoodGlyph curve={m.curve} color={colors.onDone} />}
+                      off={<MoodGlyph curve={m.curve} color={stone ? colors.accent : colors.text} />}
+                      onContent={<MoodGlyph curve={m.curve} color={stone ? colors.onWarmTile : colors.onDone} />}
                     />
                   </Pop>
                 </View>
@@ -127,6 +130,18 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
       borderTopColor: colors.material.inset.borderTop,
     },
     discOn: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
+    stoneDisc: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    stoneDiscOn: { backgroundColor: colors.warmTile, borderWidth: 1, borderColor: alphaOf(colors.onWarmTile, 0.45) },
     discLabel: { color: colors.muted },
     noteField: { marginHorizontal: 16, marginTop: 12, marginBottom: 16 },
     note: { minHeight: 48 },

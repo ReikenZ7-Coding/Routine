@@ -205,7 +205,7 @@ def to_srgb(lin):
     return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055)
 
 
-def luminance_budget(img, cap, cap_top, top_end):
+def luminance_budget(img, cap, cap_top, top_end, seen_sigma=24):
     """Keep the world's light inside the budget white type needs: wherever the world, blurred the way the lens
     sees it, is brighter than `cap` (relative luminance), scale that region's light down in linear light. Hue
     and chroma survive, so a pool of light stays a pool of colour. Above `top_end` of the height the cap eases
@@ -213,7 +213,7 @@ def luminance_budget(img, cap, cap_top, top_end):
     lin = to_linear(img)
     h, w = img.shape[:2]
     lum = (lin * np.array([0.2126, 0.7152, 0.0722])).sum(-1)
-    seen = gblur(lum, 24 * w / LENS_W)
+    seen = gblur(lum, seen_sigma * w / LENS_W)
     t = np.clip(np.linspace(0, 1, h) / top_end, 0, 1)[:, None]
     limit = cap_top + (cap - cap_top) * (t * t * (3 - 2 * t))
     gain = gblur(np.clip(limit / np.maximum(seen, 1e-6), 0, 1), 12 * w / LENS_W)
@@ -247,94 +247,120 @@ LAV_ORBS = (0.22, 0.20)  # centre alphas; the plan started at 0.38 and 0.32
 # Stone: luxury through restraint.
 
 
-def window_light(specs, angle, blur, fade_at, w=W, h=H, gaps=(28, 40)):
+def window_light(specs, angle, blur, fade_at, w=W, h=H, gaps=(28, 40), panes=(70, 130)):
     """Sun through a window: diagonal shafts split by mullions, fading out lower down the room."""
     split = []
     for x0, bw, a in specs:
         x = x0
         while x < x0 + bw:
-            pane = rng.uniform(60, 120) if bw > 120 else bw
+            pane = rng.uniform(*panes) if bw > panes[1] else bw
             split.append((x, min(pane, x0 + bw - x), a))
             x += pane + rng.uniform(*gaps)
-    fade = np.clip(1 - np.linspace(0, 1, h) / fade_at, 0, 1)[:, None, None] ** 1.2
+    t = np.clip(np.linspace(0, 1, h) / fade_at, 0, 1)[:, None, None]
+    fade = (1 - t * t * (3 - 2 * t))  # smoothstep: full at the window, gone by fade_at
     return beams(split, angle, blur, w, h) * fade
 
 
 def stone_backdrop():
-    """A quiet olive room crossed by crisp diagonal window light, a sun glow in the top-left corner,
-    and a warm bounce off the floor. All warm, no bokeh. The shafts are crisp but low in amplitude, so the
-    ivory type that sits straight on the room keeps 4.5:1 (scripts/check-contrast.py)."""
+    """A quiet olive room crossed by crisp diagonal window light. The light lives in contrast, not brightness:
+    the shafts are warm and well defined, the shadows between them sink to a cool olive, a sun haze sits in the
+    top-left corner and a warm bounce comes off the floor. All warm, no bokeh. The brightest shaft stays inside
+    what ivory type on the bare room needs (scripts/check-contrast.py)."""
     reseed('stone-bg')
-    img = gradient([(0, hexc(STONE['top'])), (0.45, hexc(STONE['mid'])), (1, hexc('#33332B'))], tilt=0.22)
-    glow(img, -W * 0.16, -H * 0.10, W * STONE['sun_r'], hexc('#F6E9C8'), STONE['sun'])
-    glow(img, W * 0.15, H * 1.0, W * 0.7, hexc('#8C8467'), 0.18)
-    k = STONE['beams']
-    light = window_light([(-300, 300, 0.30 * k), (60, 150, 0.24 * k), (260, 70, 0.16 * k)], 32, 22, 0.70)
-    img = 1 - (1 - img) * (1 - light * hexc('#FFF0CC'))
+    k = STONE
+    img = gradient([(0, hexc(k['top'])), (0.45, hexc(k['mid'])), (1, hexc(k['low']))], tilt=0.22)
+    # the shadow side of the room: cooler and deeper toward the right wall
+    glow(img, W * 1.15, H * 0.30, W * 0.9, hexc('#2C2E27'), k['shade'])
+    glow(img, -W * 0.10, -H * 0.06, W * k['sun_r'], hexc('#F6E9C8'), k['sun'])
+    glow(img, W * 0.15, H * 1.0, W * 0.7, hexc('#8C8467'), k['bounce'])
+    light = window_light([(-460, 520, 0.30), (150, 210, 0.24), (430, 90, 0.16)], 32, 18, 0.74, gaps=(30, 44), panes=(150, 230))
+    # the floor picks up a little of the light, low on the left
+    glow(img, W * 0.05, H * 0.86, W * 0.55, hexc('#6E6956'), k['floor'])
+    lin = to_linear(img) + light * k['beams'] * to_linear(hexc('#FFF0CC'))
+    img = to_srgb(lin)
+    img = luminance_budget(img, k['cap'], k['cap_top'], 0.16, seen_sigma=3)
     return grain(img, 0.018)
 
 
-# Tuned against the contrast gate (the plan's starting values were #6E6C5A/#4F4E43, sun 0.45, beams 1.0).
-STONE = {'top': '#56544A', 'mid': '#43423A', 'sun': 0.50, 'sun_r': 0.55, 'beams': 0.50}
+# Tuned against the contrast gate. The plan's starting world (#6E6C5A/#4F4E43, sun 0.45, beams at full) puts
+# ivory type on the bare room near 3:1; this keeps its hues and moves the light into contrast between shaft and
+# shadow. Beam strength is in linear light.
+STONE = {'top': '#4E4D42', 'mid': '#3F3E36', 'low': '#2E2F28', 'shade': 0.30, 'sun': 0.40, 'sun_r': 0.75, 'bounce': 0.16,
+         'beams': 0.32, 'floor': 0.22, 'cap': 0.108, 'cap_top': 0.112}
 
 
 def stone_lights():
-    """One extra window beam that sways very slowly over the room."""
+    """One extra window shaft that sways very slowly over the room."""
     w, h = LENS_W, LENS_H
     layer = Image.new('L', (w, h), 0)
     d = ImageDraw.Draw(layer)
     dx = np.tan(np.radians(32)) * h
-    x0, bw = w * 0.08, w * 0.16
+    x0, bw = w * 0.10, w * 0.14
     d.polygon([(x0, 0), (x0 + bw, 0), (x0 + bw + dx, h), (x0 + dx, h)], fill=255)
     a = np.asarray(layer.filter(ImageFilter.GaussianBlur(11))).astype(float) / 255
-    a *= np.clip(1 - np.linspace(0, 1, h) / 1.4, 0, 1)[:, None] * 0.07
+    t = np.clip(np.linspace(0, 1, h) / 0.72, 0, 1)[:, None]
+    a *= (1 - t * t * (3 - 2 * t)) * STONE_BEAM
     light_png('stone-light-beam', w, h, '#FFF0CD', a)
 
 
-def petal_layer(w, h, base, length, width, angle, tone, lift=0.0, cup=0.0):
-    """One magnolia petal: a pointed cup-shaped blade rooted at `base`, lit from the top left.
-    Returns (rgb, alpha) arrays the size of the canvas."""
+STONE_BEAM = 0.08
+
+
+def petal_layer(w, h, base, length, width, angle, tone, bend=0.0, cup=0.55):
+    """One magnolia petal: a spoon-shaped blade rooted at `base` (narrow at the base, widest two thirds of the
+    way up, a rounded tip), cupped, slightly bent, and lit from the top left. `tone` 0 is a lit front petal,
+    1 a petal at the back in its neighbours' shade. Returns (rgb, alpha) the size of the canvas."""
     yy, xx = np.mgrid[:h, :w].astype(float)
     a = np.radians(angle)
-    ux, uy = np.sin(a), -np.cos(a)  # along the petal (upwards when angle is 0)
+    ux, uy = np.sin(a), -np.cos(a)  # along the petal
     vx, vy = -uy, ux  # across
     rx, ry = xx - base[0], yy - base[1]
-    t = (rx * ux + ry * uy) / length  # 0 at the base, 1 at the tip
-    s = (rx * vx + ry * vy) / width  # -1..1 across
-    half = np.where((t > 0) & (t < 1), np.sin(np.pi * np.clip(t, 0, 1) ** 0.85) ** 0.75 * (1 - 0.25 * t), 0)
+    t = (rx * ux + ry * uy) / length
+    s = (rx * vx + ry * vy) / width - bend * np.clip(t, 0, 1) ** 2
+    tc = np.clip(t, 0, 1)
+    wide = 0.64
+    rise = np.sin(np.pi / 2 * np.clip(tc / wide, 0, 1)) ** 0.9
+    tip = np.sqrt(np.clip(1 - ((tc - wide) / (1 - wide)) ** 2, 0, 1))
+    half = np.where(tc < wide, 0.18 + 0.82 * rise, tip) * ((t > 0) & (t < 1))
     inside = np.abs(s) < half
-    edge = np.clip((half - np.abs(s)) * width / 3.0, 0, 1)  # anti-aliased edge, 3px wide
-    # light: a cylinder curving away across the petal, lit from the top left
-    nx = s / np.maximum(half, 1e-3) * 0.9
-    lam = np.clip(0.58 - 0.32 * nx + 0.3 * t - 0.25 * nx ** 2, 0, 1)  # brighter on the left, rolling off at both rims
-    ivory, shade, blush = hexc('#FFFDF6'), hexc('#C9C0A6'), hexc('#E8D5C6')
-    col = shade + (ivory - shade) * lam[..., None]
-    col = col * (1 - 0.2 * (1 - t)[..., None] * tone) + blush * 0.2 * (1 - t)[..., None] * tone
-    col = col * (0.74 + 0.26 * np.clip(t, 0, 1) ** 0.5)[..., None]  # the cup's base sits in its own shadow
-    col = col * (1 - 0.14 * tone)  # petals further back catch less light
-    vein = np.exp(-(s / 0.06) ** 2) * (t > 0.05) * (t < 0.85) * 0.025
+    edge = np.clip((half - np.abs(s)) * width / 2.2, 0, 1)  # anti-aliased edge
+    nx = np.clip(s / np.maximum(half, 1e-3), -1, 1)
+    # a cupped petal: the surface turns away at both rims; the light comes from the top left
+    nz = np.sqrt(np.clip(1 - (nx * cup) ** 2, 0, 1))
+    lam = np.clip(0.16 + 0.62 * nz - 0.50 * nx * cup + 0.22 * tc, 0, 1.15)
+    ivory, shade, blush = hexc('#F3EEE1'), hexc('#8A836E'), hexc('#DCC7B8')
+    col = shade + (ivory - shade) * np.clip(lam, 0, 1)[..., None]
+    col = col + np.clip(lam - 1, 0, 1)[..., None] * 0.4  # a soft sheen where the petal faces the window
+    col = col * (1 - 0.22 * tone)
+    base_t = np.clip(1 - tc / 0.35, 0, 1) ** 1.5
+    col = col * (1 - 0.18 * base_t[..., None]) + blush * 0.16 * base_t[..., None]  # the base sits in shadow, blushed
+    vein = np.exp(-(s / 0.05) ** 2) * (tc > 0.05) * (tc < 0.8) * 0.02
     col = col - vein[..., None]
-    rim = np.clip(1 - (half - np.abs(s)) * width / 8.0, 0, 1) * inside
-    col = col + rim[..., None] * 0.035  # light caught along the translucent edge
-    alpha = edge * inside * (0.9 - 0.12 * t + lift)
+    rim = np.clip(1 - (half - np.abs(s)) * width / 10.0, 0, 1) * inside
+    col = col + rim[..., None] * 0.05  # the translucent edge catches the light
+    alpha = edge * inside * (0.97 - 0.10 * rim)
     return np.clip(col, 0, 1), np.clip(alpha, 0, 1)
 
 
-def leaf_layer(w, h, base, length, width, angle, dark=False):
+def leaf_layer(w, h, base, length, width, angle, dark=False, bend=0.12):
+    """A glossy magnolia leaf: long, pointed at both ends, with a midrib and a soft highlight."""
     yy, xx = np.mgrid[:h, :w].astype(float)
     a = np.radians(angle)
     ux, uy = np.sin(a), -np.cos(a)
     vx, vy = -uy, ux
     rx, ry = xx - base[0], yy - base[1]
     t = (rx * ux + ry * uy) / length
-    s = (rx * vx + ry * vy) / width
-    half = np.where((t > 0) & (t < 1), np.sin(np.pi * np.clip(t, 0, 1)) ** 0.9, 0)
-    edge = np.clip((half - np.abs(s)) * width / 2.5, 0, 1)
-    lam = np.clip(0.5 - 0.35 * s + 0.2 * (1 - t), 0, 1) * (0.85 + 0.3 * noise(w, h, 60, 3, int(angle) % 97))
-    lo, hi = hexc('#262B1C'), hexc('#717857')
-    col = lo + (hi - lo) * lam[..., None] * (0.75 if dark else 1)
-    rib = np.exp(-(s / 0.04) ** 2) * (t > 0.02) * (t < 0.95)
-    col = col + rib[..., None] * 0.05
+    tc = np.clip(t, 0, 1)
+    s = (rx * vx + ry * vy) / width - bend * np.sin(np.pi * tc)
+    half = np.where((t > 0) & (t < 1), np.sin(np.pi * tc ** 0.9) ** 0.85, 0)
+    edge = np.clip((half - np.abs(s)) * width / 2.2, 0, 1)
+    nx = np.clip(s / np.maximum(half, 1e-3), -1, 1)
+    lam = np.clip(0.45 - 0.35 * nx + 0.15 * (1 - tc), 0, 1)
+    lo, hi = hexc('#252B1D'), hexc('#6C7856')
+    col = lo + (hi - lo) * lam[..., None] * (0.7 if dark else 1)
+    gloss = np.exp(-((nx + 0.35) / 0.22) ** 2) * np.sin(np.pi * tc) * (0.10 if not dark else 0.05)
+    rib = np.exp(-(s / 0.03) ** 2) * (tc > 0.02) * (tc < 0.95) * 0.06
+    col = col + (gloss + rib)[..., None] * hexc('#E9F0D2')
     return np.clip(col, 0, 1), edge * (np.abs(s) < half)
 
 
@@ -346,48 +372,56 @@ def over(dst_rgb, dst_a, rgb, a):
 
 
 def magnolia(name, open_flower=False):
-    """A white magnolia on its stem, lit from the top left, petals translucent at their rims and
-    the lower leaves out of focus. Drawn at 2x and reduced to 420x700."""
+    """A white magnolia on its stem, lit from the top left: cupped ivory petals with translucent rims, a soft
+    calyx, one sharp leaf near the flower and the lower leaves out of focus. Drawn at 2x and reduced to 420x700.
+    The flower sits in the top half and the leaves below it, so on Today only the leaves pass under the hero glass."""
     reseed(name)
     w, h = 840, 1400
     rgb, a = np.zeros((h, w, 3)), np.zeros((h, w))
-    # out-of-focus lower leaves first, blurred as their own layer
+    # out-of-focus lower leaves first, blurred as their own layer (depth of field)
     lrgb, la = np.zeros((h, w, 3)), np.zeros((h, w))
-    for base, length, width, ang in [((420, 1230), 430, 120, -58), ((440, 1120), 380, 100, 62), ((430, 1390), 360, 110, 30)]:
-        c, al = leaf_layer(w, h, base, length, width, ang, dark=True)
+    for base, length, width, ang, bend in [((420, 1060), 470, 120, -62, 0.15), ((440, 980), 420, 104, 66, -0.12),
+                                          ((430, 1290), 380, 110, 28, 0.10), ((410, 1180), 360, 96, -24, -0.1)]:
+        c, al = leaf_layer(w, h, base, length, width, ang, dark=True, bend=bend)
         lrgb, la = over(lrgb, la, c, al)
-    pm = np.dstack([lrgb * la[..., None], la])
-    pm = gblur(pm, 9)
+    pm = gblur(np.dstack([lrgb * la[..., None], la]), 11)
     la = np.clip(pm[..., 3], 0, 1)
     lrgb = pm[..., :3] / np.maximum(la[..., None], 1e-6)
     rgb, a = over(rgb, a, lrgb, la)
-    # stem
+    # stem: a gentle S, lit on its left
     stem = Image.new('L', (w, h), 0)
     d = ImageDraw.Draw(stem)
-    pts = [(430 + 14 * np.sin(k / 9), 600 + k * 9) for k in range(90)]
-    d.line(pts, fill=255, width=13, joint='curve')
-    sa = gblur(np.asarray(stem).astype(float) / 255, 1.2)
-    rgb, a = over(rgb, a, np.broadcast_to(hexc('#4A4A33'), (h, w, 3)), np.clip(sa, 0, 1))
+    pts = [(428 + 16 * np.sin(k / 10), 610 + k * 9) for k in range(88)]
+    d.line(pts, fill=255, width=9, joint='curve')
+    sa = np.clip(gblur(np.asarray(stem).astype(float) / 255, 1.0), 0, 1)
+    rgb, a = over(rgb, a, np.broadcast_to(hexc('#4C4B34'), (h, w, 3)), sa)
     # one sharp leaf near the flower
-    c, al = leaf_layer(w, h, (436, 760), 330, 92, 48)
+    c, al = leaf_layer(w, h, (432, 770), 330, 88, 52, bend=0.14)
     rgb, a = over(rgb, a, c, al)
-    # petals: back ones first, a little darker; front ones lit
-    base = (430, 640)
+    base = (428, 640)
+    # petals, back to front: (angle, length, width, tone, bend)
     if open_flower:
-        petals = [(-62, 360, 120, 0.9, -0.05), (60, 350, 120, 0.9, -0.05), (-34, 420, 135, 0.6, 0.0), (32, 410, 130, 0.6, 0.0),
-                  (-12, 440, 140, 0.3, 0.05), (14, 430, 128, 0.2, 0.06)]
+        petals = [(-70, 330, 128, 1.0, 0.10), (68, 330, 128, 1.0, -0.10), (-44, 390, 140, 0.75, 0.08), (42, 384, 138, 0.75, -0.08),
+                  (-20, 420, 140, 0.45, 0.05), (18, 416, 136, 0.40, -0.05), (-3, 400, 124, 0.0, 0.0)]
     else:
-        petals = [(-26, 430, 120, 0.9, -0.06), (24, 420, 118, 0.9, -0.06), (-12, 470, 128, 0.5, 0.0), (12, 460, 124, 0.5, 0.0),
-                  (-3, 490, 132, 0.25, 0.06)]
-    for ang, length, width, tone, lift in petals:
-        c, al = petal_layer(w, h, base, length, width, ang, tone, lift)
-        rgb, a = over(rgb, a, c, al)
-    # a soft calyx where the petals meet the stem
-    cal = np.zeros((h, w))
+        petals = [(-14, 440, 118, 1.0, 0.12), (13, 436, 116, 1.0, -0.12), (-24, 420, 122, 0.55, 0.16),
+                  (22, 414, 120, 0.5, -0.16), (-4, 452, 128, 0.0, 0.03)]
+    prgb, pa = np.zeros((h, w, 3)), np.zeros((h, w))
+    for ang, length, width, tone, bend in petals:
+        c, al = petal_layer(w, h, base, length, width, ang, tone, bend)
+        # a petal casts a soft shadow on the one behind it, down and to the right (away from the window)
+        sh = gblur(al, 10)
+        sh = np.roll(np.roll(sh, 10, axis=0), 8, axis=1)
+        prgb = prgb * (1 - 0.24 * (sh * pa)[..., None])
+        prgb, pa = over(prgb, pa, c, al)
+    # the whole bloom turns from the window: brighter on its upper left, into shade on its lower right
     yy, xx = np.mgrid[:h, :w].astype(float)
-    cal = np.exp(-(((xx - 430) / 40) ** 2 + ((yy - 650) / 26) ** 2) * 2)
-    rgb, a = over(rgb, a, np.broadcast_to(hexc('#6F7449'), (h, w, 3)), np.clip(cal * 0.9, 0, 1))
-    pm = gblur(np.dstack([rgb * a[..., None], a]), 1.1)  # a touch of lens softness, like the photographs
+    turn = 1 - 0.30 * np.clip((xx - 380) / 200, 0, 1) - 0.14 * np.clip((yy - 420) / 220, 0, 1)
+    rgb, a = over(rgb, a, prgb * turn[..., None], pa)
+    # the calyx where the petals meet the stem
+    cal = np.exp(-(((xx - 428) / 46) ** 2 + ((yy - 652) / 28) ** 2) * 2)
+    rgb, a = over(rgb, a, np.broadcast_to(hexc('#5F6440'), (h, w, 3)), np.clip(cal * 0.95, 0, 1))
+    pm = gblur(np.dstack([rgb * a[..., None], a]), 1.6)  # a touch of lens softness, like the photographs
     out = resize(pm, 420, 700)
     al = np.clip(out[..., 3], 0, 1)
     col = np.clip(out[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1)
@@ -397,11 +431,13 @@ def magnolia(name, open_flower=False):
 
 
 def stone_magnolias():
-    pm = magnolia('stone-magnolia')
-    blurred = gblur(pm, 18 / 2)  # sigma 18 at the 2x drawing size
-    al = np.clip(blurred[..., 3], 0, 1)
-    save_png(np.dstack([np.clip(blurred[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1), al]), 'stone-magnolia-blur')
-    magnolia('stone-magnolia-open', open_flower=True)
+    """The closed bud for the day, the open bloom for a finished day, and a frosted copy of each: the same image
+    blurred the way glass sees it, drawn inside the hero card where the leaves pass under it."""
+    for name, open_flower in (('stone-magnolia', False), ('stone-magnolia-open', True)):
+        pm = magnolia(name, open_flower=open_flower)
+        blurred = gblur(pm, 18 / 2)  # sigma 18 at the 2x drawing size
+        al = np.clip(blurred[..., 3], 0, 1)
+        save_png(np.dstack([np.clip(blurred[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1), al]), f'{name}-blur')
 
 
 # ---------------------------------------------------------------------------------------------
@@ -679,73 +715,104 @@ def portal_rain():
 
 
 def stones_scene(name, variant, size=1000):
-    """Smooth stones in still water with a silk ribbon, softly lit from the top left: the water mirrors
-    the stones, the silk is translucent with specular folds, and each variant changes the water and the light."""
+    """Smooth stones resting in still water with a silk ribbon draped over them, lit from the top left. The
+    stones are shaded pebbles with a faint speckle, each standing in its own soft reflection; the silk is
+    translucent with pleats that run along it and a satin shine on their crests; each variant changes the
+    water and the light."""
     reseed(name)
     w = h = size
     yy, xx = np.mgrid[:h, :w].astype(float)
-    tops = {'calm': ('#B7B29B', '#77735F', '#3D3B30'), 'rain': ('#A9AEA6', '#6A6F66', '#33372F'),
-            'waves': ('#B9B49B', '#7A7660', '#3B3A2E'), 'brown': ('#C9B08E', '#7C6A50', '#3A3024')}[variant]
-    img = gradient([(0, hexc(tops[0])), (0.5, hexc(tops[1])), (1, hexc(tops[2]))], w, h, tilt=0.3)
+    tops = {'calm': ('#C9C4AE', '#8A8571', '#3F3D32'), 'rain': ('#B5B9AF', '#767B71', '#34382F'),
+            'waves': ('#C6C1A8', '#878269', '#3C3B2F'), 'brown': ('#D6BE9A', '#8A7556', '#3B3125')}[variant]
+    # water: misty and light far away, darker close up, a soft horizon a third of the way down
+    img = gradient([(0, hexc(tops[0])), (0.24, hexc(tops[0])), (0.48, hexc(tops[1])), (1, hexc(tops[2]))], w, h, tilt=0.0)
+    img = gblur(img, 18)
     if variant == 'brown':
-        glow(img, 1.05 * w, 0.32 * h, 0.7 * w, hexc('#FFC98A'), 0.55)  # a low warm sun
+        glow(img, 1.0 * w, 0.30 * h, 0.75 * w, hexc('#FFCB8E'), 0.50)  # a low warm sun
     if variant == 'waves':
-        swell = np.sin(yy / 14 + np.sin(xx / 90) * 2.2) * np.exp(-((yy - 0.75 * h) / (0.4 * h)) ** 2)
-        img = np.clip(img + swell[..., None] * 0.035, 0, 1)
-    light = np.array([-0.55, -0.65, 0.52])
+        swell = np.sin(yy / 13 + np.sin(xx / 80) * 2.4) * np.clip((yy - 0.36 * h) / (0.6 * h), 0, 1) ** 1.5
+        img = np.clip(img + swell[..., None] * 0.03, 0, 1)
+    if variant == 'rain':
+        for _ in range(30):
+            px, py, r0 = rng.uniform(0, w), rng.uniform(0.4 * h, h), rng.uniform(12, 50)
+            d = np.hypot(xx - px, (yy - py) * 3.0)
+            ring = np.exp(-((d - r0) / 1.8) ** 2) * 0.07 + np.exp(-((d - r0 * 0.62) / 1.5) ** 2) * 0.04
+            img = np.clip(img + ring[..., None], 0, 1)
+    light = np.array([-0.55, -0.62, 0.56])
     light /= np.linalg.norm(light)
-    stones_rgb = np.zeros((h, w, 3))
-    mask = np.zeros((h, w))
-    refl_rgb, refl_a = np.zeros((h, w, 3)), np.zeros((h, w))
-    for cx, cy, rx, ry, tone in [(0.72, 0.42, 0.15, 0.1, 0.95), (0.38, 0.5, 0.27, 0.17, 1.0), (0.62, 0.72, 0.3, 0.15, 0.9)]:
+    tex = noise(w, h, 9, 3, 41) - 0.5
+    stones = sorted([(0.70, 0.46, 0.15, 0.085, 0.92), (0.36, 0.55, 0.26, 0.135, 1.0), (0.64, 0.73, 0.30, 0.14, 0.95)],
+                    key=lambda st: st[1])
+    for cx, cy, rx, ry, tone in stones:
         cx, cy, rx, ry = cx * w, cy * h, rx * w, ry * h
         nx, ny = (xx - cx) / rx, (yy - cy) / ry
-        inside = nx ** 2 + ny ** 2 < 1
-        nz = np.sqrt(np.clip(1 - nx ** 2 - ny ** 2, 0, 1))
-        lam = np.clip(nx * light[0] + ny * light[1] + nz * light[2], 0, 1)
-        spec = lam ** 18 * 0.35
-        base = hexc('#9C9580') * tone
-        shade = base * (0.28 + 0.85 * lam)[..., None] + spec[..., None]
+        r2 = np.abs(nx) ** 2.3 + np.abs(ny) ** 2.3  # a superellipse: a flattened pebble, not an egg
+        nz = np.sqrt(np.clip(1 - r2, 0, 1))
+        n = np.dstack([nx * 0.8, ny * 1.1, nz + 0.25])
+        n /= np.linalg.norm(n, axis=-1, keepdims=True)
+        lam = np.clip((n * light).sum(-1), 0, 1)
+        wrap = np.clip(((n * light).sum(-1) + 0.35) / 1.35, 0, 1)
+        refl = 2 * (n * light).sum(-1, keepdims=True) * n - light
+        spec = np.clip(refl[..., 2], 0, 1) ** 26 * 0.22
+        stone = hexc('#9D967F') * tone
+        shade = stone * (0.16 + 0.55 * wrap + 0.35 * lam)[..., None] * (1 + 0.10 * tex[..., None]) + spec[..., None]
         if variant == 'brown':
-            shade = shade + np.clip(nx, 0, 1)[..., None] * hexc('#FFB866') * 0.18  # warm rim from the sun on the right
-        sh = np.exp(-(((xx - cx) / (rx * 1.05)) ** 2 + ((yy - cy - ry * 0.9) / (ry * 0.45)) ** 2) * 2)
-        img *= (1 - 0.40 * sh)[..., None]
-        # the reflection: the stone mirrored about its waterline
-        wl = cy + ry * 0.85
+            shade = shade + np.clip(nx, 0, 1)[..., None] * hexc('#FFB866') * 0.16 * nz[..., None]
+        alpha = np.clip((1 - r2) * min(rx, ry) / 2.0, 0, 1)  # anti-aliased rim, no halo
+        # where it meets the water: a contact shadow and its reflection, mirrored about the waterline
+        wl = cy + ry * 0.62
+        contact = np.exp(-(((xx - cx) / (rx * 1.02)) ** 2 + ((yy - wl) / (ry * 0.22)) ** 2) * 2.2)
+        img = img * (1 - 0.45 * contact)[..., None]
         src = np.clip((2 * wl - yy).astype(int), 0, h - 1)
-        rin = inside[src, xx.astype(int)] & (yy > wl)
-        refl_rgb = np.where(rin[..., None], shade[src, xx.astype(int)], refl_rgb)
-        refl_a = np.maximum(refl_a, rin.astype(float))
-        stones_rgb = np.where(inside[..., None], shade, stones_rgb)
-        mask = np.maximum(mask, inside.astype(float))
-    # reflections first (under the stones), softened by the water
-    ra = gblur(refl_a, 6) * 0.35
-    rr = gblur(refl_rgb * refl_a[..., None], 6) / np.maximum(gblur(refl_a, 6)[..., None], 1e-3)
-    img = img * (1 - ra[..., None]) + rr * ra[..., None]
-    if variant == 'rain':
-        for _ in range(26):
-            px, py, rr0 = rng.uniform(0, w), rng.uniform(0.25 * h, h), rng.uniform(10, 46)
-            d = np.hypot((xx - px), (yy - py) * 2.6)
-            ring = np.exp(-((d - rr0) / 1.6) ** 2) * 0.10 + np.exp(-((d - rr0 * 0.6) / 1.4) ** 2) * 0.06
-            img = np.clip(img + ring[..., None], 0, 1)
-    m = gblur(mask, 3)[..., None]
-    img = img * (1 - m) + stones_rgb * m
-    # silk: a translucent ribbon along a curve, with specular folds
-    silk = Image.new('L', (w, h), 0)
-    d = ImageDraw.Draw(silk)
-    t = np.linspace(0, 1, 220)
-    px = (0.22 + 0.62 * t) * w
-    py = (0.36 + 0.08 * np.sin(t * 5.5) + 0.12 * t) * h
-    for i in range(len(t) - 1):
-        width = int(70 * np.sin(np.pi * t[i]) ** 0.7 + 12)
-        d.line([(px[i], py[i]), (px[i + 1], py[i + 1])], fill=255, width=width)
-    sa = gblur(np.asarray(silk).astype(float) / 255, 4)[..., None]
-    folds = 0.5 + 0.5 * np.sin(xx / 22 + yy / 40 + np.sin(xx / 70) * 1.5)
-    spec = (folds ** 6 * 0.25)[..., None]
-    silk_col = hexc('#F7F3E8') * (0.86 + 0.14 * folds[..., None]) + spec
-    img = img * (1 - sa * 0.78) + silk_col * sa * 0.78
-    glow(img, -0.1 * w, -0.1 * h, 0.9 * w, hexc('#FFF6DC'), 0.30 if variant != 'brown' else 0.15)
-    save(grain(img, 0.016), name, quality=86)
+        xi = xx.astype(int)
+        ra = alpha[src, xi] * (yy > wl)
+        rgb_r = shade[src, xi]
+        ra = gblur(ra, 5) * 0.32 * np.clip(1 - (yy - wl) / (ry * 1.6), 0, 1)
+        img = img * (1 - ra[..., None]) + gblur(rgb_r, 5) * ra[..., None]
+        img = img * (1 - alpha[..., None]) + shade * alpha[..., None]
+    # silk: a translucent ribbon draped from the upper left over the large stone and away to the right
+    t = np.linspace(0, 1, 260)
+    knots = np.array([(-0.08, 0.76), (0.14, 0.50), (0.30, 0.415), (0.46, 0.44), (0.58, 0.455), (0.70, 0.375), (0.84, 0.41), (1.08, 0.60)])
+    kt = np.linspace(0, 1, len(knots))
+    smooth = np.exp(-0.5 * (np.arange(-30, 31) / 9) ** 2)
+    smooth /= smooth.sum()
+    px = np.convolve(np.pad(np.interp(t, kt, knots[:, 0]), 30, mode='edge'), smooth, 'valid') * w
+    py = np.convolve(np.pad(np.interp(t, kt, knots[:, 1]), 30, mode='edge'), smooth, 'valid') * h
+    dxs, dys = np.gradient(px), np.gradient(py)
+    norm = np.hypot(dxs, dys)
+    nxs, nys = -dys / norm, dxs / norm
+    halfw = (30 + 44 * np.sin(np.pi * t) ** 0.7) * (w / 1000)
+    acc = np.zeros((h, w, 3))
+    acc_a = np.zeros((h, w))
+    strands = 46
+    for k in range(strands):
+        v = -1 + 2 * k / (strands - 1)
+        layer = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        for i in range(len(t) - 1):
+            # pleats run along the ribbon and twist slowly; their slope decides the light
+            ph = v * 10.5 + t[i] * 7.0 + np.sin(t[i] * 11) * 0.8
+            slope = np.cos(ph)
+            lit = np.clip(0.60 + 0.26 * slope - 0.12 * v, 0, 1)
+            sheen = np.clip(slope, 0, 1) ** 10 * 0.22
+            c = np.clip(hexc('#F4EFE2') * (0.70 + 0.30 * lit) + sheen, 0, 1)
+            x0, y0 = px[i] + nxs[i] * v * halfw[i], py[i] + nys[i] * v * halfw[i]
+            x1, y1 = px[i + 1] + nxs[i + 1] * v * halfw[i + 1], py[i + 1] + nys[i + 1] * v * halfw[i + 1]
+            d.line([(x0, y0), (x1, y1)], fill=tuple(int(cc * 255) for cc in c) + (255,), width=max(2, int(2.6 * halfw[i] / strands * 2)))
+        arr = np.asarray(layer).astype(float) / 255
+        acc = acc * (1 - arr[..., 3:4]) + arr[..., :3] * arr[..., 3:4]
+        acc_a = np.maximum(acc_a, arr[..., 3])
+    acc = gblur(acc, 1.2)
+    sa = np.clip(gblur(acc_a, 1.6), 0, 1)
+    col = acc / np.maximum(gblur(acc_a, 1.2)[..., None], 1e-3)
+    edge = np.clip(1 - gblur(acc_a, 6), 0, 1)  # thinner, more translucent at its edges
+    opacity = sa * (0.70 - 0.32 * edge)
+    img = img * (1 - opacity[..., None]) + np.clip(col, 0, 1) * opacity[..., None]
+    # the silk's shadow on the water below it, offset away from the light
+    shadow = np.roll(np.roll(gblur(acc_a, 14), 26, axis=0), 18, axis=1) * (1 - sa)
+    img = img * (1 - 0.22 * shadow[..., None])
+    glow(img, -0.1 * w, -0.1 * h, 0.9 * w, hexc('#FFF6DC'), 0.26 if variant != 'brown' else 0.12)
+    save(grain(img, 0.014), name, quality=86)
 
 
 def scenes_stone():
