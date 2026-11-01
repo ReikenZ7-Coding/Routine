@@ -194,8 +194,8 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
             : {},
     todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.text, marginBottom: -2 },
     hidden: { opacity: 0 },
-    barLabel: { fontFamily: fonts.mono, fontSize: 13, color: colors.muted },
-    barToday: { color: orb ? colors.accent : colors.text, fontFamily: fonts.monoMedium },
+    barLabel: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
+    barToday: { color: orb ? colors.accent : colors.text, fontFamily: fonts.bodyBold },
     row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
     // "4 in a row", "40 kg × 8": words with their numbers, so a sans with tabular figures (never mono for words)
     num: { fontFamily: fonts.bodyBold, fontSize: stone ? 15 : 14, color: colors.text, fontVariant: ['tabular-nums'] },
