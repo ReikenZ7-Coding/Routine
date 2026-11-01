@@ -297,6 +297,9 @@ export function HubHeader({
 }
 
 /** A routine in the grid: its time-of-day badge, name, schedule, a streak pill and a tick for today. */
+/** A short phrase such as "Every day" never breaks across lines; a long schedule still wraps. */
+const keepTogether = (phrase: string) => (phrase.length <= 14 ? phrase.replace(/ /g, '\u00A0') : phrase);
+
 export function RoutineCard({
   routine: r,
   today,
@@ -337,9 +340,13 @@ export function RoutineCard({
       <View style={styles.watermark} pointerEvents="none">
         <Ionicons name={iconFor(r) as 'sunny'} size={96} color={colors.text} />
       </View>
+      {/* The card's state (a streak, today, resting, skipped) leads; the time of day joins the schedule line, so
+          no label sits above the title. */}
       <View style={styles.cardTop}>
-        <View style={styles.cardBadge}>
-          <Text style={styles.cardBadgeText}>{TIME_LABELS[r.time]}</Text>
+        <View style={[styles.level, n > 1 ? styles.levelHot : null]}>
+          <Text style={[styles.levelText, n > 1 ? styles.levelTextHot : null]}>
+            {skipped ? 'Skipped' : n > 1 ? `${n} in a row` : scheduled ? 'Today' : 'Resting'}
+          </Text>
         </View>
         {canTick && (
           <Press
@@ -375,16 +382,12 @@ export function RoutineCard({
         {r.name}
       </Text>
       <Text style={styles.cardSub} numberOfLines={2}>
-        {r.start ? `${r.start} · ` : ''}
-        {describeRepeat(r.repeat)}
+        {TIME_LABELS[r.time]}
+        {r.start ? ` · ${r.start}` : ''}
+        {` · ${keepTogether(describeRepeat(r.repeat))}`}
         {counter ? ` · ${r.target} a day` : ''}
       </Text>
       <View style={styles.cardBottom}>
-        <View style={[styles.level, n > 1 ? styles.levelHot : null]}>
-          <Text style={[styles.levelText, n > 1 ? styles.levelTextHot : null]}>
-            {skipped ? 'Skipped' : n > 1 ? `${n} in a row` : scheduled ? 'Today' : 'Resting'}
-          </Text>
-        </View>
         <View style={styles.meta}>
           {r.duration ? (
             <>
@@ -499,18 +502,6 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) => {
       : {},
     watermark: { position: 'absolute', right: -22, bottom: -26, opacity: dark ? 0.06 : 0.05, transform: [{ rotate: '-12deg' }] },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
-    cardBadge: tag
-      ? { backgroundColor: tag.fill, borderRadius: 999, paddingHorizontal: 9, minHeight: 22, justifyContent: 'center' }
-      : {
-          backgroundColor: colors.material.inset.fill,
-          borderWidth: 1,
-          borderColor: colors.material.inset.border,
-          borderRadius: 999,
-          paddingHorizontal: 9,
-          minHeight: 22,
-          justifyContent: 'center',
-        },
-    cardBadgeText: tag ? { ...type.badge, fontSize: 10.5, letterSpacing: 1.4, color: tag.ink } : { ...type.badge, color: colors.muted },
     tickSpot: { marginTop: -8, marginRight: -6 },
     tick: {
       width: 44,
@@ -531,7 +522,7 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) => {
     },
     cardTitleDone: { color: colors.faint, textDecorationLine: 'line-through' },
     cardSub: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 4, flexGrow: 1 },
-    cardBottom: { marginTop: 12, gap: 8 },
+    cardBottom: { marginTop: 10 },
     level: {
       alignSelf: 'flex-start',
       borderRadius: 999,

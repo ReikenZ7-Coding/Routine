@@ -171,7 +171,7 @@ export interface Radii {
   pill: number;
 }
 
-const LAVENDER_FLOAT = '0px 18px 40px -8px rgba(30,12,120,0.50), 0px 2px 6px rgba(30,12,120,0.24)';
+const LAVENDER_FLOAT = '0px 18px 40px -8px rgba(22,24,112,0.50), 0px 2px 6px rgba(22,24,112,0.24)';
 const STONE_FLOAT = '6px 20px 44px -12px rgba(14,13,8,0.40), 1px 2px 6px rgba(14,13,8,0.20)';
 const STONE_PANE = '4px 14px 30px -10px rgba(14,13,8,0.34), 0px 1px 2px rgba(14,13,8,0.18)';
 const PAPER_FLOAT =
@@ -182,8 +182,8 @@ const PINE_PANE = '0px 10px 24px -6px rgba(0,8,6,0.50), 0px 1px 2px rgba(0,8,6,0
 const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindStyle>; radii: Radii }> = {
   lavender: {
     colors: {
-      gradient: ['#B4B4FF', '#6A55DA', '#2C1D8C'],
-      bg: '#6A55DA',
+      gradient: ['#6470CC', '#5563C2', '#3D48A4'],
+      bg: '#5563C2',
       text: '#FFFFFF',
       muted: '#FBFAFF',
       faint: '#FAF9FF',
@@ -196,14 +196,14 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onKind: '#2A1A78',
       doneFill: ['#FFC4EE', '#FFA6DF'],
       onDone: '#2A1A78',
-      actionGlow: '0px 10px 26px -6px rgba(255,120,210,0.60), 0px 2px 6px rgba(30,12,120,0.30)',
+      actionGlow: '0px 10px 26px -6px rgba(255,120,210,0.60), 0px 2px 6px rgba(22,24,112,0.30)',
       controlBorder: 'rgba(255,255,255,0.70)',
-      track: 'rgba(24,12,90,0.32)',
+      track: 'rgba(18,20,88,0.32)',
       danger: '#FFF8FA',
-      backdrop: 'rgba(28,16,96,0.45)',
+      backdrop: 'rgba(20,24,96,0.45)',
       statusBar: 'light',
-      edgeTop: ['rgba(64,48,176,0.92)', 'rgba(64,48,176,0)'],
-      edgeBottom: ['rgba(44,29,140,0)', 'rgba(44,29,140,0.55)'],
+      edgeTop: ['rgba(65,73,171,0.92)', 'rgba(65,73,171,0)'],
+      edgeBottom: ['rgba(48,46,150,0)', 'rgba(48,46,150,0.85)'],
       accent: '#FFB3E6',
       streak: '#FFB3E6',
       tile: 'rgba(255,255,255,0.18)',
@@ -216,9 +216,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       litGlow: '0px 6px 18px rgba(190,150,255,0.45)',
       material: {
         live: { tint: 'default', intensity: 8, reduction: 0.33, webBlur: 24, webSaturate: 1.6 },
-        chromeTint: 'rgba(46,30,150,0.30)',
-        lensSaturation: 1.12,
-        base: 'rgba(64,44,178,0.10)',
+        chromeTint: 'rgba(40,46,158,0.30)',
+        lensSaturation: 1.0,
+        base: 'rgba(48,54,168,0.10)',
         body: ['rgba(255,255,255,0.12)', 'rgba(255,255,255,0.04)'],
         bodyAngle: 160,
         caustic: 'rgba(255,150,220,0.24)',
@@ -238,15 +238,15 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         innerGlow: 'inset 0px 0px 20px rgba(220,200,255,0.14)',
         sheen: 'rgba(255,255,255,0.03)',
         shadowFloat: LAVENDER_FLOAT,
-        shadowPane: '0px 12px 28px -6px rgba(30,12,120,0.45), 0px 1px 3px rgba(30,12,120,0.20)',
+        shadowPane: '0px 12px 28px -6px rgba(22,24,112,0.45), 0px 1px 3px rgba(22,24,112,0.20)',
         shadowHero: `${LAVENDER_FLOAT}, 0px 22px 50px -6px rgba(255,120,210,0.34)`,
         pressFill: 'rgba(255,255,255,0.12)',
         pressRim: 'rgba(255,255,255,0.95)',
-        control: { body: ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.06)'], shadow: '0px 8px 18px -6px rgba(30,12,120,0.50)' },
-        inset: { fill: 'rgba(255,255,255,0.045)', border: 'rgba(255,255,255,0.16)', borderTop: 'rgba(255,255,255,0.34)' },
-        receded: { body: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'], shadow: '0px 4px 12px -4px rgba(36,16,130,0.24)' },
+        control: { body: ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.06)'], shadow: '0px 8px 18px -6px rgba(22,24,112,0.50)' },
+        inset: { fill: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.16)', borderTop: 'rgba(255,255,255,0.34)' },
+        receded: { body: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'], shadow: '0px 4px 12px -4px rgba(26,28,124,0.24)' },
         sheet: {
-          body: ['rgba(76,58,188,0.84)', 'rgba(40,26,130,0.93)'],
+          body: ['rgba(62,68,190,0.84)', 'rgba(34,36,128,0.93)'],
           rimTop: 'rgba(255,255,255,0.60)',
           band: ['rgba(255,255,255,0.14)', 120],
           grip: 'rgba(255,255,255,0.50)',
@@ -255,11 +255,11 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
           fill: ['rgba(255,255,255,0.30)', 'rgba(255,255,255,0.14)'],
           rim: 'rgba(255,255,255,0.70)',
           rimSide: 'rgba(255,255,255,0.22)',
-          shadow: '0px 4px 12px -2px rgba(36,16,130,0.40)',
+          shadow: '0px 4px 12px -2px rgba(26,28,124,0.40)',
           ink: '#FFFFFF',
         },
         light: { period: 90000, layers: ['lavender-orb-pink', 'lavender-orb-blue'], catch: 0.36 },
-        bloom: 'radial-gradient(60% 60% at 30% 20%, rgba(214,190,255,0.07), transparent 70%)',
+        bloom: 'radial-gradient(60% 60% at 30% 20%, rgba(200,206,255,0.06), transparent 70%)',
       },
     },
     kinds: {
@@ -277,10 +277,10 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       gradient: ['#6E6C5A', '#4F4E43', '#36362D'],
       bg: '#4F4E43',
       text: '#FFFBE9',
-      muted: '#EDE7DA',
-      faint: '#EBE5D7',
-      label: '#EFE4CB',
-      link: '#F2E8D3',
+      muted: '#F1ECE0',
+      faint: '#EFE9DC',
+      label: '#F3E9D3',
+      link: '#F5EDDA',
       border: 'rgba(242,238,227,0.14)',
       primary: '#E6D6B3',
       onPrimary: '#2E2D24',
@@ -291,7 +291,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       actionGlow: STONE_PANE,
       controlBorder: 'rgba(255,247,228,0.62)',
       track: 'rgba(16,16,10,0.34)',
-      danger: '#F8E1DA',
+      danger: '#FAE7E1',
       backdrop: 'rgba(14,13,8,0.50)',
       statusBar: 'light',
       edgeTop: ['rgba(40,40,30,0.55)', 'rgba(40,40,30,0)'],
@@ -303,7 +303,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       onNode: '#2E2D24',
       warmTile: 'rgba(230,214,179,0.30)',
       onWarmTile: '#F4E6BF',
-      onSlabMuted: '#EDE7DA',
+      onSlabMuted: '#F1ECE0',
       litRim: 'rgba(230,214,179,0.90)',
       litGlow: '0px 8px 22px rgba(230,208,160,0.30)',
       material: {
@@ -353,9 +353,9 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       },
     },
     kinds: {
-      routines: { color: '#E6D6B3', soft: 'rgba(230,214,179,0.16)', text: '#EFE4CB', label: 'Routines' },
+      routines: { color: '#E6D6B3', soft: 'rgba(230,214,179,0.16)', text: '#F3E9D3', label: 'Routines' },
       gym: { color: '#CDB083', soft: 'rgba(205,176,131,0.16)', text: '#F2E6CD', label: 'Gym' },
-      chinese: { color: '#D6AF99', soft: 'rgba(214,175,153,0.16)', text: '#F5E3D9', label: 'Chinese' },
+      chinese: { color: '#D6AF99', soft: 'rgba(214,175,153,0.16)', text: '#F7E8E0', label: 'Chinese' },
       groceries: { color: '#B7BF98', soft: 'rgba(183,191,152,0.16)', text: '#E6EAD5', label: 'Groceries' },
       calendar: { color: '#B8AF9B', soft: 'rgba(184,175,155,0.16)', text: '#ECE8DE', label: 'Calendar' },
       inbox: { color: '#EDE3CC', soft: 'rgba(237,227,204,0.16)', text: '#F3EBD8', label: 'Inbox' },
@@ -556,7 +556,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
 };
 
 export const THEME_OPTIONS: { name: ThemeName; label: string; description: string }[] = [
-  { name: 'lavender', label: 'Lavender', description: 'Lit violet glass, bright and luminous' },
+  { name: 'lavender', label: 'Lavender', description: 'Periwinkle glass lit with rose light' },
   { name: 'stone', label: 'Stone', description: 'Smoked glass in quiet sunlight' },
   { name: 'paper', label: 'Paper', description: 'Bright frosted glass in morning mist' },
   { name: 'pine', label: 'Pine', description: 'Smoked green glass under a night canopy' },

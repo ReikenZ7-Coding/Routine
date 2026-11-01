@@ -72,7 +72,9 @@ export function NowPlaying() {
   const styles = useStyles(makeStyles);
   const s = useSounds();
 
-  if (glass) {
+  // Lavender, Stone and Pine open a full-screen player in their own world (Pine's in the night forest, as on the
+  // training hub it follows); Paper keeps a sheet of milk glass.
+  if (glass || name === 'pine') {
     return (
       <Modal
         visible={s.sheetOpen}
@@ -94,11 +96,6 @@ export function NowPlaying() {
           // Paper frames the scene like a print under milk glass: a wide white mat and a soft, deep shadow.
           <View style={styles.paperFrame}>
             <SoundArt id={s.current.id} size={204} radius={20} />
-          </View>
-        ) : name === 'pine' ? (
-          // Pine frames the night scene in a thin mint edge of glass over a deep shadow on the floor.
-          <View style={styles.pineFrame}>
-            <SoundArt id={s.current.id} size={220} radius={48} />
           </View>
         ) : (
           <SoundArt id={s.current.id} size={220} />
@@ -255,7 +252,9 @@ function GlassPlayer() {
                 </View>
               </Glass>
             ) : (
-              <View style={[styles.artClip, styles.artGlow, { width: art, height: art, borderRadius: 32 }]}>
+              <View
+                style={[styles.artClip, name === 'pine' ? styles.artLift : styles.artGlow, { width: art, height: art, borderRadius: 32 }]}
+              >
                 <FadeSwapScene id={s.current.id} size={art} />
                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.artRim]} />
               </View>
@@ -380,6 +379,8 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     artClip: { overflow: 'hidden' },
     // Lavender's art is the hero: its rose light spills down into the world below it.
     artGlow: { boxShadow: `${colors.material.shadowPane}, 0px 24px 56px -10px ${alphaOf(colors.accent, 0.5)}` },
+    // Pine's art rests on the night floor in a deep shadow; the mint play button keeps the one glow.
+    artLift: { boxShadow: colors.material.shadowHero },
     artRim: {
       borderRadius: 32,
       borderWidth: 1,
@@ -433,13 +434,6 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
       borderRadius: 28,
       backgroundColor: alphaOf(colors.material.rimTop, 0.7),
       boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.shadowHero}`,
-    },
-    pineFrame: {
-      borderRadius: 49,
-      borderWidth: 1,
-      borderColor: colors.material.rimTop,
-      borderBottomColor: colors.material.rimBottom,
-      boxShadow: colors.material.shadowHero,
     },
     flex: { flex: 1 },
     miniSpot: { position: 'absolute', left: 16, right: 16 },

@@ -5,8 +5,8 @@ Per look (export_look):
   <look>-bg-blur.jpg   the lens: the backdrop with the scrim and top veil composited exactly as Ambience draws
                        them (values from assets/art/looks.json), Gaussian sigma 24 at 540x1170, saturation per look
   <light>.png          the look's moving light layers, alpha PNGs (see looks.json for their boxes and motion)
-plus the look's own pieces (Stone's magnolia, Paper's header, mist and header lens) and scene sets for
-SceneArt and Now Playing: portal-* (Lavender), stones-* (Stone), paper-* (Paper), pine-* (Pine).
+plus the look's own pieces (Paper's header, mist and header lens; Pine's canopy) and scene sets for
+SceneArt and Now Playing: lavender-* light studies (Lavender), stones-* (Stone), paper-* (Paper), pine-* (Pine).
 
 Usage: python3 scripts/render-art.py [target ...]   (needs numpy and Pillow)
 Targets: lavender stone paper pine (export_look), grain, scenes-lavender, scenes-stone, scenes-paper,
@@ -71,12 +71,18 @@ def screen(img, rgba_layer):
     return 1 - (1 - img) * (1 - a[..., :3] * a[..., 3:4])
 
 
-def bokeh(img, n, rmin, rmax, color, alpha, blur, ymax=1.0):
+def bokeh(img, n, rmin, rmax, color, alpha, blur, ymax=1.0, gutter=None):
+    """Soft discs of light. With `gutter` (a fraction of the width), every disc keeps clear of the screen's side
+    gutters, so none sits half hidden at a pane's edge."""
     h, w = img.shape[:2]
     layer = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     for _ in range(n):
-        x, y, r = rng.uniform(0, w), rng.uniform(0, h * ymax), rng.uniform(rmin, rmax)
+        if gutter is None:
+            x, y, r = rng.uniform(0, w), rng.uniform(0, h * ymax), rng.uniform(rmin, rmax)
+        else:
+            r = rng.uniform(rmin, rmax)
+            x, y = rng.uniform(w * gutter + r + blur * 2, w * (1 - gutter) - r - blur * 2), rng.uniform(0, h * ymax)
         a = int(255 * alpha * rng.uniform(0.4, 1))
         d.ellipse([x - r, y - r, x + r, y + r], fill=(*color, a))
         d.ellipse([x - r, y - r, x + r, y + r], outline=(*color, min(255, a + 40)), width=max(1, int(r * 0.08)))
@@ -177,22 +183,24 @@ def light_png(name, w, h, color, alpha):
 
 
 def lavender_backdrop():
-    """A lit violet world. A periwinkle wash pours in from the top left; a magenta pool glows
-    on the right, an azure pool on the left, violet and blue pools lower down, and the floor stays violet (no
-    navy band), with soft bokeh and star specks. The light lives in hue, not brightness: luminance_budget keeps
-    the world, as the lens sees it, inside what white type on the frost needs (scripts/check-contrast.py)."""
+    """A lit periwinkle world. A pale periwinkle wash pours in from the top left; a rose pool glows on the
+    right, an azure pool on the left, lilac and blue pools lower down, with soft bokeh (clear of the side
+    gutters, so no disc sits half hidden at a pane's edge) and star specks. The light lives in hue, not
+    brightness: luminance_budget keeps the world, as the lens sees it, inside what white type on the frost
+    needs (scripts/check-contrast.py), and lifts the dimmer pools up toward that budget so the floor never
+    sinks into navy."""
     reseed('lavender-bg')
     k = LAV
     img = gradient([(0, hexc(k['g0'])), (0.12, hexc(k['g1'])), (0.34, hexc(k['g2'])), (0.66, hexc(k['g3'])), (1, hexc(k['g4']))], tilt=0.12)
-    glow(img, W * 0.0, H * -0.04, W * 0.95, hexc('#9D8BFF'), k['top'])
-    glow(img, W * 1.05, H * 0.17, W * 0.58, hexc('#9A58FF'), k['lilac'])
+    glow(img, W * 0.0, H * -0.04, W * 0.95, hexc(k['top_c']), k['top'])
+    glow(img, W * 1.05, H * 0.17, W * 0.58, hexc(k['lilac_c']), k['lilac'])
     glow(img, W * 1.02, H * 0.45, W * 0.66, hexc(k['pink_c']), k['pink'])
-    glow(img, W * -0.12, H * 0.62, W * 0.66, hexc('#2F5CFF'), k['blue'])
-    glow(img, W * 0.10, H * 0.90, W * 0.66, hexc('#8B2CFF'), k['violet'])
-    glow(img, W * 1.0, H * 0.97, W * 0.55, hexc('#3550FF'), k['blue2'])
-    img = bokeh(img, 14, 30, 90, (226, 200, 255), k['bokeh'], 10)
-    img = luminance_budget(img, k['cap'], k['cap_top'], 0.18)
-    img = bokeh(img, 60, 2, 6, (255, 255, 255), 0.5, 1.0)
+    glow(img, W * -0.12, H * 0.62, W * 0.66, hexc(k['blue_c']), k['blue'])
+    glow(img, W * 0.10, H * 0.90, W * 0.66, hexc(k['violet_c']), k['violet'])
+    glow(img, W * 1.0, H * 0.97, W * 0.55, hexc(k['blue2_c']), k['blue2'])
+    img = bokeh(img, 14, 30, 90, (214, 220, 255), k['bokeh'], 10, gutter=16 / 400)
+    img = luminance_budget(img, k['cap'], k['cap_top'], k['top_end'], floor=k['floor'])
+    img = bokeh(img, 60, 2, 6, (255, 255, 255), 0.5, 1.0, gutter=16 / 400)
     return grain(img, 0.014)
 
 
@@ -205,27 +213,32 @@ def to_srgb(lin):
     return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055)
 
 
-def luminance_budget(img, cap, cap_top, top_end, seen_sigma=24):
+def luminance_budget(img, cap, cap_top, top_end, seen_sigma=24, floor=None):
     """Keep the world's light inside the budget white type needs: wherever the world, blurred the way the lens
     sees it, is brighter than `cap` (relative luminance), scale that region's light down in linear light. Hue
     and chroma survive, so a pool of light stays a pool of colour. Above `top_end` of the height the cap eases
-    up to `cap_top` (the status bar and greeting sit on the bare world, not on glass)."""
+    up to `cap_top` (the status bar and greeting sit on the bare world, not on glass). With `floor` (a fraction
+    of the cap), regions the lens sees as dimmer than floor x cap are lifted toward it, at most 1.8x."""
     lin = to_linear(img)
     h, w = img.shape[:2]
     lum = (lin * np.array([0.2126, 0.7152, 0.0722])).sum(-1)
     seen = gblur(lum, seen_sigma * w / LENS_W)
     t = np.clip(np.linspace(0, 1, h) / top_end, 0, 1)[:, None]
     limit = cap_top + (cap - cap_top) * (t * t * (3 - 2 * t))
-    gain = gblur(np.clip(limit / np.maximum(seen, 1e-6), 0, 1), 12 * w / LENS_W)
+    hi = 1.0 if floor is None else 1.8
+    target = limit if floor is None else np.maximum(np.minimum(seen, limit), cap * floor)
+    gain = gblur(np.clip(target / np.maximum(seen, 1e-6), 0, hi), 12 * w / LENS_W)
     return to_srgb(lin * gain[..., None])
 
 
-# Tuned against the contrast gate (white type on the frost at 4.5:1 or better). The plan's starting world
-# (#8C7EF2 at 0.30, #DCE2FF glow 0.65, pink #FF8AD8 0.55) put white type at about 2:1; these keep its hues and
-# move its light into hue rather than brightness.
-LAV = {'g0': '#8F7BFF', 'g1': '#5A3EE0', 'g2': '#4A26C8', 'g3': '#4220B8', 'g4': '#3A1CA8', 'top': 0.30, 'lilac': 0.30,
-       'pink_c': '#E034C8', 'pink': 0.50, 'blue': 0.45, 'violet': 0.40, 'blue2': 0.34, 'bokeh': 0.12,
-       'cap': 0.055, 'cap_top': 0.13}
+# Tuned against the contrast gate (white type on the frost at 4.5:1 or better). The hues sit on periwinkle
+# (about 242 degrees) rather than violet, with rose and lilac pools for warmth; the light lives in hue and in an
+# even floor rather than in brightness, because a world as bright as the reference (#7077BD) holds white type
+# at about 4.2:1 on its own and under 3.5:1 under frost.
+LAV = {'g0': '#A4A8FF', 'g1': '#6066F2', 'g2': '#4E50E2', 'g3': '#4846D4', 'g4': '#423EC6',
+       'top_c': '#B8BCFF', 'top': 0.30, 'lilac_c': '#A08CFF', 'lilac': 0.30, 'pink_c': '#E04CC8', 'pink': 0.46,
+       'blue_c': '#3F6CFF', 'blue': 0.40, 'violet_c': '#7C64FF', 'violet': 0.36, 'blue2_c': '#4A60FF', 'blue2': 0.30,
+       'bokeh': 0.12, 'cap': 0.054, 'cap_top': 0.13, 'top_end': 0.12, 'floor': 0.92}
 
 
 def lavender_lights():
@@ -285,8 +298,8 @@ def stone_backdrop():
 # Tuned against the contrast gate. The plan's starting world (#6E6C5A/#4F4E43, sun 0.45, beams at full) puts
 # ivory type on the bare room near 3:1; this keeps its hues and moves the light into contrast between shaft and
 # shadow. Beam strength is in linear light.
-STONE = {'top': '#4E4D42', 'mid': '#3F3E36', 'low': '#2E2F28', 'shade': 0.30, 'sun': 0.40, 'sun_r': 0.75, 'bounce': 0.16,
-         'beams': 0.32, 'floor': 0.22, 'cap': 0.108, 'cap_top': 0.112}
+STONE = {'top': '#56554A', 'mid': '#45443B', 'low': '#2E2F28', 'shade': 0.30, 'sun': 0.46, 'sun_r': 0.80, 'bounce': 0.16,
+         'beams': 0.36, 'floor': 0.22, 'cap': 0.108, 'cap_top': 0.112}
 
 
 def stone_lights():
@@ -303,141 +316,7 @@ def stone_lights():
     light_png('stone-light-beam', w, h, '#FFF0CD', a)
 
 
-STONE_BEAM = 0.08
-
-
-def petal_layer(w, h, base, length, width, angle, tone, bend=0.0, cup=0.55):
-    """One magnolia petal: a spoon-shaped blade rooted at `base` (narrow at the base, widest two thirds of the
-    way up, a rounded tip), cupped, slightly bent, and lit from the top left. `tone` 0 is a lit front petal,
-    1 a petal at the back in its neighbours' shade. Returns (rgb, alpha) the size of the canvas."""
-    yy, xx = np.mgrid[:h, :w].astype(float)
-    a = np.radians(angle)
-    ux, uy = np.sin(a), -np.cos(a)  # along the petal
-    vx, vy = -uy, ux  # across
-    rx, ry = xx - base[0], yy - base[1]
-    t = (rx * ux + ry * uy) / length
-    s = (rx * vx + ry * vy) / width - bend * np.clip(t, 0, 1) ** 2
-    tc = np.clip(t, 0, 1)
-    wide = 0.64
-    rise = np.sin(np.pi / 2 * np.clip(tc / wide, 0, 1)) ** 0.9
-    tip = np.sqrt(np.clip(1 - ((tc - wide) / (1 - wide)) ** 2, 0, 1))
-    half = np.where(tc < wide, 0.18 + 0.82 * rise, tip) * ((t > 0) & (t < 1))
-    inside = np.abs(s) < half
-    edge = np.clip((half - np.abs(s)) * width / 2.2, 0, 1)  # anti-aliased edge
-    nx = np.clip(s / np.maximum(half, 1e-3), -1, 1)
-    # a cupped petal: the surface turns away at both rims; the light comes from the top left
-    nz = np.sqrt(np.clip(1 - (nx * cup) ** 2, 0, 1))
-    lam = np.clip(0.16 + 0.62 * nz - 0.50 * nx * cup + 0.22 * tc, 0, 1.15)
-    ivory, shade, blush = hexc('#F3EEE1'), hexc('#8A836E'), hexc('#DCC7B8')
-    col = shade + (ivory - shade) * np.clip(lam, 0, 1)[..., None]
-    col = col + np.clip(lam - 1, 0, 1)[..., None] * 0.4  # a soft sheen where the petal faces the window
-    col = col * (1 - 0.22 * tone)
-    base_t = np.clip(1 - tc / 0.35, 0, 1) ** 1.5
-    col = col * (1 - 0.18 * base_t[..., None]) + blush * 0.16 * base_t[..., None]  # the base sits in shadow, blushed
-    vein = np.exp(-(s / 0.05) ** 2) * (tc > 0.05) * (tc < 0.8) * 0.02
-    col = col - vein[..., None]
-    rim = np.clip(1 - (half - np.abs(s)) * width / 10.0, 0, 1) * inside
-    col = col + rim[..., None] * 0.05  # the translucent edge catches the light
-    alpha = edge * inside * (0.97 - 0.10 * rim)
-    return np.clip(col, 0, 1), np.clip(alpha, 0, 1)
-
-
-def leaf_layer(w, h, base, length, width, angle, dark=False, bend=0.12):
-    """A glossy magnolia leaf: long, pointed at both ends, with a midrib and a soft highlight."""
-    yy, xx = np.mgrid[:h, :w].astype(float)
-    a = np.radians(angle)
-    ux, uy = np.sin(a), -np.cos(a)
-    vx, vy = -uy, ux
-    rx, ry = xx - base[0], yy - base[1]
-    t = (rx * ux + ry * uy) / length
-    tc = np.clip(t, 0, 1)
-    s = (rx * vx + ry * vy) / width - bend * np.sin(np.pi * tc)
-    half = np.where((t > 0) & (t < 1), np.sin(np.pi * tc ** 0.9) ** 0.85, 0)
-    edge = np.clip((half - np.abs(s)) * width / 2.2, 0, 1)
-    nx = np.clip(s / np.maximum(half, 1e-3), -1, 1)
-    lam = np.clip(0.45 - 0.35 * nx + 0.15 * (1 - tc), 0, 1)
-    lo, hi = hexc('#252B1D'), hexc('#6C7856')
-    col = lo + (hi - lo) * lam[..., None] * (0.7 if dark else 1)
-    gloss = np.exp(-((nx + 0.35) / 0.22) ** 2) * np.sin(np.pi * tc) * (0.10 if not dark else 0.05)
-    rib = np.exp(-(s / 0.03) ** 2) * (tc > 0.02) * (tc < 0.95) * 0.06
-    col = col + (gloss + rib)[..., None] * hexc('#E9F0D2')
-    return np.clip(col, 0, 1), edge * (np.abs(s) < half)
-
-
-def over(dst_rgb, dst_a, rgb, a):
-    a = a[..., None]
-    out_a = a + dst_a[..., None] * (1 - a)
-    out = (rgb * a + dst_rgb * dst_a[..., None] * (1 - a)) / np.maximum(out_a, 1e-6)
-    return out, out_a[..., 0]
-
-
-def magnolia(name, open_flower=False):
-    """A white magnolia on its stem, lit from the top left: cupped ivory petals with translucent rims, a soft
-    calyx, one sharp leaf near the flower and the lower leaves out of focus. Drawn at 2x and reduced to 420x700.
-    The flower sits in the top half and the leaves below it, so on Today only the leaves pass under the hero glass."""
-    reseed(name)
-    w, h = 840, 1400
-    rgb, a = np.zeros((h, w, 3)), np.zeros((h, w))
-    # out-of-focus lower leaves first, blurred as their own layer (depth of field)
-    lrgb, la = np.zeros((h, w, 3)), np.zeros((h, w))
-    for base, length, width, ang, bend in [((420, 1060), 470, 120, -62, 0.15), ((440, 980), 420, 104, 66, -0.12),
-                                          ((430, 1290), 380, 110, 28, 0.10), ((410, 1180), 360, 96, -24, -0.1)]:
-        c, al = leaf_layer(w, h, base, length, width, ang, dark=True, bend=bend)
-        lrgb, la = over(lrgb, la, c, al)
-    pm = gblur(np.dstack([lrgb * la[..., None], la]), 11)
-    la = np.clip(pm[..., 3], 0, 1)
-    lrgb = pm[..., :3] / np.maximum(la[..., None], 1e-6)
-    rgb, a = over(rgb, a, lrgb, la)
-    # stem: a gentle S, lit on its left
-    stem = Image.new('L', (w, h), 0)
-    d = ImageDraw.Draw(stem)
-    pts = [(428 + 16 * np.sin(k / 10), 610 + k * 9) for k in range(88)]
-    d.line(pts, fill=255, width=9, joint='curve')
-    sa = np.clip(gblur(np.asarray(stem).astype(float) / 255, 1.0), 0, 1)
-    rgb, a = over(rgb, a, np.broadcast_to(hexc('#4C4B34'), (h, w, 3)), sa)
-    # one sharp leaf near the flower
-    c, al = leaf_layer(w, h, (432, 770), 330, 88, 52, bend=0.14)
-    rgb, a = over(rgb, a, c, al)
-    base = (428, 640)
-    # petals, back to front: (angle, length, width, tone, bend)
-    if open_flower:
-        petals = [(-70, 330, 128, 1.0, 0.10), (68, 330, 128, 1.0, -0.10), (-44, 390, 140, 0.75, 0.08), (42, 384, 138, 0.75, -0.08),
-                  (-20, 420, 140, 0.45, 0.05), (18, 416, 136, 0.40, -0.05), (-3, 400, 124, 0.0, 0.0)]
-    else:
-        petals = [(-14, 440, 118, 1.0, 0.12), (13, 436, 116, 1.0, -0.12), (-24, 420, 122, 0.55, 0.16),
-                  (22, 414, 120, 0.5, -0.16), (-4, 452, 128, 0.0, 0.03)]
-    prgb, pa = np.zeros((h, w, 3)), np.zeros((h, w))
-    for ang, length, width, tone, bend in petals:
-        c, al = petal_layer(w, h, base, length, width, ang, tone, bend)
-        # a petal casts a soft shadow on the one behind it, down and to the right (away from the window)
-        sh = gblur(al, 10)
-        sh = np.roll(np.roll(sh, 10, axis=0), 8, axis=1)
-        prgb = prgb * (1 - 0.24 * (sh * pa)[..., None])
-        prgb, pa = over(prgb, pa, c, al)
-    # the whole bloom turns from the window: brighter on its upper left, into shade on its lower right
-    yy, xx = np.mgrid[:h, :w].astype(float)
-    turn = 1 - 0.30 * np.clip((xx - 380) / 200, 0, 1) - 0.14 * np.clip((yy - 420) / 220, 0, 1)
-    rgb, a = over(rgb, a, prgb * turn[..., None], pa)
-    # the calyx where the petals meet the stem
-    cal = np.exp(-(((xx - 428) / 46) ** 2 + ((yy - 652) / 28) ** 2) * 2)
-    rgb, a = over(rgb, a, np.broadcast_to(hexc('#5F6440'), (h, w, 3)), np.clip(cal * 0.95, 0, 1))
-    pm = gblur(np.dstack([rgb * a[..., None], a]), 1.6)  # a touch of lens softness, like the photographs
-    out = resize(pm, 420, 700)
-    al = np.clip(out[..., 3], 0, 1)
-    col = np.clip(out[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1)
-    col = np.clip(col + rng.normal(0, 0.008, col.shape[:2] + (1,)), 0, 1)
-    save_png(np.dstack([col, al]), name)
-    return np.dstack([col * al[..., None], al])
-
-
-def stone_magnolias():
-    """The closed bud for the day, the open bloom for a finished day, and a frosted copy of each: the same image
-    blurred the way glass sees it, drawn inside the hero card where the leaves pass under it."""
-    for name, open_flower in (('stone-magnolia', False), ('stone-magnolia-open', True)):
-        pm = magnolia(name, open_flower=open_flower)
-        blurred = gblur(pm, 18 / 2)  # sigma 18 at the 2x drawing size
-        al = np.clip(blurred[..., 3], 0, 1)
-        save_png(np.dstack([np.clip(blurred[..., :3] / np.maximum(al[..., None], 1e-6), 0, 1), al]), f'{name}-blur')
+STONE_BEAM = 0.095
 
 
 # ---------------------------------------------------------------------------------------------
@@ -857,7 +736,7 @@ def pine_header():
 
 BACKDROPS = {'lavender': lavender_backdrop, 'stone': stone_backdrop, 'paper': paper_backdrop, 'pine': pine_backdrop}
 LIGHTS = {'lavender': lavender_lights, 'stone': stone_lights, 'paper': paper_lights, 'pine': pine_lights}
-EXTRAS = {'stone': [stone_magnolias], 'paper': [paper_header], 'pine': [pine_header]}
+EXTRAS = {'paper': [paper_header], 'pine': [pine_header]}
 
 
 def export_look(name):
@@ -890,164 +769,135 @@ def glass_grain():
 # Scenes for SceneArt and Now Playing.
 
 
-def portal(name, top, mid, horizon, glow_color, figure, size=1000):
-    """A glowing ring over still water, reflected, with an optional small figure."""
+def light_study(name, top, bottom, fields, drops=0, ripples=(), size=1000):
+    """An abstract study in soft light for Lavender's cards and sounds, made of the world's own orbs: a deep
+    periwinkle ground (darker at the top left, where a card's words sit) with large out-of-focus fields of light
+    blended in linear light, the way light adds. No figure, no horizon, no ring. `fields` are
+    (cx, cy, rx, ry, colour, strength) in units of the size; `drops` adds that many soft out-of-focus drops;
+    `ripples` are (y, thickness, amplitude, colour, strength): long swells of light, as on water seen out of focus."""
     reseed(name)
     w = h = size
-    hz = int(0.64 * h)
-    y = np.linspace(0, 1, h)[:, None]
-    sky = np.clip(y / 0.64, 0, 1)
-    img = np.zeros((h, w, 3))
-    for k in range(3):
-        img[..., k] = np.where(sky < 0.55, top[k] + (mid[k] - top[k]) * (sky / 0.55),
-                               mid[k] + (horizon[k] - mid[k]) * ((sky - 0.55) / 0.45))
-    cx, cy, r = 0.6 * w, hz - 0.2 * h, 0.24 * w
-    yy, xx = np.mgrid[:h, :w].astype(float)
-    dist = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
-    edge = np.abs(dist - r)
-    light = (np.exp(-(edge / 3.5) ** 2) + np.exp(-(edge / 18) ** 2) * 0.55 + np.exp(-(edge / 60) ** 2) * 0.3
-             + np.exp(-(dist / r) ** 2 * 1.5) * 0.18
-             + np.exp(-(((xx - cx) / (w * 0.5)) ** 2 + ((yy - hz) / (h * 0.12)) ** 2)) * 0.6)
-    img = 1 - (1 - img) * (1 - np.clip(light[..., None] * glow_color, 0, 1))
-    for _ in range(70):
-        sx, sy, s, a = rng.uniform(0, w), rng.uniform(0, hz * 0.8), rng.uniform(0.6, 1.8), rng.uniform(0.3, 0.9)
-        star = np.exp(-((xx - sx) ** 2 + (yy - sy) ** 2) / (s ** 2 * 2)) * a
-        img = 1 - (1 - img) * (1 - star[..., None])
-    refl = img[hz - 1::-1][:h - hz].copy()
-    for i in range(h - hz):
-        refl[i] = np.roll(refl[i], int(6 * np.sin(i * 0.25) * (i / (h - hz) + 0.2)), axis=0)
-    refl = gblur(refl, 3)
-    dark = np.linspace(0.75, 0.35, h - hz)[:, None, None]
-    img[hz:] = refl * dark + top * (1 - dark) * 0.5
-    for i in range(0, h - hz, 9):
-        shimmer = np.exp(-((np.arange(w) - cx) / (r * 1.1)) ** 2) * 0.5 * np.exp(-i / 120)
-        img[hz + i] = np.clip(img[hz + i] + shimmer[:, None] * glow_color * 0.6, 0, 1)
-    if figure:
-        im = Image.fromarray(to8(img))
-        d = ImageDraw.Draw(im)
-        d.ellipse([cx - 90, hz - 6, cx + 90, hz + 10], fill=(30, 18, 60))
-        d.polygon([(cx - 9, hz - 2), (cx - 7, hz - 62), (cx + 7, hz - 62), (cx + 9, hz - 2)], fill=(22, 12, 45))
-        d.ellipse([cx - 9, hz - 82, cx + 9, hz - 64], fill=(22, 12, 45))
-        img = np.asarray(im).astype(float) / 255
-    save(grain(img, 0.015), name, quality=86)
+    yy, xx = np.mgrid[:h, :w].astype(float) / size
+    t = np.clip(yy * 0.8 + xx * 0.2, 0, 1)[..., None]
+    lin = to_linear(hexc(top)) * (1 - t) + to_linear(hexc(bottom)) * t
+    for cx, cy, rx, ry, colour, strength in fields:
+        g = np.exp(-(((xx - cx) / rx) ** 2 + ((yy - cy) / ry) ** 2) * 1.6)
+        lin = lin + g[..., None] * to_linear(hexc(colour)) * strength
+    for y0, th, amp, colour, strength in ripples:
+        ph, f, ph2 = rng.uniform(0, 2 * np.pi), rng.uniform(0.7, 1.3), rng.uniform(0, 2 * np.pi)
+        curve = y0 + amp * np.sin(2 * np.pi * xx * f + ph) + amp * 0.4 * np.sin(2 * np.pi * xx * f * 2.3 + ph2)
+        g = np.exp(-((yy - curve) / th) ** 2) * (0.55 + 0.45 * np.sin(2 * np.pi * xx * 0.8 + ph2) ** 2)
+        lin = lin + gblur(g, size * 0.022)[..., None] * to_linear(hexc(colour)) * strength
+    if drops:
+        layer = np.zeros((h, w))
+        for _ in range(drops):
+            x, y, r, a = rng.uniform(0.3, 1.0), rng.uniform(0.25, 1.0), rng.uniform(0.012, 0.05), rng.uniform(0.25, 0.7)
+            d = np.hypot(xx - x, yy - y) / r
+            # a drop out of focus: an even disc with a slightly brighter edge
+            layer += np.clip(1 - d, 0, 1) ** 0.35 * a * (0.75 + 0.25 * np.exp(-((d - 0.9) / 0.12) ** 2))
+        layer = gblur(layer, size * 0.004)
+        lin = lin + layer[..., None] * to_linear(hexc('#C9D2FF')) * 0.10
+    # a gentle lens falloff toward the corners
+    v = 1 - 0.28 * np.clip(np.hypot(xx - 0.5, yy - 0.55) / 0.75, 0, 1) ** 2
+    img = to_srgb(lin * v[..., None])
+    save(grain(img, 0.012), name, quality=88)
+
+
+# Lavender's scenes. Each variant answers its own job: the Today card (dusk), the finished day and Ocean Waves
+# (waves), Soft Rain (rain) and Deep Focus (brown).
+LAV_SCENES = {
+    'lavender-dusk': ('#262A7A', '#4740B4', [
+        (0.86, 0.30, 0.42, 0.34, '#8E9CFF', 0.55),
+        (0.72, 0.92, 0.48, 0.30, '#FF86D2', 0.70),
+        (0.10, 1.05, 0.40, 0.25, '#A890FF', 0.40),
+    ]),
+    'lavender-waves': ('#222A78', '#2B46A8', [
+        (0.80, 0.22, 0.45, 0.32, '#7F8CFF', 0.40),
+        (0.50, 1.00, 0.80, 0.30, '#7C9CFF', 0.30),
+    ], 0, [
+        (0.56, 0.030, 0.035, '#A8C4FF', 0.35),
+        (0.66, 0.034, 0.040, '#FFA8DC', 0.32),
+        (0.77, 0.040, 0.045, '#A8C4FF', 0.40),
+        (0.90, 0.048, 0.050, '#FFB8E2', 0.36),
+    ]),
+    'lavender-rain': ('#20246A', '#30368C', [
+        (0.65, 0.05, 0.55, 0.40, '#9AAAFF', 0.45),
+        (0.85, 0.95, 0.35, 0.25, '#E08CFF', 0.30),
+    ], 46),
+    'lavender-brown': ('#271C5A', '#3A2468', [
+        (0.58, 0.88, 0.40, 0.28, '#FFB08A', 0.75),
+        (0.62, 0.80, 0.70, 0.45, '#FF7FC4', 0.35),
+        (0.95, 0.20, 0.30, 0.30, '#6E6CFF', 0.25),
+    ]),
+}
 
 
 def scenes_lavender(only=None):
-    specs = {
-        'portal-dusk': (hexc('#251660'), hexc('#7C47C8'), hexc('#F59AD2'), hexc('#FFD6F6'), True),
-        'portal-rain': (hexc('#1C1660'), hexc('#5A4BD0'), hexc('#B9A8FF'), hexc('#EAD8FF'), False),
-        'portal-waves': (hexc('#28155A'), hexc('#A148B6'), hexc('#FFA8C3'), hexc('#FFE2EE'), False),
-        'portal-brown': (hexc('#2A183C'), hexc('#894769'), hexc('#F2AF78'), hexc('#FFE6C4'), False),
-    }
-    for name, args in specs.items():
+    for name, spec in LAV_SCENES.items():
         if only is None or name in only:
-            portal(name, *args)
+            light_study(name, *spec)
 
 
-def portal_rain():
-    """Only the re-coloured rain portal (violet-blue); the other portals are unchanged."""
-    scenes_lavender(only={'portal-rain'})
+# Stone's scenes are photographs, not drawings: a CC0 gravel texture ("Gravel04" from CC0Textures, now
+# ambientCG, as bundled with scikit-image; Creative Commons CC0, no attribution required), laid into
+# perspective as a gravel bed seen from low down, focused on one band with the rest falling out of focus, and
+# graded to the room: olive shadows, warm stone mids, ivory highlights, window light from the top left.
+GRAVEL = 'scripts/sources/gravel-cc0.png'
+
+STONE_SCENES = {
+    # shadows, mids, highlights, focus row, light direction (x, y), light strength, contrast, mirror
+    'calm': ('#23241B', '#8A8470', '#ECE3CA', 0.60, (-0.6, -0.8), 0.60, 1.12, False),
+    'rain': ('#191A16', '#64675C', '#E0E1D4', 0.52, (-0.3, -1.0), 0.45, 1.35, True),
+    'waves': ('#1B211D', '#68715F', '#DEE4D0', 0.66, (0.0, -1.0), 0.50, 1.08, True),
+    'brown': ('#271E15', '#8C7254', '#F2D8AE', 0.58, (1.0, -0.4), 0.75, 1.15, False),
+}
 
 
 def stones_scene(name, variant, size=1000):
-    """Smooth stones resting in still water with a silk ribbon draped over them, lit from the top left. The
-    stones are shaded pebbles with a faint speckle, each standing in its own soft reflection; the silk is
-    translucent with pleats that run along it and a satin shine on their crests; each variant changes the
-    water and the light."""
+    """A gravel bed photographed from low down in window light (see GRAVEL)."""
     reseed(name)
-    w = h = size
-    yy, xx = np.mgrid[:h, :w].astype(float)
-    tops = {'calm': ('#C9C4AE', '#8A8571', '#3F3D32'), 'rain': ('#B5B9AF', '#767B71', '#34382F'),
-            'waves': ('#C6C1A8', '#878269', '#3C3B2F'), 'brown': ('#D6BE9A', '#8A7556', '#3B3125')}[variant]
-    # water: misty and light far away, darker close up, a soft horizon a third of the way down
-    img = gradient([(0, hexc(tops[0])), (0.24, hexc(tops[0])), (0.48, hexc(tops[1])), (1, hexc(tops[2]))], w, h, tilt=0.0)
-    img = gblur(img, 18)
-    if variant == 'brown':
-        glow(img, 1.0 * w, 0.30 * h, 0.75 * w, hexc('#FFCB8E'), 0.50)  # a low warm sun
-    if variant == 'waves':
-        swell = np.sin(yy / 13 + np.sin(xx / 80) * 2.4) * np.clip((yy - 0.36 * h) / (0.6 * h), 0, 1) ** 1.5
-        img = np.clip(img + swell[..., None] * 0.03, 0, 1)
-    if variant == 'rain':
-        for _ in range(30):
-            px, py, r0 = rng.uniform(0, w), rng.uniform(0.4 * h, h), rng.uniform(12, 50)
-            d = np.hypot(xx - px, (yy - py) * 3.0)
-            ring = np.exp(-((d - r0) / 1.8) ** 2) * 0.07 + np.exp(-((d - r0 * 0.62) / 1.5) ** 2) * 0.04
-            img = np.clip(img + ring[..., None], 0, 1)
-    light = np.array([-0.55, -0.62, 0.56])
-    light /= np.linalg.norm(light)
-    tex = noise(w, h, 9, 3, 41) - 0.5
-    stones = sorted([(0.70, 0.46, 0.15, 0.085, 0.92), (0.36, 0.55, 0.26, 0.135, 1.0), (0.64, 0.73, 0.30, 0.14, 0.95)],
-                    key=lambda st: st[1])
-    for cx, cy, rx, ry, tone in stones:
-        cx, cy, rx, ry = cx * w, cy * h, rx * w, ry * h
-        nx, ny = (xx - cx) / rx, (yy - cy) / ry
-        r2 = np.abs(nx) ** 2.3 + np.abs(ny) ** 2.3  # a superellipse: a flattened pebble, not an egg
-        nz = np.sqrt(np.clip(1 - r2, 0, 1))
-        n = np.dstack([nx * 0.8, ny * 1.1, nz + 0.25])
-        n /= np.linalg.norm(n, axis=-1, keepdims=True)
-        lam = np.clip((n * light).sum(-1), 0, 1)
-        wrap = np.clip(((n * light).sum(-1) + 0.35) / 1.35, 0, 1)
-        refl = 2 * (n * light).sum(-1, keepdims=True) * n - light
-        spec = np.clip(refl[..., 2], 0, 1) ** 26 * 0.22
-        stone = hexc('#9D967F') * tone
-        shade = stone * (0.16 + 0.55 * wrap + 0.35 * lam)[..., None] * (1 + 0.10 * tex[..., None]) + spec[..., None]
-        if variant == 'brown':
-            shade = shade + np.clip(nx, 0, 1)[..., None] * hexc('#FFB866') * 0.16 * nz[..., None]
-        alpha = np.clip((1 - r2) * min(rx, ry) / 2.0, 0, 1)  # anti-aliased rim, no halo
-        # where it meets the water: a contact shadow and its reflection, mirrored about the waterline
-        wl = cy + ry * 0.62
-        contact = np.exp(-(((xx - cx) / (rx * 1.02)) ** 2 + ((yy - wl) / (ry * 0.22)) ** 2) * 2.2)
-        img = img * (1 - 0.45 * contact)[..., None]
-        src = np.clip((2 * wl - yy).astype(int), 0, h - 1)
-        xi = xx.astype(int)
-        ra = alpha[src, xi] * (yy > wl)
-        rgb_r = shade[src, xi]
-        ra = gblur(ra, 5) * 0.32 * np.clip(1 - (yy - wl) / (ry * 1.6), 0, 1)
-        img = img * (1 - ra[..., None]) + gblur(rgb_r, 5) * ra[..., None]
-        img = img * (1 - alpha[..., None]) + shade * alpha[..., None]
-    # silk: a translucent ribbon draped from the upper left over the large stone and away to the right
-    t = np.linspace(0, 1, 260)
-    knots = np.array([(-0.08, 0.76), (0.14, 0.50), (0.30, 0.415), (0.46, 0.44), (0.58, 0.455), (0.70, 0.375), (0.84, 0.41), (1.08, 0.60)])
-    kt = np.linspace(0, 1, len(knots))
-    smooth = np.exp(-0.5 * (np.arange(-30, 31) / 9) ** 2)
-    smooth /= smooth.sum()
-    px = np.convolve(np.pad(np.interp(t, kt, knots[:, 0]), 30, mode='edge'), smooth, 'valid') * w
-    py = np.convolve(np.pad(np.interp(t, kt, knots[:, 1]), 30, mode='edge'), smooth, 'valid') * h
-    dxs, dys = np.gradient(px), np.gradient(py)
-    norm = np.hypot(dxs, dys)
-    nxs, nys = -dys / norm, dxs / norm
-    halfw = (30 + 44 * np.sin(np.pi * t) ** 0.7) * (w / 1000)
-    acc = np.zeros((h, w, 3))
-    acc_a = np.zeros((h, w))
-    strands = 46
-    for k in range(strands):
-        v = -1 + 2 * k / (strands - 1)
-        layer = Image.new('RGBA', (w, h), (0, 0, 0, 0))
-        d = ImageDraw.Draw(layer)
-        for i in range(len(t) - 1):
-            # pleats run along the ribbon and twist slowly; their slope decides the light
-            ph = v * 10.5 + t[i] * 7.0 + np.sin(t[i] * 11) * 0.8
-            slope = np.cos(ph)
-            lit = np.clip(0.60 + 0.26 * slope - 0.12 * v, 0, 1)
-            sheen = np.clip(slope, 0, 1) ** 10 * 0.22
-            c = np.clip(hexc('#F4EFE2') * (0.70 + 0.30 * lit) + sheen, 0, 1)
-            x0, y0 = px[i] + nxs[i] * v * halfw[i], py[i] + nys[i] * v * halfw[i]
-            x1, y1 = px[i + 1] + nxs[i + 1] * v * halfw[i + 1], py[i + 1] + nys[i + 1] * v * halfw[i + 1]
-            d.line([(x0, y0), (x1, y1)], fill=tuple(int(cc * 255) for cc in c) + (255,), width=max(2, int(2.6 * halfw[i] / strands * 2)))
-        arr = np.asarray(layer).astype(float) / 255
-        acc = acc * (1 - arr[..., 3:4]) + arr[..., :3] * arr[..., 3:4]
-        acc_a = np.maximum(acc_a, arr[..., 3])
-    acc = gblur(acc, 1.2)
-    sa = np.clip(gblur(acc_a, 1.6), 0, 1)
-    col = acc / np.maximum(gblur(acc_a, 1.2)[..., None], 1e-3)
-    edge = np.clip(1 - gblur(acc_a, 6), 0, 1)  # thinner, more translucent at its edges
-    opacity = sa * (0.70 - 0.32 * edge)
-    img = img * (1 - opacity[..., None]) + np.clip(col, 0, 1) * opacity[..., None]
-    # the silk's shadow on the water below it, offset away from the light
-    shadow = np.roll(np.roll(gblur(acc_a, 14), 26, axis=0), 18, axis=1) * (1 - sa)
-    img = img * (1 - 0.22 * shadow[..., None])
-    glow(img, -0.1 * w, -0.1 * h, 0.9 * w, hexc('#FFF6DC'), 0.26 if variant != 'brown' else 0.12)
-    save(grain(img, 0.014), name, quality=86)
+    shadows, mids, highs, focus, (lx, ly), light, contrast, mirror = STONE_SCENES[variant]
+    tex = Image.open(GRAVEL).convert('L')
+    if mirror:
+        tex = tex.transpose(Image.FLIP_LEFT_RIGHT).rotate(90)
+    tw, th = tex.size
+    # the gravel as a plane: the far edge (top) shows the whole texture width, the near edge (bottom) a third
+    # of it, so the stones grow toward the camera
+    big = tex.resize((tw * 2, th * 2), Image.LANCZOS)  # sampled at 2x so the near stones stay smooth
+    src = [(0, 0), (tw * 2, 0), (tw * 1.32, th * 2), (tw * 0.68, th * 2)]
+    dst = [(0, 0), (size, 0), (size, size), (0, size)]
+    g = np.asarray(big.transform((size, size), Image.PERSPECTIVE, _perspective(dst, src), Image.BICUBIC)).astype(float) / 255
+    # depth of field: sharp on the focus row, softer away from it (faster toward the far edge)
+    y = np.linspace(0, 1, size)
+    blur_px = np.where(y < focus, (focus - y) * 26, (y - focus) * 16)
+    levels = [0.0, 2.0, 4.0, 7.0, 11.0]
+    stack = np.stack([g] + [gblur(g, s_) for s_ in levels[1:]])
+    idx = np.interp(blur_px, levels, np.arange(len(levels)))
+    i0 = np.minimum(np.floor(idx).astype(int), len(levels) - 2)
+    f = (idx - i0)[:, None]
+    rows = np.arange(size)
+    g = stack[i0, rows] * (1 - f) + stack[i0 + 1, rows] * f
+    # contrast about the mid, then the window light: a broad falloff from the light's side
+    g = np.clip(0.5 + (g - 0.5) * contrast, 0, 1)
+    yy, xx = np.mgrid[:size, :size].astype(float) / size
+    lit = 0.5 + 0.5 * np.clip(((xx - 0.5) * lx + (yy - 0.5) * ly) * 1.4, -1, 1)
+    g = g * (1 - light + light * (0.55 + 0.9 * lit))
+    vign = 1 - 0.35 * np.clip(np.hypot(xx - 0.5, yy - 0.5) / 0.72, 0, 1) ** 2
+    g = np.clip(g * vign, 0, 1)
+    # tritone grade in linear light
+    s0, m0, h0 = (to_linear(hexc(c)) for c in (shadows, mids, highs))
+    t = g[..., None]
+    lin = np.where(t < 0.5, s0 + (m0 - s0) * (t / 0.5), m0 + (h0 - m0) * ((t - 0.5) / 0.5))
+    save(grain(to_srgb(lin), 0.010), name, quality=88)
+
+
+def _perspective(dst, src):
+    """PIL PERSPECTIVE coefficients mapping output points `dst` to input points `src`."""
+    m = []
+    for (x, y), (u, v) in zip(dst, src):
+        m.append([x, y, 1, 0, 0, 0, -u * x, -u * y])
+        m.append([0, 0, 0, x, y, 1, -v * x, -v * y])
+    return np.linalg.solve(np.array(m, float), np.array(src, float).reshape(8)).tolist()
 
 
 def scenes_stone():

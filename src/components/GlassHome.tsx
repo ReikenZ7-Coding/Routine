@@ -1,13 +1,13 @@
 // Today's top half for the glass looks, laid out after the reference designs:
 // Lavender follows the music-app home (search bar, art hero, category circles, list rows with art),
-// Stone follows the meditation home (light greeting with a flower, recommendation card, category tiles).
+// Stone follows the meditation home (a light greeting in window light, recommendation card, category tiles).
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import { type AccessibilityActionEvent, Image, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { type ReactNode, useEffect, useRef } from 'react';
+import { type AccessibilityActionEvent, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { type Kind, type Theme, useStyles, useTheme } from '../theme';
-import { MAGNOLIA, MAGNOLIA_RATIO, Magnolia, SceneArt } from './Art';
+import { SceneArt } from './Art';
 import { Glass } from './Glass';
 import { alphaOf } from './glass/colour';
 import { Dim, EASE_OUT, Enter, FadeSwap, Pop, Press, SelectFade, useReduceMotion } from './Motion';
@@ -49,7 +49,8 @@ interface Props {
   calendarOpen: boolean;
   calendar: ReactNode;
   onToggleCalendar: () => void;
-  hero: { eyebrow: string; title: string; meta: string; action: string; icon: IconName; onAction: () => void };
+  /** `next`: the hero is the next routine (its action ticks it off); otherwise it sums up the day. */
+  hero: { eyebrow: string; title: string; meta: string; action: string; icon: IconName; next?: boolean; onAction: () => void };
   categories: HomeCategory[];
   items: HomeItem[];
   done: number;
@@ -151,13 +152,14 @@ function LavenderHome(p: Props) {
             </Text>
             <View style={styles.flex} />
             {!allDone && (
-              <Press onPress={p.hero.onAction} style={styles.lavPlay} haptic accessibilityLabel={p.hero.action}>
-                <Ionicons
-                  name={p.hero.icon}
-                  size={24}
-                  color={colors.onNode}
-                  style={p.hero.icon === 'play' ? styles.playNudgeBig : undefined}
-                />
+              <Press
+                onPress={p.hero.onAction}
+                style={styles.lavAction}
+                haptic
+                accessibilityLabel={p.hero.next ? `${p.hero.action}: ${p.hero.title}` : p.hero.action}
+              >
+                <Ionicons name={p.hero.icon} size={20} color={colors.onNode} />
+                <Text style={styles.lavActionText}>{p.hero.action}</Text>
               </Press>
             )}
           </Glass>
@@ -268,7 +270,8 @@ function DoneBloom({ on }: { on: boolean }) {
   return <Animated.View pointerEvents="none" style={[styles.doneBloom, anim]} />;
 }
 
-/** The round tick at a row's end: a play glyph until done, then the look's done fill fades in with a check. */
+/** The tick at a row's end: an empty ring (a checkbox, not a play button) in a 44 target; when done the look's
+ *  done fill fades into the ring with a check. */
 function RowCheck({ item: it }: { item: HomeItem }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
@@ -282,41 +285,20 @@ function RowCheck({ item: it }: { item: HomeItem }) {
       accessibilityState={{ checked: it.done }}
       accessibilityLabel={`Mark ${it.title} done`}
     >
-      <SelectFade on={it.done} radius={22} bleed={1} style={styles.doneFill} />
-      <Pop done={it.done}>
-        <FadeSwap
-          on={it.done}
-          off={<Ionicons name="play" size={14} color={colors.text} style={styles.playNudge} />}
-          onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />}
-        />
+      <Pop done={it.done} style={styles.tickRing}>
+        <SelectFade on={it.done} radius={15} bleed={1.5} style={styles.doneFill} />
+        <FadeSwap on={it.done} off={null} onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />} />
       </Pop>
     </Press>
   );
 }
 
-// Stone's magnolia stands behind the hero card: the sharp flower over the room, its leaves passing under the
-// glass, where a frosted copy (the same image, pre-blurred) lines up with it exactly.
-const MAG_W = 170;
-const MAG_TOP = 112;
-const MAG_RIGHT = -34;
-
 function StoneHome(p: Props) {
   const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
-  const [heroY, setHeroY] = useState<number | null>(null);
   const allDone = p.total > 0 && p.done === p.total;
-  const magH = Math.round(MAG_W * MAGNOLIA_RATIO);
-  // Inside the hero, children sit within its 1px rim.
-  const frosted = heroY === null ? null : { top: MAG_TOP - heroY - 1, right: MAG_RIGHT - 1, width: MAG_W, height: magH };
   return (
     <View>
-      {/* The flower steps out while the calendar is open: the calendar pane would cut its leaves with no frost. */}
-      <Dim on={p.calendarOpen} to={0} style={[styles.magnolia, { width: MAG_W, height: magH }]}>
-        <View pointerEvents="none">
-          <FadeSwap on={allDone} duration={400} off={<Magnolia width={MAG_W} />} onContent={<Magnolia width={MAG_W} open />} />
-        </View>
-      </Dim>
-
       <View style={styles.bar}>
         <Glass tier="control" radius={22} style={styles.round} onPress={p.onStats} accessibilityLabel="Your week">
           <Ionicons name="stats-chart-outline" size={18} color={colors.text} />
@@ -353,28 +335,14 @@ function StoneHome(p: Props) {
 
       {p.calendarOpen && <Glass style={styles.calendar}>{p.calendar}</Glass>}
 
-      <View onLayout={(e) => setHeroY(e.nativeEvent.layout.y)}>
+      <View>
         <Enter index={0}>
           <Glass tier="hero" radius={radii.hero} style={styles.stoneCard}>
-            {frosted && (
-              <View pointerEvents="none" style={[styles.frost, frosted]}>
-                <Dim on={p.calendarOpen} to={0}>
-                  <FadeSwap
-                    on={allDone}
-                    duration={400}
-                    off={<Image source={MAGNOLIA.blur} style={frostSize(magH)} resizeMode="contain" accessibilityIgnoresInvertColors />}
-                    onContent={
-                      <Image source={MAGNOLIA.openBlur} style={frostSize(magH)} resizeMode="contain" accessibilityIgnoresInvertColors />
-                    }
-                  />
-                </Dim>
-              </View>
-            )}
             <Text style={styles.stoneTitle} numberOfLines={2}>
               {allDone ? 'All done' : p.hero.title}
             </Text>
             <Text style={styles.stoneHeroMeta} numberOfLines={2}>
-              {allDone ? `Rest well, ${p.name}` : p.hero.icon === 'play' ? `${p.hero.eyebrow} · ${p.hero.meta}` : p.hero.meta}
+              {allDone ? `Rest well, ${p.name}` : p.hero.next ? `${p.hero.eyebrow} · ${p.hero.meta}` : p.hero.meta}
             </Text>
             {allDone ? (
               <Press
@@ -394,7 +362,7 @@ function StoneHome(p: Props) {
                 haptic
                 accessibilityLabel={p.hero.action}
               >
-                <Ionicons name={p.hero.icon === 'play' ? 'checkmark' : p.hero.icon} size={18} color={colors.onPrimary} />
+                <Ionicons name={p.hero.icon} size={18} color={colors.onPrimary} />
                 <Text style={styles.stonePillText}>{p.hero.action}</Text>
               </Press>
             )}
@@ -517,8 +485,6 @@ function StoneHome(p: Props) {
   );
 }
 
-const frostSize = (h: number) => ({ width: MAG_W, height: h });
-
 function SectionHead({ title, action, onAction, pill }: { title: string; action?: string; onAction?: () => void; pill?: boolean }) {
   const styles = useStyles(makeStyles);
   return (
@@ -593,16 +559,19 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
       maxWidth: '78%',
     },
     lavHeroMeta: { marginTop: 6, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.text, maxWidth: '72%' },
-    lavPlay: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
+    lavAction: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'center',
-      backgroundImage: `linear-gradient(180deg, ${colors.node}, ${alphaOf(colors.node, 0.82)})`,
+      gap: 8,
+      height: 48,
+      paddingLeft: 16,
+      paddingRight: 20,
+      borderRadius: 24,
+      backgroundImage: `linear-gradient(180deg, ${colors.node}, ${alphaOf(colors.node, 0.86)})`,
       boxShadow: colors.actionGlow,
     },
-    playNudgeBig: { marginLeft: 3 },
+    lavActionText: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.onNode },
     sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20, minHeight: 44 },
     sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 18, color: colors.text },
     sectionAction: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
@@ -641,27 +610,25 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     rowTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
     rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
     rowDone: { fontFamily: fonts.body, color: colors.faint, textDecorationLine: 'line-through' },
-    rowButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
+    rowButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    tickRing: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundImage: `linear-gradient(180deg, ${colors.material.control.body[0]}, ${colors.material.control.body[1]})`,
-      borderWidth: 1,
+      borderWidth: 1.5,
       borderColor: colors.controlBorder,
+      backgroundColor: colors.material.inset.fill,
     },
-    playNudge: { marginLeft: 2 },
 
     // Stone
-    magnolia: { position: 'absolute', top: MAG_TOP, right: MAG_RIGHT, pointerEvents: 'none' },
     barEnd: { flexDirection: 'row', gap: 10 },
-    stoneTop: { marginTop: 26, paddingRight: 96 },
+    stoneTop: { marginTop: 26, paddingRight: 40 },
     stoneGreet: { fontFamily: 'DMSans_300Light', fontSize: 32, lineHeight: 38, color: colors.text, letterSpacing: -0.2 },
     stoneDay: { marginTop: 6, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
     stoneTagline: { marginTop: 14, fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.muted, maxWidth: 210 },
     stoneCard: { marginTop: 26, paddingHorizontal: 22, paddingTop: 22, paddingBottom: 20 },
-    frost: { position: 'absolute', opacity: 0.8 },
     stoneTitle: { fontFamily: 'DMSans_300Light', fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.2, maxWidth: '76%' },
     stoneHeroMeta: { marginTop: 6, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, maxWidth: '76%' },
     stonePill: {

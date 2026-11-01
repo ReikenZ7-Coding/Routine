@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { SceneArt } from '../components/Art';
 import { Button } from '../components/Button';
 import { Divider, Section } from '../components/Section';
 import { PageTitle } from '../components/PageTitle';
@@ -184,9 +183,9 @@ export default function GymScreen() {
                     )}
                   </View>
                   {name === 'lavender' && (
-                    // Lavender gives the session its own small scene, like the art on a playlist.
-                    <View style={styles.sessionArt}>
-                      <SceneArt width={64} height={64} variant="waves" />
+                    // Lavender marks the session with the gym's own pastel tile and glyph, like the rows on Today.
+                    <View style={styles.sessionTile}>
+                      <Ionicons name="barbell" size={28} color={colors.onKind} />
                     </View>
                   )}
                 </View>
@@ -236,7 +235,8 @@ export default function GymScreen() {
                         >
                           <Ionicons name="remove" size={18} color={colors.text} />
                         </Press>
-                        <Text style={styles.weight}>{formatWeight(weight)}</Text>
+                        {/* Numbers in the numeric face; "Bodyweight" is a word, so it stays in the body face. */}
+                        <Text style={[styles.weight, weight === 0 && styles.weightWord]}>{formatWeight(weight)}</Text>
                         <Press
                           onPress={() => changeWeight(session, e, WEIGHT_STEP)}
                           style={styles.stepBtn}
@@ -462,7 +462,15 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
     planSummary: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
     todayCard: { padding: 16 },
     sessionHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    sessionArt: { width: 64, height: 64, borderRadius: radii.inset, overflow: 'hidden', boxShadow: colors.material.control.shadow },
+    sessionTile: {
+      width: 56,
+      height: 56,
+      borderRadius: radii.inset,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: kinds.gym.color,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
+    },
     sessionName: {
       fontFamily: fonts.display,
       fontSize: stone || paper || tag ? 30 : 26,
@@ -496,6 +504,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
       color: colors.text,
       fontVariant: ['tabular-nums'],
     },
+    weightWord: { fontFamily: fonts.bodyMedium },
     sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
     setBubble: {
       width: 44,

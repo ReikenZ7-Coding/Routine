@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
+import type { SharedValue } from 'react-native-reanimated';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Button } from '../components/Button';
-import { Fab } from '../components/Fab';
+import { Fab, useFabScroll } from '../components/Fab';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { HubHeader, RoutineCard } from '../components/Hub';
@@ -45,12 +46,15 @@ export default function RoutinesScreen({
   repeat = 'all',
   header,
   onClearQuery,
+  scrollY,
 }: {
   query?: string;
   when?: WhenFilter;
   repeat?: RepeatFilter;
   header?: ReactNode;
   onClearQuery?: () => void;
+  /** Receives the list's scroll offset (Library fades rows into the world under its fixed header). */
+  scrollY?: SharedValue<number>;
 }) {
   const { colors, kinds, glass } = useTheme();
   const styles = useStyles(makeStyles);
@@ -58,6 +62,7 @@ export default function RoutinesScreen({
   const cardWidth = Math.floor((width - 32 - 10) / 2);
   const { ready, today, routines: all, updateRoutines } = useStore();
   const contentBottom = useContentBottom(!glass);
+  const fab = useFabScroll();
   const q = query.trim().toLowerCase();
   const filtered = all.filter((r) => (when === 'all' || r.time === when) && matchesRepeat(r, repeat));
   const routines = q ? filtered.filter((r) => r.name.toLowerCase().includes(q)) : filtered;
@@ -81,7 +86,12 @@ export default function RoutinesScreen({
 
   return (
     <View style={styles.flex}>
-      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]} keyboardShouldPersistTaps="handled">
+      <GlassScroll
+        contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}
+        keyboardShouldPersistTaps="handled"
+        onScroll={glass ? undefined : fab.onScroll}
+        offsetOut={scrollY}
+      >
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -219,7 +229,7 @@ export default function RoutinesScreen({
         )}
       </GlassScroll>
 
-      {all.length > 0 && !glass && <Fab onPress={() => open()} accessibilityLabel="Add a routine" />}
+      {all.length > 0 && !glass && <Fab onPress={() => open()} accessibilityLabel="Add a routine" hidden={fab.hidden} />}
 
       <RoutineForm
         visible={formOpen}
@@ -285,9 +295,7 @@ function ArtRow({
       <Text style={styles.tickText}>+1</Text>
     ) : stone ? (
       <Ionicons name="checkmark-outline" size={18} color={colors.accent} />
-    ) : (
-      <Ionicons name="play" size={16} color={colors.text} style={styles.playNudge} />
-    );
+    ) : null;
   const meta = `${counter ? `${countOn(r, today)} of ${r.target} · ` : ''}${routineSubtitle(r, today, !pill)}`;
   return (
     <Glass radius={20} style={styles.artRow} receded={done || skipped}>
@@ -315,24 +323,34 @@ function ArtRow({
             </View>
           ) : null}
         </View>
-        <Text style={styles.rowMeta} numberOfLines={stone ? 2 : 1}>
+        <Text style={styles.rowMeta} numberOfLines={1}>
           {meta}
         </Text>
       </View>
       {canTick && (
         <Press
           onPress={() => onChange!(tapRoutine(r, today))}
-          style={styles.tick}
+          style={stone ? styles.tick : styles.tickSpot}
           overlay={colors.material.pressFill}
           haptic
           accessibilityRole={counter ? 'button' : 'checkbox'}
           accessibilityState={counter ? undefined : { checked: done }}
           accessibilityLabel={counter ? `Add one to ${r.name}, ${countOn(r, today)} of ${r.target}` : `Mark ${r.name} done`}
         >
-          <SelectFade on={done} radius={22} bleed={1.5} style={styles.tickDone} />
-          <Pop done={done}>
-            <FadeSwap on={done} off={idle} onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />} />
-          </Pop>
+          {stone ? (
+            <>
+              <SelectFade on={done} radius={22} bleed={1.5} style={styles.tickDone} />
+              <Pop done={done}>
+                <FadeSwap on={done} off={idle} onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />} />
+              </Pop>
+            </>
+          ) : (
+            // Lavender: a checkbox ring (never a play button) inside the 44 target, filling rose when done.
+            <Pop done={done} style={styles.tickRing}>
+              <SelectFade on={done} radius={15} bleed={1.5} style={styles.tickDone} />
+              <FadeSwap on={done} off={idle} onContent={<Ionicons name="checkmark" size={18} color={colors.onDone} />} />
+            </Pop>
+          )}
         </Press>
       )}
       <Press onPress={onMore} style={styles.more} overlay={colors.material.pressFill} accessibilityLabel={`Edit ${r.name}`}>
@@ -415,8 +433,18 @@ const makeStyles = ({ colors, kinds, fonts, type, radius, name }: Theme) =>
       borderWidth: 1.5,
       borderColor: colors.controlBorder,
     },
+    tickSpot: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+    tickRing: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: colors.controlBorder,
+      backgroundColor: colors.material.inset.fill,
+    },
     tickText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, fontVariant: ['tabular-nums'] },
-    playNudge: { marginLeft: 2 },
     more: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },

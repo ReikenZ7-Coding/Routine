@@ -5,6 +5,7 @@ import { createContext, type ReactNode, useContext, useMemo } from 'react';
 import Animated, {
   type AnimatedScrollViewProps,
   type SharedValue,
+  useAnimatedReaction,
   useAnimatedRef,
   useScrollOffset,
   useSharedValue,
@@ -29,11 +30,17 @@ export function useGlassScroll(): GlassScrollValue {
 type GlassScrollProps = Omit<AnimatedScrollViewProps, 'onContentSizeChange'> & {
   children?: ReactNode;
   onContentSizeChange?: (w: number, h: number) => void;
+  /** Mirrors the scroll offset for chrome drawn outside the scroll (a fade under a fixed header). */
+  offsetOut?: SharedValue<number>;
 };
 
-export function GlassScroll({ horizontal, children, onContentSizeChange, ...props }: GlassScrollProps) {
+export function GlassScroll({ horizontal, children, onContentSizeChange, offsetOut, ...props }: GlassScrollProps) {
   const ref = useAnimatedRef<Animated.ScrollView>();
   const offset = useScrollOffset(ref);
+  useAnimatedReaction(
+    () => offset.get(),
+    (v) => offsetOut?.set(v),
+  );
   const parent = useGlassScroll();
   const frame = useFrame();
   const value = useMemo<GlassScrollValue>(

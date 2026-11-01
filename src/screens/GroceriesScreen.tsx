@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
+import type { SharedValue } from 'react-native-reanimated';
 import { Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../components/Button';
 import { ActionChip } from '../components/Chip';
-import { Fab } from '../components/Fab';
+import { Fab, useFabScroll } from '../components/Fab';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { CheckRow } from '../components/CheckRow';
@@ -50,10 +51,13 @@ export default function GroceriesScreen({
   query = '',
   header,
   onClearQuery,
+  scrollY,
 }: {
   query?: string;
   header?: ReactNode;
   onClearQuery?: () => void;
+  /** Receives the list's scroll offset (Library fades rows into the world under its fixed header). */
+  scrollY?: SharedValue<number>;
 }) {
   const { colors, kinds, name, type } = useTheme();
   const styles = useStyles(makeStyles);
@@ -65,6 +69,7 @@ export default function GroceriesScreen({
   const pine = name === 'pine';
   const [copied, setCopied] = useState(false);
   const contentBottom = useContentBottom(true);
+  const fab = useFabScroll();
   const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
   const q = query.trim().toLowerCase();
   const groceries = q ? all.filter((g) => g.name.toLowerCase().includes(q)) : all;
@@ -102,7 +107,12 @@ export default function GroceriesScreen({
 
   return (
     <View style={styles.screen}>
-      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]} keyboardShouldPersistTaps="handled">
+      <GlassScroll
+        contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}
+        keyboardShouldPersistTaps="handled"
+        onScroll={fab.onScroll}
+        offsetOut={scrollY}
+      >
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -260,7 +270,7 @@ export default function GroceriesScreen({
         )}
       </GlassScroll>
 
-      {all.length > 0 && <Fab onPress={openNew} accessibilityLabel="Add a grocery item" />}
+      {all.length > 0 && <Fab onPress={openNew} accessibilityLabel="Add a grocery item" hidden={fab.hidden} />}
 
       <GroceryForm
         visible={formOpen}

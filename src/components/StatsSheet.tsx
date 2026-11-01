@@ -28,38 +28,49 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
     <Sheet visible={visible} title="Your week" onClose={onClose}>
       <Text style={type.small}>The last 7 days, up to today.</Text>
 
-      <View style={styles.tiles}>
-        <Tile value={pct === null ? '–' : `${pct}%`} label="routines done" color={kinds.routines.color} />
-        <Tile value={String(s.gymDays)} label={s.gymDays === 1 ? 'gym day' : 'gym days'} color={kinds.gym.color} />
-        <Tile value={String(s.chineseMinutes)} label="min Chinese" color={kinds.chinese.color} />
-      </View>
+      {/* The week in one sentence, then the days themselves as the picture. */}
+      <Text style={styles.summary}>
+        {pct === null ? (
+          'No routines were planned'
+        ) : (
+          <>
+            <Text style={styles.strong}>{pct}%</Text> of routines done
+          </>
+        )}
+        {', '}
+        <Text style={styles.strong}>{plural(s.gymDays, 'gym day').replace(' ', '\u00A0')}</Text>
+        {' and '}
+        <Text style={styles.strong}>{`${s.chineseMinutes}\u00A0min`}</Text> of Chinese.
+      </Text>
 
-      <View style={styles.bars}>
-        {s.days.map((d, i) => {
-          const day = parseKey(d.date).toLocaleDateString('en', { weekday: 'long' });
-          return (
-            <View
-              key={d.date}
-              style={styles.barCol}
-              accessible
-              accessibilityLabel={d.planned ? `${day}, ${d.done} of ${plural(d.planned, 'routine')}` : `${day}, nothing planned`}
-            >
-              <DayBar share={d.share ?? 0} index={i} shown={visible} />
-              {name === 'lavender' && <View style={[styles.todayDot, d.date !== today && styles.hidden]} />}
-              {name === 'paper' ? (
-                // Paper marks today with a small ink-glass disc behind its letter.
-                <View style={[styles.dayDisc, d.date === today && styles.dayDiscToday]}>
-                  <Text style={[styles.barLabel, d.date === today && styles.barTodayOnInk]}>
-                    {WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}
-                  </Text>
-                </View>
-              ) : (
-                <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
-              )}
-            </View>
-          );
-        })}
-      </View>
+      <Glass style={styles.week}>
+        <View style={styles.bars}>
+          {s.days.map((d, i) => {
+            const day = parseKey(d.date).toLocaleDateString('en', { weekday: 'long' });
+            return (
+              <View
+                key={d.date}
+                style={styles.barCol}
+                accessible
+                accessibilityLabel={d.planned ? `${day}, ${d.done} of ${plural(d.planned, 'routine')}` : `${day}, nothing planned`}
+              >
+                <DayBar share={d.share ?? 0} index={i} shown={visible} />
+                {name === 'lavender' && <View style={[styles.todayDot, d.date !== today && styles.hidden]} />}
+                {name === 'paper' ? (
+                  // Paper marks today with a small ink-glass disc behind its letter.
+                  <View style={[styles.dayDisc, d.date === today && styles.dayDiscToday]}>
+                    <Text style={[styles.barLabel, d.date === today && styles.barTodayOnInk]}>
+                      {WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.barLabel, d.date === today && styles.barToday]}>{WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}</Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </Glass>
 
       {s.gymVolume > 0 && (
         <Text style={[type.small, styles.gap, name === 'paper' && styles.moved]}>
@@ -107,19 +118,6 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
   );
 }
 
-function Tile({ value, label, color }: { value: string; label: string; color: string }) {
-  const { type } = useTheme();
-  const styles = useStyles(makeStyles);
-  return (
-    <Glass style={styles.tile}>
-      <View pointerEvents="none" style={styles.orb} />
-      <View style={[styles.tileLine, { backgroundColor: color }]} />
-      <Text style={styles.tileValue}>{value}</Text>
-      <Text style={type.small}>{label}</Text>
-    </Glass>
-  );
-}
-
 const GROW = { duration: 600, easing: EASE_OUT };
 
 /**
@@ -153,37 +151,16 @@ const makeStyles = ({ colors, kinds, fonts, name }: Theme) => {
   const paper = name === 'paper';
   const orb = colors.material.orb;
   return StyleSheet.create({
-    // Pine: each tile carries the moon orb in its top-right corner
-    orb: orb
-      ? {
-          position: 'absolute',
-          top: -30,
-          right: -30,
-          width: 84,
-          height: 84,
-          borderRadius: 42,
-          backgroundColor: orb.fill,
-          borderWidth: 1,
-          borderColor: orb.rim,
-        }
-      : { display: 'none' },
     moved: { fontSize: 15, lineHeight: 21 },
     dayDisc: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
     dayDiscToday: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     barTodayOnInk: { color: colors.onPrimary, fontFamily: fonts.bodyBold },
     flex: { flex: 1 },
     gap: { marginTop: 12 },
-    tiles: { flexDirection: 'row', gap: 8, marginTop: 16 },
-    tile: { flex: 1, padding: 12, gap: 2, ...(stone ? { borderRadius: 20 } : null) },
-    tileLine: { width: 20, height: 3, borderRadius: 2, marginBottom: 8 },
-    tileValue: {
-      fontFamily: fonts.display,
-      fontSize: lavender ? 30 : stone ? 34 : orb ? 28 : 26,
-      lineHeight: lavender ? 36 : stone ? 38 : orb ? 33 : 32,
-      color: colors.text,
-      fontVariant: ['tabular-nums'],
-    },
-    bars: { flexDirection: 'row', gap: 8, height: 96, marginTop: 16 },
+    summary: { marginTop: 14, fontFamily: fonts.body, fontSize: 17, lineHeight: 25, color: colors.text },
+    strong: { fontFamily: fonts.bodyBold, fontVariant: ['tabular-nums'] },
+    week: { marginTop: 16, paddingHorizontal: 14, paddingTop: 16, paddingBottom: 12 },
+    bars: { flexDirection: 'row', gap: 8, height: 148 },
     barCol: { flex: 1, alignItems: 'center', gap: 6 },
     barTrack: {
       flex: 1,

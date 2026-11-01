@@ -29,7 +29,7 @@ import { useSounds } from '../lib/sounds';
 import { dayStreak } from '../lib/stats';
 import { newId, useStore } from '../lib/store';
 import { type TimedEntry, clock, timedRoutines, upNext } from '../lib/timeline';
-import { Fab } from '../components/Fab';
+import { Fab, useFabScroll } from '../components/Fab';
 import { Chevron, Press } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
@@ -61,6 +61,7 @@ export default function TodayScreen() {
   const styles = useStyles(makeStyles);
   const store = useStore();
   const contentBottom = useContentBottom(!theme.glass);
+  const fab = useFabScroll();
   const {
     ready,
     today,
@@ -299,7 +300,10 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.flex}>
-      <GlassScroll contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: contentBottom }]}>
+      <GlassScroll
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: contentBottom }]}
+        onScroll={theme.glass ? undefined : fab.onScroll}
+      >
         {theme.glass ? (
           <GlassHome
             name={settings.name || 'friend'}
@@ -322,7 +326,8 @@ export default function TodayScreen() {
                         ? `${formatLeft(next.minutes)} remaining`
                         : `At ${clock(next.entry.start)} · in ${formatLeft(next.minutes)}`,
                     action: next.entry.routine!.target ? 'Add one' : 'Mark done',
-                    icon: 'play',
+                    icon: next.entry.routine!.target ? 'add' : 'checkmark',
+                    next: true,
                     onAction: () => tap(next.entry.routine!),
                   }
                 : {
@@ -431,7 +436,9 @@ export default function TodayScreen() {
       </GlassScroll>
 
       {/* The glass looks add from the quick-add bar and the hero card, so they skip the floating button. */}
-      {!theme.glass && <Fab onPress={() => setPanel('add')} accessibilityLabel="Add a routine, to-do, grocery item or word" />}
+      {!theme.glass && (
+        <Fab onPress={() => setPanel('add')} accessibilityLabel="Add a routine, to-do, grocery item or word" hidden={fab.hidden} />
+      )}
 
       <Sheet visible={panel === 'add'} title="Add" onClose={close}>
         {(

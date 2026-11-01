@@ -1,5 +1,5 @@
 // Artwork for every look: the rendered world behind each screen, its pre-blurred lens, the moving light
-// layers, Stone's magnolia, the mountain headers, and the scenes for cards and focus sounds. All of it is
+// layers, the mountain headers, and the scenes for cards and focus sounds. All of it is
 // made by scripts/render-art.py; assets/art/looks.json holds the values the renderer, this file and the
 // contrast gate (scripts/check-contrast.py) share, so the lens can never drift from Ambience.
 import { LinearGradient as Veil } from 'expo-linear-gradient';
@@ -89,16 +89,6 @@ export function lightBox(light: LightSpec, frameW: number, frameH: number) {
   return { left: (frameW - width) / 2, top, width, height };
 }
 
-/** Stone's magnolia: the sharp bud, the open bloom for a done day, and a frosted copy of each for inside glass. */
-export const MAGNOLIA = {
-  closed: require('../../assets/art/stone-magnolia.png') as ImageSourcePropType,
-  blur: require('../../assets/art/stone-magnolia-blur.png') as ImageSourcePropType,
-  open: require('../../assets/art/stone-magnolia-open.png') as ImageSourcePropType,
-  openBlur: require('../../assets/art/stone-magnolia-open-blur.png') as ImageSourcePropType,
-};
-/** Height over width of the magnolia images (420x700). */
-export const MAGNOLIA_RATIO = 700 / 420;
-
 /** Stone's satin grain, a 128x128 tile. */
 export const GLASS_GRAIN: ImageSourcePropType = require('../../assets/art/glass-grain.png');
 
@@ -145,12 +135,12 @@ type Variant = 'calm' | 'rain' | 'waves' | 'brown' | 'dusk' | 'focus';
 // tile or a sound's art never falls back to another look's world.
 const SCENES: Record<ThemeName, Record<Variant, ImageSourcePropType>> = {
   lavender: {
-    calm: require('../../assets/art/portal-dusk.jpg'),
-    dusk: require('../../assets/art/portal-dusk.jpg'),
-    rain: require('../../assets/art/portal-rain.jpg'),
-    waves: require('../../assets/art/portal-waves.jpg'),
-    brown: require('../../assets/art/portal-brown.jpg'),
-    focus: require('../../assets/art/portal-brown.jpg'),
+    calm: require('../../assets/art/lavender-dusk.jpg'),
+    dusk: require('../../assets/art/lavender-dusk.jpg'),
+    rain: require('../../assets/art/lavender-rain.jpg'),
+    waves: require('../../assets/art/lavender-waves.jpg'),
+    brown: require('../../assets/art/lavender-brown.jpg'),
+    focus: require('../../assets/art/lavender-brown.jpg'),
   },
   stone: {
     calm: require('../../assets/art/stones-calm.jpg'),
@@ -210,18 +200,6 @@ export function Ambience() {
       <View style={[StyleSheet.absoluteFill, { backgroundColor: art.scrim }]} />
       <Veil colors={art.topVeil} start={{ x: 0, y: 0 }} end={{ x: 0, y: art.veilEnd }} style={StyleSheet.absoluteFill} />
     </>
-  );
-}
-
-/** Stone's magnolia at a given width (Today places it behind the hero glass). */
-export function Magnolia({ width, open = false }: { width: number; open?: boolean }) {
-  return (
-    <Image
-      source={open ? MAGNOLIA.open : MAGNOLIA.closed}
-      style={{ width, height: Math.round(width * MAGNOLIA_RATIO) }}
-      resizeMode="contain"
-      accessibilityIgnoresInvertColors
-    />
   );
 }
 
