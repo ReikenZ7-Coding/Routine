@@ -1,5 +1,5 @@
 {
-  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width.",
+  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width. bounds: the part of a light's box where its alpha is visible at all (alpha > 0.004), as [x0, y0, x1, y1] fractions of the box; glass skips drawing a light whose bounds miss it.",
   "frame": {
     "widthDp": 400,
     "heightDp": 860
@@ -23,7 +23,8 @@
             "radius": 0.3,
             "dir": 1,
             "phase": 0
-          }
+          },
+          "bounds": [0.11, 0.11, 0.9, 0.89]
         },
         {
           "name": "lavender-orb-blue",
@@ -37,7 +38,8 @@
             "radius": 0.34,
             "dir": -1,
             "phase": 180
-          }
+          },
+          "bounds": [0.11, 0.12, 0.89, 0.89]
         }
       ]
     },
@@ -55,7 +57,8 @@
             "period": 22000,
             "dx": 14,
             "rotate": 1.2
-          }
+          },
+          "bounds": [0.05, 0.0, 1.0, 0.69]
         }
       ]
     },
@@ -74,7 +77,8 @@
             "ax": 18,
             "ay": 10,
             "s": 0.04
-          }
+          },
+          "bounds": [0.25, 0.0, 1.0, 0.31]
         },
         {
           "name": "paper-mist",
@@ -89,7 +93,8 @@
             "period": 40000,
             "x0": -12,
             "ax": 12
-          }
+          },
+          "bounds": [0.0, 0.0, 1.0, 1.0]
         }
       ],
       "header": {
@@ -113,7 +118,8 @@
             "ax": 14,
             "ay": 10,
             "s": 0.06
-          }
+          },
+          "bounds": [0.66, 0.0, 1.0, 0.14]
         }
       ],
       "header": {

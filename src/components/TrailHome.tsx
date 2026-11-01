@@ -8,6 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { HeaderScene } from './Art';
+import { Glass, LensHeaderContext, useGlassScroll } from './Glass';
 import { Bar, Chevron, Collapse, EASE_OUT, Pop, Press, Ring } from './Motion';
 
 export interface TrailItem {
@@ -78,141 +79,147 @@ export function TrailHome(p: Props) {
     y += h;
   }
   const railPath = useMemo(() => trail(centers), [centers.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The mountains sit at the top of the scroll content, flush with the top of the frame: glass over them
+  // shows their blurred copy in its lens.
+  const { scrollY } = useGlassScroll();
+  const lensHeader = useMemo(() => ({ top: 0, scrollY, parallax: 0 }), [scrollY]);
 
   return (
-    <View>
-      <View style={[styles.scene, { top: -p.topInset, left: -16, width }]} pointerEvents="none">
-        <HeaderScene width={width} />
-      </View>
-
-      <View style={styles.top}>
-        <View style={styles.flex}>
-          <Text style={styles.greet}>{p.greeting},</Text>
-          <Text style={styles.hello} numberOfLines={1} accessibilityRole="header">
-            {p.name}
-          </Text>
-          <Press
-            onPress={p.onToggleCalendar}
-            style={styles.dateRow}
-            accessibilityLabel={p.calendarOpen ? 'Hide the calendar' : 'Pick a day'}
-            accessibilityState={{ expanded: p.calendarOpen }}
-            hitSlop={6}
-          >
-            <Text style={styles.date}>{p.dateLabel}</Text>
-            <Chevron open={!p.calendarOpen} color={colors.muted} size={16} />
-          </Press>
+    <LensHeaderContext.Provider value={lensHeader}>
+      <View>
+        <View style={[styles.scene, { top: -p.topInset, left: -16, width }]} pointerEvents="none">
+          <HeaderScene width={width} />
         </View>
-        <View style={styles.topButtons}>
-          <Round
-            icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'}
-            label="Focus sounds"
-            onPress={p.onSounds}
-            dot={p.soundsPlaying}
-          />
-          <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
-          <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
-        </View>
-      </View>
 
-      <Collapse open={p.calendarOpen}>
-        <View style={styles.calendar}>{p.calendar}</View>
-      </Collapse>
-
-      <View style={styles.streak}>
-        <Ionicons name="flame" size={16} color={p.streak > 0 ? '#E8793A' : colors.faint} />
-        <Text style={styles.streakText}>
-          {p.streak > 0 ? `${p.streak} day streak` : 'Start a streak'}
-          <Text style={styles.streakMuted}>{p.total > 0 ? `  ·  ${p.done}/${p.total} today` : ''}</Text>
-        </Text>
-      </View>
-
-      <View style={styles.sectionHead}>
-        <Text style={type.sectionTitle}>{p.isToday ? "Today's trail" : `${p.dateLabel} trail`}</Text>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {p.done}/{p.total}
-          </Text>
-        </View>
-      </View>
-
-      {p.items.length === 0 ? (
-        <Press onPress={p.onAdd} style={styles.empty} accessibilityLabel="Add a routine or a to-do">
-          <View style={[styles.tile, { backgroundColor: colors.tile }]}>
-            <Ionicons name="add" size={22} color={colors.text} />
-          </View>
+        <View style={styles.top}>
           <View style={styles.flex}>
-            <Text style={styles.rowTitle}>A clear day</Text>
-            <Text style={styles.rowMeta}>Add a routine or a to-do and it starts the trail.</Text>
+            <Text style={styles.greet}>{p.greeting},</Text>
+            <Text style={styles.hello} numberOfLines={1} accessibilityRole="header">
+              {p.name}
+            </Text>
+            <Press
+              onPress={p.onToggleCalendar}
+              style={styles.dateRow}
+              accessibilityLabel={p.calendarOpen ? 'Hide the calendar' : 'Pick a day'}
+              accessibilityState={{ expanded: p.calendarOpen }}
+              hitSlop={6}
+            >
+              <Text style={styles.date}>{p.dateLabel}</Text>
+              <Chevron open={!p.calendarOpen} color={colors.muted} size={16} />
+            </Press>
           </View>
-        </Press>
-      ) : (
-        <View style={styles.trail}>
-          <View style={[styles.rail, { height: y }]} pointerEvents="none">
-            {y > 0 && (
-              <Svg width={RAIL} height={y}>
-                <Path
-                  d={railPath}
-                  stroke={colors.faint}
-                  strokeWidth={2.5}
-                  strokeDasharray="1 7"
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity={0.7}
-                />
-              </Svg>
-            )}
-          </View>
-          {p.items.map((it, i) => (
-            <TrailRow
-              key={it.key}
-              item={it}
-              index={i}
-              current={it.key === p.nextKey}
-              currentLabel={p.nextLabel}
-              onLayout={(h) => setRows((r) => (r[it.key] === h ? r : { ...r, [it.key]: h }))}
+          <View style={styles.topButtons}>
+            <Round
+              icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'}
+              label="Focus sounds"
+              onPress={p.onSounds}
+              dot={p.soundsPlaying}
             />
-          ))}
-        </View>
-      )}
-
-      <View style={styles.sectionHead}>
-        <Text style={type.sectionTitle}>Balance</Text>
-      </View>
-      <View style={styles.card}>
-        <View style={styles.balanceHead}>
-          <Text style={styles.rowMeta}>{p.isToday ? 'How today is shaping up' : 'How that day went'}</Text>
-          <Press
-            onPress={() => setBalanceOpen((o) => !o)}
-            style={styles.iconBtn}
-            accessibilityLabel={balanceOpen ? 'Hide balance' : 'Show balance'}
-            accessibilityState={{ expanded: balanceOpen }}
-          >
-            <Chevron open={balanceOpen} color={colors.text} />
-          </Press>
-        </View>
-        <Collapse open={balanceOpen}>
-          <View style={styles.rings}>
-            {p.balance.map((b) => {
-              const rest = b.total === 0;
-              return (
-                <View
-                  key={b.label}
-                  style={styles.ringWrap}
-                  accessible
-                  accessibilityLabel={`${b.label}: ${b.value} of ${b.total} ${b.unit}`}
-                >
-                  <Ring size={88} stroke={9} progress={rest ? 0 : b.value / b.total} color={b.color} track={b.soft}>
-                    <Text style={[styles.ringValue, { color: rest ? colors.faint : b.color }]}>{rest ? '–' : b.value}</Text>
-                    <Text style={styles.ringUnit}>{rest ? 'rest' : `of ${b.total}`}</Text>
-                  </Ring>
-                  <Text style={styles.ringLabel}>{b.label}</Text>
-                </View>
-              );
-            })}
+            <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
+            <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
           </View>
+        </View>
+
+        <Collapse open={p.calendarOpen}>
+          <View style={styles.calendar}>{p.calendar}</View>
         </Collapse>
+
+        <View style={styles.streak}>
+          <Ionicons name="flame" size={16} color={p.streak > 0 ? '#E8793A' : colors.faint} />
+          <Text style={styles.streakText}>
+            {p.streak > 0 ? `${p.streak} day streak` : 'Start a streak'}
+            <Text style={styles.streakMuted}>{p.total > 0 ? `  ·  ${p.done}/${p.total} today` : ''}</Text>
+          </Text>
+        </View>
+
+        <View style={styles.sectionHead}>
+          <Text style={type.sectionTitle}>{p.isToday ? "Today's trail" : `${p.dateLabel} trail`}</Text>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {p.done}/{p.total}
+            </Text>
+          </View>
+        </View>
+
+        {p.items.length === 0 ? (
+          <Press onPress={p.onAdd} style={styles.empty} accessibilityLabel="Add a routine or a to-do">
+            <View style={[styles.tile, { backgroundColor: colors.tile }]}>
+              <Ionicons name="add" size={22} color={colors.text} />
+            </View>
+            <View style={styles.flex}>
+              <Text style={styles.rowTitle}>A clear day</Text>
+              <Text style={styles.rowMeta}>Add a routine or a to-do and it starts the trail.</Text>
+            </View>
+          </Press>
+        ) : (
+          <View style={styles.trail}>
+            <View style={[styles.rail, { height: y }]} pointerEvents="none">
+              {y > 0 && (
+                <Svg width={RAIL} height={y}>
+                  <Path
+                    d={railPath}
+                    stroke={colors.faint}
+                    strokeWidth={2.5}
+                    strokeDasharray="1 7"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity={0.7}
+                  />
+                </Svg>
+              )}
+            </View>
+            {p.items.map((it, i) => (
+              <TrailRow
+                key={it.key}
+                item={it}
+                index={i}
+                current={it.key === p.nextKey}
+                currentLabel={p.nextLabel}
+                onLayout={(h) => setRows((r) => (r[it.key] === h ? r : { ...r, [it.key]: h }))}
+              />
+            ))}
+          </View>
+        )}
+
+        <View style={styles.sectionHead}>
+          <Text style={type.sectionTitle}>Balance</Text>
+        </View>
+        <Glass>
+          <View style={styles.balanceHead}>
+            <Text style={styles.rowMeta}>{p.isToday ? 'How today is shaping up' : 'How that day went'}</Text>
+            <Press
+              onPress={() => setBalanceOpen((o) => !o)}
+              style={styles.iconBtn}
+              accessibilityLabel={balanceOpen ? 'Hide balance' : 'Show balance'}
+              accessibilityState={{ expanded: balanceOpen }}
+            >
+              <Chevron open={balanceOpen} color={colors.text} />
+            </Press>
+          </View>
+          <Collapse open={balanceOpen}>
+            <View style={styles.rings}>
+              {p.balance.map((b) => {
+                const rest = b.total === 0;
+                return (
+                  <View
+                    key={b.label}
+                    style={styles.ringWrap}
+                    accessible
+                    accessibilityLabel={`${b.label}: ${b.value} of ${b.total} ${b.unit}`}
+                  >
+                    <Ring size={88} stroke={9} progress={rest ? 0 : b.value / b.total} color={b.color} track={b.soft}>
+                      <Text style={[styles.ringValue, { color: rest ? colors.faint : b.color }]}>{rest ? '–' : b.value}</Text>
+                      <Text style={styles.ringUnit}>{rest ? 'rest' : `of ${b.total}`}</Text>
+                    </Ring>
+                    <Text style={styles.ringLabel}>{b.label}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </Collapse>
+        </Glass>
       </View>
-    </View>
+    </LensHeaderContext.Provider>
   );
 }
 
@@ -220,10 +227,10 @@ function Round({ icon, label, onPress, dot }: { icon: string; label: string; onP
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   return (
-    <Press onPress={onPress} style={styles.round} accessibilityLabel={label}>
+    <Glass tier="control" radius={22} onPress={onPress} style={styles.round} accessibilityLabel={label}>
       <Ionicons name={icon as 'sunny'} size={19} color={colors.text} />
       {dot && <View style={styles.dot} />}
-    </Press>
+    </Glass>
   );
 }
 
@@ -282,11 +289,11 @@ function TrailRow({
           ) : null}
         </Pop>
       </View>
-      <Press
+      <Glass
         onPress={press}
         onLongPress={item.onLongPress}
-        outerStyle={styles.flex}
-        style={[styles.card, styles.rowCard]}
+        receded={finished}
+        style={[styles.flex, styles.rowCard]}
         accessibilityRole={item.nav ? 'button' : 'checkbox'}
         accessibilityState={item.nav ? undefined : { checked: item.done }}
         accessibilityLabel={`${item.title}, ${meta}`}
@@ -314,7 +321,7 @@ function TrailRow({
             {item.done && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
           </View>
         )}
-      </Press>
+      </Glass>
     </Animated.View>
   );
 }
@@ -343,17 +350,7 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
     dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 32 },
     date: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.muted },
     topButtons: { flexDirection: 'row', gap: 8 },
-    round: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: colors.card,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: colors.shadow,
-    },
+    round: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     dot: {
       position: 'absolute',
       top: 8,
@@ -426,7 +423,7 @@ const makeStyles = ({ colors, fonts, type, radius }: Theme) =>
       height: 26,
       borderRadius: 13,
       borderWidth: 2,
-      borderColor: colors.border,
+      borderColor: colors.controlBorder,
       alignItems: 'center',
       justifyContent: 'center',
     },

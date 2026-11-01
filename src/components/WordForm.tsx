@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Word } from '../lib/chinese';
 import { type Theme, useStyles, useTheme } from '../theme';
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [hanzi, setHanzi] = useState('');
@@ -48,10 +50,10 @@ export function WordForm({ visible, word, onSave, onDelete, onClose }: Props) {
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{word ? 'Edit word' : 'New word'}</Text>
 

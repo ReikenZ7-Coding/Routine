@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { GlassScroll } from '../components/Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassHome } from '../components/GlassHome';
 import { BackupSheet } from '../components/BackupSheet';
@@ -290,7 +291,7 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.flex}>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
+      <GlassScroll contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
         {theme.glass ? (
           <GlassHome
             name={settings.name || 'friend'}
@@ -412,7 +413,7 @@ export default function TodayScreen() {
         )}
 
         {!isFuture && <DayNote date={selected} isToday={isToday} />}
-      </ScrollView>
+      </GlassScroll>
 
       {/* The glass looks add from the quick-add bar and the hero card, so they skip the floating button. */}
       {!theme.glass && (

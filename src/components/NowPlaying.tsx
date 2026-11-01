@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurTargetView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { type ComponentRef, useRef } from 'react';
 import { Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SOUNDS, useSounds } from '../lib/sounds';
-import { Ambience, SceneArt } from './Art';
-import { BlurTargetContext, Glass } from './Glass';
+import { SceneArt } from './Art';
+import { Glass, WorldFrame } from './Glass';
+import { MINI_HEIGHT, useBar } from './glass/chrome';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 /** Art for a sound: a soft gradient tile with its icon. */
@@ -73,14 +72,27 @@ export function NowPlaying() {
 
   if (glass) {
     return (
-      <Modal visible={s.sheetOpen} animationType="slide" onRequestClose={() => s.setSheetOpen(false)}>
+      <Modal
+        visible={s.sheetOpen}
+        animationType="slide"
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={() => s.setSheetOpen(false)}
+      >
         <GlassPlayer />
       </Modal>
     );
   }
 
   return (
-    <Modal visible={s.sheetOpen} animationType="slide" transparent onRequestClose={() => s.setSheetOpen(false)}>
+    <Modal
+      visible={s.sheetOpen}
+      animationType="slide"
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={() => s.setSheetOpen(false)}
+    >
       <View style={styles.backdrop}>
         <Pressable
           accessibilityRole="button"
@@ -170,7 +182,6 @@ function GlassPlayer() {
   const styles = useStyles(makeGlassStyles);
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
-  const target = useRef<ComponentRef<typeof View>>(null);
   const s = useSounds();
   const stone = name === 'stone';
   const pct = Math.min(1, s.position / s.length);
@@ -181,15 +192,12 @@ function GlassPlayer() {
 
   return (
     <View style={styles.root}>
-      <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
-        <LinearGradient colors={colors.gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
-        <Ambience />
-      </BlurTargetView>
-      <BlurTargetContext.Provider value={target}>
+      {/* The player is a world of its own, with the same moving light as the screens. */}
+      <WorldFrame>
         <View style={[styles.body, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
           <View style={styles.top}>
             {stone ? (
-              <Glass radius={22} style={styles.round} onPress={close} accessibilityLabel="Close player">
+              <Glass tier="control" radius={22} style={styles.round} onPress={close} accessibilityLabel="Close player">
                 <Ionicons name="chevron-back" size={20} color={iconColor} />
               </Glass>
             ) : (
@@ -202,7 +210,7 @@ function GlassPlayer() {
               {!stone && <Text style={styles.topSub}>Focus sounds · loops until you stop</Text>}
             </View>
             {stone ? (
-              <Glass radius={22} style={styles.round} onPress={s.cycleTimer} accessibilityLabel={timerLabel(s.timer)}>
+              <Glass tier="control" radius={22} style={styles.round} onPress={s.cycleTimer} accessibilityLabel={timerLabel(s.timer)}>
                 <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={18} color={iconColor} />
               </Glass>
             ) : (
@@ -300,7 +308,7 @@ function GlassPlayer() {
             })}
           </Glass>
         </View>
-      </BlurTargetContext.Provider>
+      </WorldFrame>
     </View>
   );
 }
@@ -327,7 +335,7 @@ function Control({
   const glyph = <Ionicons name={icon as 'shuffle'} size={small ? 18 : 22} color={stone ? colors.text : '#FFFFFF'} />;
   // Stone sets each control in its own glass circle; Lavender keeps them bare and bright.
   return stone ? (
-    <Glass radius={26} style={styles.control} onPress={onPress} accessibilityLabel={label}>
+    <Glass tier="control" radius={26} style={styles.control} onPress={onPress} accessibilityLabel={label}>
       {glyph}
     </Glass>
   ) : (
@@ -468,9 +476,9 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     itemActive: { backgroundColor: colors.primarySoft },
   });
 
-/** Where floating buttons sit: clear of the floating tab bar and the mini player. */
+/** Where floating buttons sit: clear of the tab bar and, once a sound has started, the mini player. */
 export function useFabBottom(): number {
-  const { glass } = useTheme();
+  const bar = useBar();
   const { started } = useSounds();
-  return (glass ? 100 : 24) + (started ? 64 : 0);
+  return bar.bottom + bar.height + 16 + (started ? MINI_HEIGHT + 10 : 0);
 }

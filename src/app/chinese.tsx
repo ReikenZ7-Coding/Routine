@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Chip } from '../components/Chip';
 import { FocusTimer } from '../components/FocusTimer';
 import { Divider, Section } from '../components/Section';
@@ -10,7 +10,7 @@ import { type Grade, type Word, STARTER_WORDS, addMinutes, dueWords, newWord, re
 import { friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Glass } from '../components/Glass';
+import { Glass, GlassScroll } from '../components/Glass';
 
 const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
@@ -92,7 +92,7 @@ export default function ChineseScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <GlassScroll contentContainerStyle={styles.content}>
       <PageTitle
         title="Chinese"
         subtitle="Daily practice and flashcards"
@@ -216,7 +216,7 @@ export default function ChineseScreen() {
             : undefined
         }
       />
-    </ScrollView>
+    </GlassScroll>
   );
 }
 

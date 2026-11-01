@@ -13,6 +13,7 @@ Glass (pane, control, receded, inset, sheet; each with the tokens it can carry),
   -> topGlow 18px below the top edge (where the first glyphs start) -> the sheen peak -> the LightCatch peak (the most each light layer
   reaches at that pixel anywhere along its motion path, times material.light.catch) -> Stone's grain.
   Sheets: lens -> colors.backdrop -> material.sheet body (and its top band) instead.
+  Hero (looks with a bloom): the pane plus the bloom at its peak, where it reaches the nearest text.
 Bare backdrop (titles, section headings, hints): the sharp backdrop with scrim and veil, plus the LightField
   at full strength (every moment of its motion path), averaged over about a glyph (sigma 3 dp) so a
   single star speck doesn't count, in the zones where that text sits.
@@ -23,6 +24,7 @@ Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1;
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -302,6 +304,13 @@ def gate_look(look, theme, g):
         'sheet': (sheet, every),
         'sheet inset': (sheet_inset, every),
     }
+    if mat.get('bloom'):
+        # Hero cards breathe a radial bloom over the pane body. Taken at its peak (opacity 1), reaching the
+        # nearest place text can sit the way the caustics do. The hero carries its title, meta and label.
+        bm = re.search(r'radial-gradient\(\s*([\d.]+% [\d.]+%) at ([\d.]+% [\d.]+%)\s*,\s*(rgba?\([^)]*\))', mat['bloom'])
+        bc, ba = col(bm.group(3))
+        reach = radial_alpha_at_text(bm.group(2), bm.group(1))
+        surfaces['hero'] = (over(pane, bc, ba * reach), ['text', 'muted', 'faint', 'label', 'link'])
     for sname, (bg, names) in surfaces.items():
         region = bg[y0:]
         for tname in names:

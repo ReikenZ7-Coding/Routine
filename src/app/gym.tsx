@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Divider, Section } from '../components/Section';
 import { PageTitle } from '../components/PageTitle';
 import { SessionForm } from '../components/SessionForm';
@@ -23,7 +23,7 @@ import { isRecord, workoutHistory } from '../lib/records';
 import { WEEKDAY_SHORT, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Glass } from '../components/Glass';
+import { Glass, GlassScroll } from '../components/Glass';
 
 const REST_SECONDS = 90;
 const WEIGHT_STEP = 2.5;
@@ -93,7 +93,7 @@ export default function GymScreen() {
 
   if (gym.sessions.length === 0) {
     return (
-      <ScrollView contentContainerStyle={styles.content}>
+      <GlassScroll contentContainerStyle={styles.content}>
         <PageTitle title="Gym" subtitle="Pick a plan to start with, or build your own" />
         <Glass style={styles.welcome}>
           <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
@@ -120,7 +120,7 @@ export default function GymScreen() {
           </Pressable>
         </Glass>
         <SessionForm visible={formOpen} session={editing} takenDays={[]} onClose={() => setFormOpen(false)} onSave={saveSession} />
-      </ScrollView>
+      </GlassScroll>
     );
   }
 
@@ -128,7 +128,7 @@ export default function GymScreen() {
 
   return (
     <View style={styles.flex}>
-      <ScrollView contentContainerStyle={[styles.content, restEnd !== null && styles.contentWithTimer]}>
+      <GlassScroll contentContainerStyle={[styles.content, restEnd !== null && styles.contentWithTimer]}>
         <PageTitle
           title="Gym"
           subtitle="Your training plan, one day at a time"
@@ -136,7 +136,7 @@ export default function GymScreen() {
         />
         {session && progress ? (
           <>
-            <Glass style={styles.todayCard}>
+            <Glass tier="hero" bloom style={styles.todayCard}>
               <Text style={styles.eyebrow}>Today's session</Text>
               <Text style={styles.sessionName}>{session.name}</Text>
               <Text style={styles.progressText}>
@@ -270,7 +270,7 @@ export default function GymScreen() {
             ))}
           </Section>
         )}
-      </ScrollView>
+      </GlassScroll>
 
       {restEnd !== null && (
         <Pressable accessibilityRole="button" style={styles.timer} onPress={() => setRestEnd(null)} accessibilityLabel="Dismiss rest timer">

@@ -46,6 +46,6 @@ const makeStyles = ({ colors }: Theme) =>
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     dot: { width: 8, height: 8, borderRadius: 4 },
     bar: { width: 3, height: 18, borderRadius: 2 },
-    card: { overflow: 'hidden', boxShadow: colors.shadow },
+    card: {},
     divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border },
   });

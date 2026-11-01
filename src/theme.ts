@@ -248,7 +248,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
           band: ['rgba(255,255,255,0.14)', 120],
         },
         light: { period: 90000, layers: ['lavender-orb-pink', 'lavender-orb-blue'], catch: 0.45 },
-        bloom: 'radial-gradient(60% 60% at 30% 20%, rgba(214,190,255,0.35), transparent 70%)',
+        bloom: 'radial-gradient(60% 60% at 30% 20%, rgba(214,190,255,0.07), transparent 70%)',
       },
     },
     kinds: {
@@ -515,7 +515,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         receded: { body: ['rgba(26,80,66,0.30)', 'rgba(6,26,22,0.46)'], shadow: 'none' },
         sheet: { body: ['rgba(20,66,58,0.94)', 'rgba(10,38,33,0.97)'], rimTop: 'rgba(168,240,212,0.24)' },
         light: { period: 16000, layers: ['pine-light-moon'], catch: 0.6 },
-        bloom: 'radial-gradient(60% 60% at 70% 100%, rgba(124,227,188,0.22), transparent 70%)',
+        bloom: 'radial-gradient(60% 60% at 70% 100%, rgba(124,227,188,0.1), transparent 70%)',
       },
     },
     kinds: {

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { GlassScroll } from '../components/Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CheckRow } from '../components/CheckRow';
 import { Divider, Section } from '../components/Section';
@@ -86,7 +87,7 @@ export default function InboxScreen() {
   );
 
   return (
-    <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled">
+    <GlassScroll contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]} keyboardShouldPersistTaps="handled">
       <Text style={type.title}>Inbox</Text>
       <Text style={[type.small, styles.intro]}>Jot down anything. Put it on a day when you're ready.</Text>
 
@@ -117,7 +118,7 @@ export default function InboxScreen() {
       {done.length > 0 && <Section title="Done this week">{done.map(row)}</Section>}
 
       <Text style={[type.small, styles.hint]}>Tap to tick off. Press and hold to plan it for today or tomorrow.</Text>
-    </ScrollView>
+    </GlassScroll>
   );
 }
 

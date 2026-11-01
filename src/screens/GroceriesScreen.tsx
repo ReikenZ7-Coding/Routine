@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { CheckRow } from '../components/CheckRow';
 import { GroceryForm } from '../components/GroceryForm';
 import { Divider, Section } from '../components/Section';
@@ -8,7 +8,7 @@ import { STARTER_STAPLES, useStore } from '../lib/store';
 import { type GroceryItem, boughtOn, describeRepeat, friendlyDate, groceryListText, needsBuying, nextDue } from '../lib/schedule';
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Glass } from '../components/Glass';
+import { Glass, GlassScroll } from '../components/Glass';
 
 const NO_AISLE = 'Other';
 
@@ -67,7 +67,7 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
 
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassScroll contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -168,7 +168,7 @@ export default function GroceriesScreen({ query = '', header }: { query?: string
             <Text style={styles.hint}>Tap to tick off. Press and hold an item to edit it.</Text>
           </>
         )}
-      </ScrollView>
+      </GlassScroll>
 
       {all.length > 0 && (
         <Pressable

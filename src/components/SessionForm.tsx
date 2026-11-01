@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Session } from '../lib/gym';
 import { WEEKDAY_SHORT } from '../lib/schedule';
 import { newId } from '../lib/store';
@@ -29,6 +30,7 @@ interface Row {
 const blankRow = (): Row => ({ id: newId(), name: '', sets: '3', reps: '10', weight: '' });
 
 export function SessionForm({ visible, session, takenDays, onSave, onDelete, onClose }: Props) {
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
@@ -84,10 +86,10 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{session ? 'Edit session' : 'New session'}</Text>
 

@@ -12,21 +12,29 @@ import { useFonts } from 'expo-font';
 import { Tabs } from 'expo-router/js-tabs';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { BlurTargetView } from 'expo-blur';
+import { useIsFocused } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { type ComponentRef, type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ambience } from '../components/Art';
-import { BlurTargetContext } from '../components/Glass';
+import { ActiveBlurTargetContext, LightRoot, WorldFrame } from '../components/Glass';
+import { useBar } from '../components/glass/chrome';
+import type { BlurTarget } from '../components/glass/targets';
 import { GlassTabBar } from '../components/GlassTabBar';
 import { MiniPlayer, NowPlaying } from '../components/NowPlaying';
 import { syncReminders } from '../lib/reminders';
 import { SoundProvider } from '../lib/sounds';
 import { StoreProvider, useStore } from '../lib/store';
-import { ThemeContext, themeFor } from '../theme';
+import { ThemeContext, themeFor, useTheme } from '../theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+/**
+ * When true, each screen's content is drawn inside its blur target, so the tab bar and mini player frost the
+ * rows passing under them. Off until profiled on a mid-range phone: Dimezis re-records the target whenever the
+ * content invalidates, so every scroll frame would re-blur the chrome. Off, chrome blurs the backdrop only.
+ */
+const CHROME_BLURS_CONTENT = false;
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -77,36 +85,35 @@ export default function RootLayout() {
 function ThemedApp() {
   const { settings } = useStore();
   const theme = themeFor(settings.theme);
-  const { colors, fonts, glass } = theme;
-  const insets = useSafeAreaInsets();
-  const barBottom = glass ? insets.bottom + 10 : 0;
-  const barHeight = glass ? 72 : 60 + insets.bottom;
-
   return (
     <ThemeContext.Provider value={theme}>
+      <LightRoot>
+        <Shell />
+      </LightRoot>
+    </ThemeContext.Provider>
+  );
+}
+
+function Shell() {
+  const { colors, fonts } = useTheme();
+  const bar = useBar();
+  // The focused screen hands its blur target up, so chrome drawn over every screen blurs the right world.
+  const [target, setTarget] = useState<BlurTarget | null>(null);
+  const onTarget = useCallback((t: BlurTarget) => setTarget(() => t), []);
+
+  return (
+    <ActiveBlurTargetContext.Provider value={target}>
       <View style={styles.root}>
         <LinearGradient colors={colors.gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
         <StatusBar style={colors.statusBar} />
         <ReminderSync />
         <Tabs
-          tabBar={glass ? (props) => <GlassTabBar {...props} bottom={barBottom} /> : undefined}
-          // Each screen paints its own gradient, so screens kept alive in the background never show through.
-          screenLayout={({ children, options }) => (
-            <ScreenFrame gradient={colors.gradient} fade={glass && options.headerShown === false} glass={glass}>
-              {children}
-            </ScreenFrame>
-          )}
+          tabBar={(props) => <GlassTabBar {...props} variant={bar.variant} bottom={bar.bottom} height={bar.height} />}
+          // Each screen paints its own world, so screens kept alive in the background never show through.
+          screenLayout={({ children }) => <ScreenFrame onTarget={onTarget}>{children}</ScreenFrame>}
           screenOptions={{
-            tabBarActiveTintColor: glass ? colors.text : colors.accent,
+            tabBarActiveTintColor: colors.text,
             tabBarInactiveTintColor: colors.muted,
-            tabBarStyle: {
-              backgroundColor: colors.tabBar,
-              borderTopColor: colors.border,
-              borderTopWidth: StyleSheet.hairlineWidth,
-              elevation: 0,
-              height: 60 + insets.bottom,
-              paddingTop: 6,
-            },
             tabBarItemStyle: { minHeight: 48 },
             tabBarLabelStyle: { fontFamily: fonts.bodyMedium, fontSize: 12 },
             headerStyle: { backgroundColor: colors.gradient[0] },
@@ -131,10 +138,10 @@ function ThemedApp() {
             />
           ))}
         </Tabs>
-        <MiniPlayer bottom={barBottom + barHeight + 10} />
+        <MiniPlayer bottom={bar.bottom + bar.height + 10} />
         <NowPlaying />
       </View>
-    </ThemeContext.Provider>
+    </ActiveBlurTargetContext.Provider>
   );
 }
 
@@ -144,45 +151,21 @@ const styles = StyleSheet.create({
   bottomEdge: { position: 'absolute', bottom: 0, left: 0, right: 0 },
 });
 
-/** Each screen paints its own backdrop (gradient, light and glow), so screens kept alive in the
- *  background never show through, and glass on the screen has something to blur. */
-function ScreenFrame({
-  gradient,
-  fade,
-  glass,
-  children,
-}: {
-  gradient: [string, string, string];
-  fade: boolean;
-  glass: boolean;
-  children: ReactNode;
-}) {
-  const target = useRef<ComponentRef<typeof View>>(null);
+/**
+ * Each screen paints its own world (WorldFrame: the backdrop in the blur target, then the moving light), then
+ * its content, then the scroll edges: content fades out under the status bar, and fades into the world before
+ * it slides under the tab bar.
+ */
+function ScreenFrame({ onTarget, children }: { onTarget: (t: BlurTarget) => void; children: ReactNode }) {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const focused = useIsFocused();
   return (
-    <View style={styles.root}>
-      <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
-        <LinearGradient colors={gradient} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} />
-        <Ambience />
-      </BlurTargetView>
-      <BlurTargetContext.Provider value={target}>{children}</BlurTargetContext.Provider>
-      {/* Scroll edge: content softly fades out under the status bar instead of being cut off. */}
-      {fade && (
-        <LinearGradient
-          colors={[gradient[0], `${gradient[0]}00`]}
-          style={[styles.edge, { height: insets.top + 28 }]}
-          pointerEvents="none"
-        />
-      )}
-      {/* Bottom edge: content fades into the backdrop before it slides under the floating tab bar. */}
-      {glass && (
-        <LinearGradient
-          colors={[`${gradient[2]}00`, `${gradient[2]}E6`]}
-          style={[styles.bottomEdge, { height: insets.bottom + 120 }]}
-          pointerEvents="none"
-        />
-      )}
-    </View>
+    <WorldFrame focused={focused} onTarget={onTarget} contentInTarget={CHROME_BLURS_CONTENT}>
+      {children}
+      <LinearGradient colors={colors.edgeTop} style={[styles.edge, { height: insets.top + 24 }]} pointerEvents="none" />
+      <LinearGradient colors={colors.edgeBottom} style={[styles.bottomEdge, { height: insets.bottom + 96 }]} pointerEvents="none" />
+    </WorldFrame>
   );
 }
 

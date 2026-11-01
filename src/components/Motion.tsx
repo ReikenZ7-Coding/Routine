@@ -3,6 +3,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useEffect, useState } from 'react';
 import {
+  AccessibilityInfo,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -19,7 +21,7 @@ import Animated, {
   LinearTransition,
   useAnimatedProps,
   useAnimatedStyle,
-  useReducedMotion,
+  ReduceMotion,
   useSharedValue,
   withSequence,
   withSpring,
@@ -29,6 +31,36 @@ import Svg, { Circle } from 'react-native-svg';
 import { type Theme, useStyles } from '../theme';
 
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+
+let systemReduceMotion = false;
+const reduceMotionListeners = new Set<(on: boolean) => void>();
+AccessibilityInfo.isReduceMotionEnabled()
+  .then((on) => {
+    systemReduceMotion = on;
+    reduceMotionListeners.forEach((fn) => fn(on));
+  })
+  .catch(() => {});
+AccessibilityInfo.addEventListener('reduceMotionChanged', (on) => {
+  systemReduceMotion = on;
+  reduceMotionListeners.forEach((fn) => fn(on));
+});
+
+/** The system's reduce-motion setting (Android "Remove animations"), kept live: unlike Reanimated's
+ *  useReducedMotion(), it follows the setting when it changes while the app is open. */
+export function useReduceMotion(): boolean {
+  const [on, setOn] = useState(systemReduceMotion);
+  useEffect(() => {
+    setOn(systemReduceMotion);
+    reduceMotionListeners.add(setOn);
+    return () => {
+      reduceMotionListeners.delete(setOn);
+    };
+  }, []);
+  return on;
+}
+
+/** Fades that stay even under reduced motion (a crossfade is the reduced form of motion, never a 0ms cut). */
+export const FADE = { reduceMotion: ReduceMotion.Never } as const;
 const GROW = LinearTransition.duration(260).easing(EASE_OUT);
 const SHOW = FadeIn.duration(220).easing(EASE_OUT);
 const HIDE = FadeOut.duration(160).easing(EASE_OUT);
@@ -47,7 +79,8 @@ interface PressProps {
   children: ReactNode;
 }
 
-/** Press feedback: a 3% squeeze in 120ms, from press-in, so the tap feels answered before the finger lifts. */
+/** Press feedback: a 3% squeeze in 120ms, from press-in, so the tap feels answered before the finger lifts.
+ *  On Android a keyboard or D-pad focus draws a 2px ring in the text colour (the web uses :focus-visible). */
 export function Press({
   onPress,
   onLongPress,
@@ -61,11 +94,15 @@ export function Press({
   children,
 }: PressProps) {
   const scale = useSharedValue(1);
-  const reduced = useReducedMotion();
+  const focus = useSharedValue(0);
+  const reduced = useReduceMotion();
+  const ringColor = useStyles(ringColorOf);
   const squeeze = (to: number) => {
     if (!reduced) scale.set(withTiming(to, { duration: 120, easing: EASE_OUT }));
   };
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  const ring = useAnimatedStyle(() => ({ opacity: focus.get() }));
+  const radius = StyleSheet.flatten(style)?.borderRadius;
   return (
     <Pressable
       onPress={onPress}
@@ -73,6 +110,8 @@ export function Press({
       disabled={disabled}
       onPressIn={() => squeeze(0.97)}
       onPressOut={() => squeeze(1)}
+      onFocus={FOCUS_RING ? () => focus.set(withTiming(1, { duration: 120, easing: EASE_OUT, ...FADE })) : undefined}
+      onBlur={FOCUS_RING ? () => focus.set(withTiming(0, { duration: 160, easing: EASE_OUT, ...FADE })) : undefined}
       style={outerStyle}
       hitSlop={hitSlop}
       pressRetentionOffset={16}
@@ -80,15 +119,27 @@ export function Press({
       accessibilityRole={accessibilityRole}
       accessibilityState={accessibilityState}
     >
-      <Animated.View style={[style, animated]}>{children}</Animated.View>
+      <Animated.View style={[style, animated]}>
+        {children}
+        {FOCUS_RING && (
+          <Animated.View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, { borderRadius: radius, borderWidth: 2, borderColor: ringColor }, ring]}
+          />
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
 
+/** Native platforms draw their own focus ring; the web keeps the :focus-visible outline from _layout.tsx. */
+export const FOCUS_RING = Platform.OS !== 'web';
+const ringColorOf = ({ colors }: Theme) => colors.text;
+
 /** A circle that pops when `done` flips: a quick grow, then a bouncy settle. */
 export function Pop({ done, style, children }: { done: boolean; style?: StyleProp<ViewStyle>; children?: ReactNode }) {
   const scale = useSharedValue(1);
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
   const [first, setFirst] = useState(true);
   useEffect(() => {
     if (first) return setFirst(false);
@@ -122,7 +173,7 @@ export function Ring({
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const p = useSharedValue(0);
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
   const target = Math.max(0, Math.min(1, progress));
   useEffect(() => {
     p.set(reduced ? target : withTiming(target, { duration: 800, easing: EASE_OUT }));
@@ -153,7 +204,7 @@ export function Ring({
 /** A slim progress bar; the fill is absolute and childless, so animating its width costs no layout. */
 export function Bar({ progress, color, track, height = 6 }: { progress: number; color: string; track: string; height?: number }) {
   const p = useSharedValue(0);
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
   const target = Math.max(0, Math.min(1, progress));
   useEffect(() => {
     p.set(reduced ? target : withTiming(target, { duration: 600, easing: EASE_OUT }));
@@ -184,7 +235,7 @@ export function Collapse({ open, children }: { open: boolean; children: ReactNod
 /** A chevron that turns to point the way the content will go. */
 export function Chevron({ open, color, size = 20 }: { open: boolean; color: string; size?: number }) {
   const turn = useSharedValue(open ? 0 : 180);
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
   useEffect(() => {
     turn.set(reduced ? (open ? 0 : 180) : withTiming(open ? 0 : 180, { duration: 220, easing: EASE_OUT }));
   }, [open, reduced, turn]);

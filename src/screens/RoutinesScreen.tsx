@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { HubHeader, RoutineCard } from '../components/Hub';
 import { Press } from '../components/Motion';
 import { RoutineForm } from '../components/RoutineForm';
@@ -25,7 +25,7 @@ import { describeRepeat } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { useFabBottom } from '../components/NowPlaying';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Glass } from '../components/Glass';
+import { Glass, GlassScroll } from '../components/Glass';
 import { SceneArt } from '../components/Art';
 
 const ART = ['calm', 'rain', 'waves', 'brown'];
@@ -89,7 +89,7 @@ export default function RoutinesScreen({
 
   return (
     <View style={styles.flex}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <GlassScroll contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -214,7 +214,7 @@ export default function RoutinesScreen({
             <Text style={styles.hint}>Tap to tick off. Press and hold to edit, skip a day or set a reminder.</Text>
           </>
         )}
-      </ScrollView>
+      </GlassScroll>
 
       {all.length > 0 && !glass && (
         <Pressable

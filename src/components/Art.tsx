@@ -20,6 +20,8 @@ interface LightSpec {
   box: 'frame' | { w: number; h: number };
   anchor?: 'top';
   opacity?: number;
+  /** Where the light is visible at all, as [x0, y0, x1, y1] fractions of its box (glass culls by it). */
+  bounds: [number, number, number, number];
   motion: LightMotion;
 }
 
@@ -106,6 +108,11 @@ const HEADERS: Partial<Record<ThemeName, ImageSourcePropType>> = {
 export const HEADER_BLURS: Partial<Record<ThemeName, ImageSourcePropType>> = {
   paper: require('../../assets/art/paper-header-blur.png'),
 };
+
+/** Height over width of each look's header art. */
+export const HEADER_RATIOS: Partial<Record<ThemeName, number>> = Object.fromEntries(
+  (Object.keys(LOOKS) as ThemeName[]).filter((look) => LOOKS[look].header).map((look) => [look, LOOKS[look].header!.ratio]),
+);
 
 type Variant = 'calm' | 'rain' | 'waves' | 'brown' | 'dusk' | 'focus';
 

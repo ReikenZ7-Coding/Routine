@@ -108,11 +108,12 @@ function LavenderHome(p: Props) {
       </Text>
 
       <View style={styles.searchRow}>
-        <Glass radius={18} style={styles.search} onPress={p.onAdd} accessibilityLabel="Add a routine, to-do or word">
+        <Glass tier="control" radius={18} style={styles.search} onPress={p.onAdd} accessibilityLabel="Add a routine, to-do or word">
           <Ionicons name="add-circle-outline" size={18} color={colors.muted} />
           <Text style={styles.searchText}>Add a routine, to-do, word…</Text>
         </Glass>
         <Glass
+          tier="control"
           radius={18}
           style={styles.filter}
           onPress={p.onToggleCalendar}
@@ -141,7 +142,7 @@ function LavenderHome(p: Props) {
           {p.hero.meta}
         </Text>
         <View style={styles.flex} />
-        <Glass radius={22} style={styles.lavPlay} onPress={p.hero.onAction} accessibilityLabel={p.hero.action}>
+        <Glass tier="control" radius={22} style={styles.lavPlay} onPress={p.hero.onAction} accessibilityLabel={p.hero.action}>
           <Ionicons name={p.hero.icon} size={20} color="#FFFFFF" />
         </Glass>
         <View style={styles.dots}>
@@ -156,6 +157,7 @@ function LavenderHome(p: Props) {
         {p.categories.map((c, i) => (
           <View key={c.label} style={styles.circleItem}>
             <Glass
+              tier="control"
               radius={26}
               tint={c.active ? colors.selected : CIRCLE_TINTS[i % CIRCLE_TINTS.length]}
               style={[styles.circle, { boxShadow: `0px 6px 20px ${CIRCLE_GLOWS[i % CIRCLE_GLOWS.length]}` }]}
@@ -218,7 +220,7 @@ function StoneHome(p: Props) {
         <Pressable onPress={p.onStats} style={styles.iconBtnStart} accessibilityRole="button" accessibilityLabel="Your week">
           <Ionicons name="pulse" size={30} color={colors.text} />
         </Pressable>
-        <Glass radius={22} style={styles.round} onPress={p.onSettings} accessibilityLabel="Settings">
+        <Glass tier="control" radius={22} style={styles.round} onPress={p.onSettings} accessibilityLabel="Settings">
           <Ionicons name="menu" size={20} color={colors.text} />
         </Glass>
       </View>

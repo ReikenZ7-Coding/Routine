@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { allowReminders, remindersSupported } from '../lib/reminders';
 import { Ionicons } from '@expo/vector-icons';
 import { ROUTINE_ICONS, type Routine, type TimeOfDay, TIME_LABELS, formatTime, iconFor } from '../lib/routines';
@@ -54,6 +55,7 @@ function choiceFor(r: Repeat): RepeatChoice {
 }
 
 export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose }: Props) {
+  const insets = useSafeAreaInsets();
   const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
@@ -159,10 +161,10 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   const toggleDay = (d: number) => setDays((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Pressable accessibilityRole="button" style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: 32 + insets.bottom }]}>
           <ScrollView keyboardShouldPersistTaps="handled">
             <Text style={styles.heading}>{routine ? 'Edit routine' : 'New routine'}</Text>
 

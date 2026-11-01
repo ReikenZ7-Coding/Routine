@@ -4,8 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { type ReactNode, useEffect, useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Platform, StyleSheet, Text, View } from 'react-native';
+import { GlassScroll } from './Glass';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import {
   type Routine,
   countOn,
@@ -20,7 +21,7 @@ import {
 } from '../lib/routines';
 import { describeRepeat } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Micro, Press } from './Motion';
+import { Micro, Press, useReduceMotion } from './Motion';
 
 const EASE_IN_OUT = Easing.bezier(0.77, 0, 0.175, 1);
 
@@ -49,7 +50,7 @@ export function Segmented<K extends string>({
   const styles = useStyles(makeStyles);
   const [width, setWidth] = useState(0);
   const x = useSharedValue(0);
-  const reduced = useReducedMotion();
+  const reduced = useReduceMotion();
   const index = Math.max(
     0,
     options.findIndex((o) => o.key === value),
@@ -115,7 +116,7 @@ export function FilterRow<K extends string>({
   return (
     <View style={styles.filter}>
       <Micro>{caption}</Micro>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
+      <GlassScroll horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipScroll}>
         {options.map((o) => {
           const active = o.key === value;
           return (
@@ -135,7 +136,7 @@ export function FilterRow<K extends string>({
             </Press>
           );
         })}
-      </ScrollView>
+      </GlassScroll>
     </View>
   );
 }

@@ -3,14 +3,29 @@ import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useStyles, useTheme, type Theme } from '../theme';
 import { Glass } from './Glass';
+import type { BarVariant } from './glass/chrome';
 
 const PAD = 6;
 
+/** The capsule behind the active icon in the dock. */
+const CAPSULE = { w: 56, h: 32, top: 6 };
+
 /**
- * Floating liquid-glass tab bar. A glass drop sits under the current tab and flows to the next one:
- * its leading edge springs ahead and the trailing edge catches up, so it stretches and settles.
+ * The glass tab bar (live blur of the screen's world). A glass drop sits under the current tab and flows to the
+ * next one: its leading edge springs ahead and the trailing edge catches up, so it stretches and settles.
+ * 'float' and 'floatInk' float above the bottom edge with a slot-wide drop; 'dock' spans the bottom edge with a
+ * capsule behind the icon.
  */
-export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom }: BottomTabBarProps & { bottom: number }) {
+export function GlassTabBar({
+  state,
+  descriptors,
+  emitter,
+  navigateToTab,
+  variant,
+  bottom,
+  height,
+}: BottomTabBarProps & { variant: BarVariant; bottom: number; height: number }) {
+  const dock = variant === 'dock';
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [width, setWidth] = useState(0);
@@ -30,8 +45,8 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
 
   useEffect(() => {
     if (!slot) return;
-    const l = PAD + state.index * slot;
-    const r = l + slot;
+    const l = dock ? PAD + state.index * slot + (slot - CAPSULE.w) / 2 : PAD + state.index * slot;
+    const r = l + (dock ? CAPSULE.w : slot);
     if (!placed.current || reduceMotion) {
       left.setValue(l);
       right.setValue(r);
@@ -56,17 +71,20 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
       ]).start();
     }
     lastIndex.current = state.index;
-  }, [state.index, slot, left, right, reduceMotion]);
+  }, [state.index, slot, left, right, reduceMotion, dock]);
 
   return (
-    <View style={[styles.wrap, { bottom }]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
-      <Glass radius={28} intensity={70} tint={colors.tabBar} style={StyleSheet.absoluteFill}>
+    <View style={[dock ? styles.dock : styles.wrap, { bottom, height }]} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <Glass tier="chrome" radius={dock ? 0 : 28} topOnly={dock} tint={colors.tabBar} style={StyleSheet.absoluteFill}>
         {slot > 0 && (
-          <Animated.View style={[styles.dropSlot, { left, width: Animated.subtract(right, left) }]} pointerEvents="none">
-            <Glass radius={22} tint={colors.primarySoft} style={styles.drop} />
+          <Animated.View
+            style={[dock ? styles.capsuleSlot : styles.dropSlot, { left, width: Animated.subtract(right, left) }]}
+            pointerEvents="none"
+          >
+            <Glass radius={dock ? CAPSULE.h / 2 : 22} tint={colors.primarySoft} style={styles.drop} />
           </Animated.View>
         )}
-        <View style={styles.row}>
+        <View style={[styles.row, dock ? styles.dockRow : styles.floatRow]}>
           {state.routes.map((route, i) => {
             const { options } = descriptors[route.key];
             const focused = state.index === i;
@@ -103,7 +121,9 @@ export function GlassTabBar({ state, descriptors, emitter, navigateToTab, bottom
 
 const makeStyles = ({ fonts }: Theme) =>
   StyleSheet.create({
-    wrap: { position: 'absolute', left: 16, right: 16, height: 72 },
+    wrap: { position: 'absolute', left: 16, right: 16 },
+    dock: { position: 'absolute', left: 0, right: 0 },
+    capsuleSlot: { position: 'absolute', top: CAPSULE.top, height: CAPSULE.h },
     dropSlot: {
       position: 'absolute',
       top: PAD,
@@ -111,7 +131,9 @@ const makeStyles = ({ fonts }: Theme) =>
       paddingHorizontal: 4,
     },
     drop: { flex: 1 },
-    row: { flex: 1, flexDirection: 'row', paddingHorizontal: PAD },
+    row: { flexDirection: 'row', paddingHorizontal: PAD },
+    floatRow: { flex: 1 },
+    dockRow: { height: 64 },
     tab: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
     label: { fontFamily: fonts.bodyMedium, fontSize: 12 },
   });
