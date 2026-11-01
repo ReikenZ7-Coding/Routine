@@ -76,7 +76,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       backdrop: 'rgba(20,30,80,0.4)',
       tabBar: 'rgba(255,255,255,0.12)',
       statusBar: 'light',
-      glassFill: ['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.03)'],
+      glassFill: ['rgba(58,38,166,0.58)', 'rgba(30,16,116,0.64)'],
       blurTint: 'default',
       glow: '#CD94E6',
       rim: 'rgba(255,255,255,0.62)',
@@ -84,7 +84,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       selected: '#6E5FD3',
       onSelected: '#FFFFFF',
       shadow: '0px 14px 34px rgba(26,14,96,0.38), inset 0px 1px 1px rgba(255,255,255,0.45)',
-      shine: 'rgba(255,255,255,0.2)',
+      shine: 'rgba(255,255,255,0.14)',
       edgeGlow: 'rgba(255,143,208,0.2)',
     },
     kinds: {
