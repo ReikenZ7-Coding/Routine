@@ -18,6 +18,9 @@ export const SHELL = {
   row2: 56,
   /** The grid stops at this width and sits centred. */
   contentMax: 1440,
+  /** A kind's translucent soft wash on desktop glass (calendar blocks, the gym's New best) is drawn at this share:
+   *  the wide panes are clearer than the phone's cards, so the full wash would lift their text below 4.5:1. */
+  wash: 0.4,
 };
 
 export interface ShellMetrics {

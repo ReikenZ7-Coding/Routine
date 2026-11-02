@@ -19,7 +19,6 @@ import { Easing, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ambience } from '../components/Art';
 import { DesktopContext, useDesktopSwitch } from '../components/desktop/context';
-import { DESKTOP_PAGES } from '../components/desktop/nav';
 import { DesktopScreen } from '../components/desktop/Screen';
 import { DesktopShell } from '../components/desktop/Shell';
 import { ActiveBlurTargetContext, LightRoot, WorldFrame } from '../components/Glass';
@@ -66,7 +65,7 @@ const TABS: { name: string; title: string; icon: IconName; iconActive: IconName 
 ];
 
 /** Routes only the desktop shell lists in its sidebar. On the phone each lands on its phone equivalent. */
-const DESKTOP_ROUTES = ['overview', 'calendar', 'groceries', 'music'];
+const DESKTOP_ROUTES = ['overview', 'calendar', 'groceries', 'music', 'settings', 'stats'];
 
 // Keyboard focus on web: a white ring with a dark halo reads on every look's background. The desktop shell's
 // menus, the palette's field and switches carry their own roles, and get the same ring.
@@ -124,8 +123,8 @@ function ThemedApp() {
 }
 
 /**
- * The desktop shell around the same routes. No tab bar: the sidebar navigates. Pages with a desktop layout of
- * their own fill the content area; the rest show their phone layout in a centred column for now.
+ * The desktop shell around the same routes. No tab bar: the sidebar navigates. Every route draws its desktop page
+ * when the shell is on (each route picks its layout from the shell context).
  */
 function Desktop() {
   const { colors } = useTheme();
@@ -144,14 +143,18 @@ function Desktop() {
       >
         <Tabs
           tabBar={() => null}
-          screenLayout={({ children, route }) => <DesktopScreen wide={DESKTOP_PAGES.has(route.name)}>{children}</DesktopScreen>}
+          screenLayout={({ children }) => <DesktopScreen>{children}</DesktopScreen>}
           screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: 'transparent' }, ...TAB_FADE }}
         >
           {TABS.map((t) => (
             <Tabs.Screen key={t.name} name={t.name} options={{ title: t.name === 'language' ? tabTitle(language.languages) : t.title }} />
           ))}
           {DESKTOP_ROUTES.map((name) => (
-            <Tabs.Screen key={name} name={name} options={{ title: name[0].toUpperCase() + name.slice(1) }} />
+            <Tabs.Screen
+              key={name}
+              name={name}
+              options={{ title: name === 'stats' ? 'Your week' : name[0].toUpperCase() + name.slice(1) }}
+            />
           ))}
         </Tabs>
       </DesktopShell>

@@ -1,8 +1,7 @@
 // Each routed page inside the desktop shell. The navigator crossfades pages over 180 ms but leaves the page it
 // faded out in place, transparent and still in the Tab order; so once that fade has ended, the page left behind is
-// hidden (visibility, which keeps its scroll position) and takes no pointer input on the way out. Pages with a
-// desktop layout of their own fill the content area; the rest show their phone layout in a centred 720 dp column
-// for now.
+// hidden (visibility, which keeps its scroll position) and takes no pointer input on the way out. Every page
+// fills the content area with its own desktop layout.
 import { useIsFocused } from 'expo-router';
 import { type ReactNode, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -10,7 +9,7 @@ import { StyleSheet, View } from 'react-native';
 /** The navigator's crossfade (TAB_FADE in the root layout), and a frame to spare. */
 const FADE_OUT_MS = 180 + 40;
 
-export function DesktopScreen({ wide, children }: { wide: boolean; children: ReactNode }) {
+export function DesktopScreen({ children }: { children: ReactNode }) {
   const focused = useIsFocused();
   const [faded, setFaded] = useState(!focused);
   useEffect(() => {
@@ -24,13 +23,7 @@ export function DesktopScreen({ wide, children }: { wide: boolean; children: Rea
   const hidden = faded && !focused;
   return (
     <View style={[styles.fill, hidden && styles.hidden]} pointerEvents={focused ? 'auto' : 'none'} aria-hidden={!focused}>
-      {wide ? (
-        children
-      ) : (
-        <View style={styles.column}>
-          <View style={styles.columnInner}>{children}</View>
-        </View>
-      )}
+      {children}
     </View>
   );
 }
@@ -38,6 +31,4 @@ export function DesktopScreen({ wide, children }: { wide: boolean; children: Rea
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   hidden: { visibility: 'hidden' } as never,
-  column: { flex: 1, alignItems: 'center' },
-  columnInner: { flex: 1, width: '100%', maxWidth: 720 },
 });

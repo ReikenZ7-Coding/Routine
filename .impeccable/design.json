@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-01T20:47:46+00:00",
+  "generatedAt": "2026-11-02T11:13:41+00:00",
   "title": "Design System: Symphony OS",
   "extensions": {
     "colorMeta": {
@@ -1943,7 +1943,107 @@
         "value": "220ms, 24px",
         "purpose": "The floating button sliding away while scrolling down (fade only under reduced motion)."
       }
-    ]
+    ],
+    "desktop": {
+      "summary": "The web build from 1024dp wide draws a desktop shell around the same routes: the references' layout, the four looks' tokens. The phone layout is untouched (each route switches on useDesktop().on).",
+      "breakpoints": {
+        "desktop": "web and window width >= 1024dp",
+        "compact": "1024-1279dp",
+        "comfortable": ">= 1280dp"
+      },
+      "shell": {
+        "sidebar": {
+          "width": 264,
+          "rail": 72,
+          "radius": 30,
+          "toggle": "Ctrl+B",
+          "groups": ["Overview, Today, Calendar, Inbox", "Health and growth: Gym, Language", "Home life: Groceries, Library, Music"],
+          "foot": "Needs you, the day's progress, the person and Settings"
+        },
+        "topBar": ["breadcrumbs", "search palette (Ctrl+K)", "look switch", "reminders bell", "New (Ctrl+N then R, T, G, W)"],
+        "sidePanel": {
+          "width": 440,
+          "gap": 16,
+          "note": "The phone's sheets open from the right."
+        },
+        "pagesNotInSidebar": {
+          "/settings": "Settings (Ctrl+,)",
+          "/stats": "Your week (from Overview)"
+        }
+      },
+      "grid": {
+        "columns": 12,
+        "gutter": {
+          "comfortable": 20,
+          "compact": 16
+        },
+        "contentMax": 1440,
+        "pagePad": {
+          "comfortable": 32,
+          "compact": 24
+        },
+        "panelPad": {
+          "comfortable": 20,
+          "compact": 16
+        },
+        "minSpan": "a span under 280dp takes the whole row"
+      },
+      "pageHeader": {
+        "title": "display face, 38/44 (34/40 compact)",
+        "subtitle": "one sentence of facts, figures in body medium, onSlabMuted",
+        "actions": "40dp control-glass buttons, secondary; New in the top bar is the primary"
+      },
+      "interaction": {
+        "targets": {
+          "controls": 40,
+          "pillsChipsSegmentsRowButtons": 36,
+          "coarsePointer": 44
+        },
+        "hover": {
+          "token": "material.hover {fill, rim}",
+          "in": "120ms",
+          "out": "160ms",
+          "rule": "every hover light also shows under keyboard focus, with the global focus ring on top; nothing appears on hover alone"
+        },
+        "focusRing": "2px white outline, 2px offset, 5px dark halo, on every role the shell uses",
+        "shortcuts": {
+          "Ctrl+K": "search",
+          "Ctrl+N": "New menu",
+          "Ctrl+B": "sidebar",
+          "Ctrl+1..9": "pages",
+          "Ctrl+,": "Settings",
+          "Ctrl+[ / Ctrl+]": "previous / next day (Today), week or month (Calendar)",
+          "Space or Enter, then 1/2/3": "turn and grade the review card while it has focus",
+          "Esc": "close palette, menu or side panel"
+        }
+      },
+      "kit": [
+        "Pebble (40dp inset tile)",
+        "Tick (26dp ring in 40dp target; square for to-dos and groceries)",
+        "IconButton (40 or 36dp, labelled)",
+        "Pill (36dp inset; active = primary)",
+        "ChipRow (radio group)",
+        "GroupHead",
+        "Empty",
+        "SearchField (labelled; 360dp or full width)",
+        "usePageKeys",
+        "Segmented dense (36dp segments in a 40dp trough)"
+      ],
+      "pages": {
+        "overview": "hero, day line, Needs you, trail, agenda, week chart, groceries, gym, language",
+        "today": "the phone's trail in span 7 (cards max 720, visible edit button per routine) beside the month, Balance rings and the day's note in span 5; previous/next day",
+        "calendar": "Week: all-day lane (3 chips a day, then 'N more'), 05:00-24:00 grid (48dp hours), overlap lanes, routine blocks in the kind's soft wash (40% of its alpha on desktop glass) with a half-strength kind rim and a tick on blocks >= 40dp, done/skipped recede to inset with struck title, now line under blocks, empty half hour adds a weekly routine. Month: counts, kind dots, past moods; a day opens Today on it. Legend of five kinds.",
+        "inbox": "three panels: To sort (composer on top), Planned (grouped by day), Done this week; row Plan and more open inline",
+        "gym": "today's session as hero (exercise rows: plan line, stepper, set bubbles, New best, rest timer) beside Weekly plan, History, Personal records; rest day offers 'Do a session anyway'",
+        "language": "Today's practice and the inline review card beside Focus, My words (searchable) and languages",
+        "library": "routines table: search + When + Repeat chips; Today / Not today / Ideas; 64dp rows",
+        "groceries": "aisle panels in two columns beside Bought today and Coming up",
+        "music": "hero player (art up to 320, seek, transport, sleep timer) beside focus sound tiles and the library",
+        "settings": "name, four looks side by side, phone calendar, backup, This computer, keyboard shortcuts",
+        "yourWeek": "week chart (tall), best streaks ranked with bars, personal records, When things get done heatmap (whenDone in src/lib/stats.ts)"
+      },
+      "contrastGate": "scripts/check-contrast.py gate_desktop: text tokens on pane, control, receded, inset, sheet, hover and the kinds' soft washes at 40% (SHELL.wash) over the wide world; sidebar chrome; bare-world titles and notes at 1440x900, 1280x800, 1024x768; now line, chart bars and focus ring at 3:1"
+    }
   },
   "components": [
     {
@@ -2009,6 +2109,22 @@
       "description": "Pine's header art: the canopy slab drawn behind the same screen header every look has, in the same place. Lit teal, rounded only at its foot with a thin mint rim; the title (Bold 30 on a 36 line), a Slab Sage subtitle, and the count badge as a dark pill with a mint rim and a mint count in sentence case. Below, the floating button, the same 56dp disc of the primary gradient with a lit top rim and specular cap in every look.",
       "html": "<div class=\"ds-world-pine\"><header class=\"ds-canopy\"><div class=\"ds-canopy-head\"><div><div class=\"ds-canopy-title\">Gym</div><div class=\"ds-canopy-sub\">Your training plan, one day at a time</div></div><span class=\"ds-canopy-badge\">2 sessions</span></div></header><div class=\"ds-pine-row\"><button class=\"ds-fab-pine\" aria-label=\"Add a session\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg></button></div></div>",
       "css": ".ds-world-pine { background: linear-gradient(180deg, #0B2A24, #071D19, #03110E); padding: 24px; border-radius: 0; font-family: 'DM Sans', system-ui, sans-serif; } .ds-canopy { margin: -24px -24px 0; padding: 40px 24px 26px; background: linear-gradient(180deg, #1F6352 0%, #164D41 60%, #113D34 100%); border-bottom: 1px solid rgba(168,240,212,0.18); border-radius: 0 0 28px 28px; box-shadow: 0px 16px 32px -10px rgba(0,8,6,0.55), 0px 2px 6px rgba(0,8,6,0.30); } .ds-canopy-head { display: flex; align-items: center; gap: 12px; } .ds-canopy-head > div { flex: 1; } .ds-canopy-title { font-weight: 700; font-size: 30px; line-height: 36px; letter-spacing: -0.8px; color: #F1F7F3; } .ds-canopy-sub { margin-top: 2px; font-size: 14px; line-height: 19px; color: #D8EBE3; } .ds-canopy-badge { display: inline-flex; align-items: center; min-height: 30px; padding: 0 12px; box-sizing: border-box; border-radius: 999px; background: rgba(4,14,12,0.55); border: 1px solid rgba(124,227,188,0.60); color: #7CE3BC; font-weight: 700; font-size: 13px; letter-spacing: 0.2px; font-variant-numeric: tabular-nums; } .ds-pine-row { display: flex; align-items: center; justify-content: flex-end; margin-top: 24px; } .ds-fab-pine { position: relative; overflow: hidden; width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; color: #06201A; background: linear-gradient(180deg, #A3F0D3, #7CE3BC); border: 1px solid; border-top-color: rgba(168,240,212,0.28); border-left-color: rgba(168,240,212,0.18); border-right-color: rgba(124,227,188,0.08); border-bottom-color: rgba(124,227,188,0.22); box-shadow: 0px 10px 26px -6px rgba(124,227,188,0.42), 0px 2px 6px rgba(0,8,6,0.40); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-fab-pine::before { content: \"\"; position: absolute; top: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, rgba(168,240,212,0.18), rgba(168,240,212,0)); } .ds-fab-pine svg { position: relative; } .ds-fab-pine:active { transform: scale(0.97); } .ds-fab-pine:focus-visible { outline: 2px solid #F1F7F3; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-property: opacity, background-color, border-color, color !important; } [class^=\"ds-\"]:active { transform: none !important; } }"
+    },
+    {
+      "name": "Desktop Panel with Rows (every look; Lavender shown)",
+      "kind": "card",
+      "refersTo": "lavender-text",
+      "description": "A desktop panel: pane glass, 20 padding, a 36dp header row (h2 in the section-title face, a one-line subtitle), then 56-64dp rows divided by the look's border. A row's controls are 36-40dp: the tick ring, a bare more button. The look's hover light (fill and rim) fades in under the pointer and under keyboard focus; the focus ring sits on top.",
+      "html": "<div class=\"ds-world-lav\"><section class=\"ds-panel-lav\" aria-labelledby=\"dp-h\"><h2 id=\"dp-h\" class=\"ds-panel-lav-title\">Planned</h2><p class=\"ds-panel-lav-sub\">2 on a day</p><div class=\"ds-prow-lav\"><button class=\"ds-pbox-lav\" role=\"checkbox\" aria-checked=\"false\" aria-label=\"Call Mum\"></button><div class=\"ds-prow-lav-text\"><div class=\"ds-prow-lav-title\">Call Mum</div><div class=\"ds-prow-lav-meta\">Today</div></div><button class=\"ds-pmore-lav\" aria-label=\"More for Call Mum\">•••</button></div></section></div>",
+      "css": ".ds-world-lav { background: linear-gradient(180deg, #6470CC, #5563C2, #3D48A4); padding: 24px; font-family: 'DM Sans', system-ui, sans-serif; } .ds-panel-lav { padding: 20px; border-radius: 24px; background: linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)), rgba(48,54,168,0.10); border: 1px solid rgba(255,255,255,0.22); border-top-color: rgba(255,255,255,0.80); border-left-color: rgba(255,255,255,0.40); border-bottom-color: rgba(255,170,230,0.40); box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 12px 28px -6px rgba(22,24,112,0.45); } .ds-panel-lav-title { margin: 0; color: #FFFFFF; font-size: 18px; font-weight: 700; } .ds-panel-lav-sub { margin: 2px 0 16px; color: #FBFAFF; font-size: 14px; } .ds-prow-lav { display: flex; align-items: center; gap: 8px; min-height: 60px; border-top: 1px solid rgba(255,255,255,0.28); } .ds-pbox-lav { width: 24px; height: 24px; margin: 8px; border-radius: 8px; border: 1.75px solid rgba(255,255,255,0.70); background: transparent; cursor: pointer; } .ds-prow-lav-text { flex: 1; } .ds-prow-lav-title { color: #FFFFFF; font-size: 16px; font-weight: 500; } .ds-prow-lav-meta { color: #FBFAFF; font-size: 14px; } .ds-pmore-lav { width: 36px; height: 36px; border-radius: 18px; border: 1px solid transparent; background: transparent; color: #FFFFFF; cursor: pointer; transition: background-color 160ms cubic-bezier(0.23, 1, 0.32, 1), border-color 160ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-pmore-lav:hover, .ds-pmore-lav:focus-visible { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.30); transition-duration: 120ms; } .ds-pmore-lav:focus-visible, .ds-pbox-lav:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(20,22,48,0.85); }"
+    },
+    {
+      "name": "Week Calendar Block (every look; Lavender shown)",
+      "kind": "card",
+      "refersTo": "lavender-text",
+      "description": "A timed routine on the desktop week grid: the routines kind's soft wash at 40% of its alpha over the pane with a rim of the kind's colour at half strength, 10 radius, a kind dot and the title (Medium 14), the time and length in the caption face on blocks 40dp and taller, and the tick ring in its corner on those blocks. Done or skipped, it recedes to the plain inset with the title struck in muted ink. Overlapping blocks share the day's width side by side.",
+      "html": "<div class=\"ds-world-lav\"><div class=\"ds-cal-lav\"><button class=\"ds-blk-lav\" aria-label=\"Read 20 pages, Monday 21:30 · 30 min. Edit\"><span class=\"ds-blk-lav-row\"><span class=\"ds-blk-lav-dot\" aria-hidden=\"true\"></span>Read 20 pages</span><span class=\"ds-blk-lav-meta\">21:30 · 30 min</span></button><button class=\"ds-blk-lav ds-blk-lav-done\" aria-label=\"Stretch, Monday 21:00 · 10 min, done. Edit\"><span class=\"ds-blk-lav-row\"><span class=\"ds-blk-lav-dot\" aria-hidden=\"true\"></span><s>Stretch</s></span></button></div></div>",
+      "css": ".ds-cal-lav { display: flex; flex-direction: column; gap: 8px; width: 180px; } .ds-blk-lav { text-align: left; min-height: 48px; padding: 4px 8px; border-radius: 10px; background: rgba(201,168,255,0.088); border: 1px solid rgba(201,168,255,0.5); color: #FFFFFF; font-family: 'DM Sans', system-ui, sans-serif; cursor: pointer; } .ds-blk-lav-done { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.16); border-top-color: rgba(255,255,255,0.34); color: #FBFAFF; min-height: 24px; } .ds-blk-lav-row { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; } .ds-blk-lav-dot { width: 8px; height: 8px; border-radius: 4px; background: #C9A8FF; } .ds-blk-lav-meta { display: block; font-size: 13px; color: #FBFAFF; } .ds-blk-lav:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(20,22,48,0.85); }"
     }
   ],
   "narrative": {
@@ -2082,7 +2198,8 @@
         "name": "The Recede, Don't Scold Rule",
         "body": "Finished and skipped things sink back into the world: faint ink, a thinner body, a dimmed tile. A done title takes one quiet line through it, a record of the thing done, never a red mark. Nothing turns red or shouts about a missed day; a skipped step says \"Skipped · streak kept\".",
         "section": "elevation"
-      }
+      },
+      "On the desktop (web, 1024dp and wider) every route draws its desktop page in the shell; hover is always also focus, targets are 40dp (36 for pills, chips and row buttons), and the phone layout never changes because of it."
     ],
     "dos": [
       "**Do** re-render the art with `python3 scripts/render-art.py <look>` after any change to `assets/art/looks.json` or the art code (the lens is a pre-blurred copy baked from them), then run `python3 scripts/check-contrast.py` and keep it passing. Run the gate after any change to tokens or material too. Text 4.5:1; unchecked outlines 3:1 against the glass; kind fills and the accent 3:1 against their track.",

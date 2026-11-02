@@ -54,3 +54,34 @@ export function upNext(
   if (next) return { entry: next, state: 'next', minutes: next.start - now };
   return undefined;
 }
+
+/**
+ * Side-by-side places for entries that overlap in time (the desktop week's blocks): each entry gets a lane, and
+ * every entry in a cluster of overlapping ones shares the cluster's lane count, so their widths match. Entries are
+ * read in the order given; the result lines up with it.
+ */
+export function laneOut(entries: { start: number; end: number }[]): { lane: number; lanes: number }[] {
+  const order = entries.map((e, i) => ({ ...e, i })).sort((a, b) => a.start - b.start || b.end - a.end);
+  const out: { lane: number; lanes: number }[] = entries.map(() => ({ lane: 0, lanes: 1 }));
+  let cluster: typeof order = [];
+  let laneEnds: number[] = [];
+  let clusterEnd = 0;
+  const close = () => {
+    for (const e of cluster) out[e.i].lanes = laneEnds.length;
+    cluster = [];
+    laneEnds = [];
+  };
+  for (const e of order) {
+    if (cluster.length && e.start >= clusterEnd) close();
+    clusterEnd = cluster.length ? Math.max(clusterEnd, e.end) : e.end;
+    let lane = laneEnds.findIndex((end) => end <= e.start);
+    if (lane < 0) {
+      lane = laneEnds.length;
+      laneEnds.push(e.end);
+    } else laneEnds[lane] = e.end;
+    out[e.i].lane = lane;
+    cluster.push(e);
+  }
+  close();
+  return out;
+}

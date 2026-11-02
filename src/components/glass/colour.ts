@@ -37,3 +37,9 @@ export function alphaOf(c: string, a: number): string {
   const p = parse(c);
   return p ? `rgba(${p[0]},${p[1]},${p[2]},${a})` : c;
 }
+
+/** A translucent colour with its alpha multiplied by `k`; an opaque colour is returned as it is. */
+export function washOf(c: string, k: number): string {
+  const p = parse(c);
+  return p && p[3] < 1 ? `rgba(${p[0]},${p[1]},${p[2]},${(p[3] * k).toFixed(3)})` : c;
+}

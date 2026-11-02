@@ -21,8 +21,9 @@ Desktop frame (gate_desktop): the wide world (<look>-bg-wide.jpg and its lens) a
   and 1024x768 windows cropped from it as the app crops them (looks.json wide.anchor). Every glass tier over every
   pixel of the wide lens and its light; the sidebar as chrome (the world live-blurred, then its glass and
   chromeTint, and over a pane passing under it); the hover light on pane and chrome; sheet glass over the dim
-  (palette, side panels, popovers); the kbd hint (inset in control glass); breadcrumbs, page titles, subtitles and
-  page notes on the bare world right of the sidebar; marks at 3:1 (the now line, chart bars, the day line's nodes,
+  (palette, side panels, popovers); the kbd hint (inset in control glass); a kind's soft wash on pane at DESK_WASH
+  (calendar blocks, the gym's New best); breadcrumbs, page titles, subtitles and page notes on the bare world right
+  of the sidebar; marks at 3:1 (the now line, chart bars, the day line's nodes,
   the rail's dots) and the focus ring against the world and the glass.
 Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
   onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
@@ -54,6 +55,7 @@ DP = FW / FRAME_W_DP  # px per dp at that resolution
 TEXT, NONTEXT = 4.5, 3.0
 SAMPLES = 36  # positions sampled along each light's motion path
 GLYPH = 3  # dp: bare-backdrop zones are averaged over about a glyph, so a star speck under one letter doesn't count
+DESK_WASH = 0.4  # SHELL.wash: the share of a kind's translucent soft wash drawn on desktop glass
 TEXT_TOP = 18  # px below a surface's top edge where the first glyphs start (16 padding plus the line's leading)
 
 
@@ -608,6 +610,11 @@ def gate_desktop(look, theme, g):
         'sidebar count': (over(side, ic, ia), ['text', 'muted']),
         'sidebar over pane': (side_over, ['text', 'muted', 'label']),
     }
+    # A kind's soft wash on pane: the calendar's routine blocks (title and time) and the gym's "New best" pill. A
+    # translucent wash is drawn at SHELL.wash of its alpha on desktop glass (src/components/desktop/layout.ts).
+    for k, names in (('routines', ['text', 'muted', 'kind.routines.text']), ('gym', ['text', 'kind.gym.text'])):
+        sc, sa = col(kinds[k]['soft'])
+        surfaces[f'pane {k} soft'] = (over(pane, sc, sa * DESK_WASH if sa < 1 else sa), names)
     if mat.get('bloom'):
         bm = re.search(r'radial-gradient\(\s*([\d.]+% [\d.]+%) at ([\d.]+% [\d.]+%)\s*,\s*(rgba?\([^)]*\))', mat['bloom'])
         bc, ba = col(bm.group(3))

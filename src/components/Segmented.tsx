@@ -36,6 +36,7 @@ export function Segmented<K extends string>({
   onChange,
   accessibilityLabel,
   stacked,
+  dense,
 }: {
   options: SegmentOption<K>[];
   value: K;
@@ -44,6 +45,8 @@ export function Segmented<K extends string>({
   accessibilityLabel?: string;
   /** Icon above the label in a taller, rounder-cornered trough (the sound picker). */
   stacked?: boolean;
+  /** The desktop's 36 dp segments in a 40 dp trough, to sit in a row of 40 dp buttons. */
+  dense?: boolean;
 }) {
   const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
@@ -85,9 +88,9 @@ export function Segmented<K extends string>({
   }, [index, found, slot, reduced, x, shown]);
   const drop = useAnimatedStyle(() => ({ opacity: shown.get(), transform: [{ translateX: x.get() }] }));
   return (
-    <Glass tier="control" radius={stacked ? radii.control : radii.pill} style={styles.trough}>
+    <Glass tier="control" radius={stacked ? radii.control : radii.pill} style={[styles.trough, dense && styles.denseTrough]}>
       <View
-        style={[styles.segments, stacked && styles.stackedSegments]}
+        style={[styles.segments, stacked && styles.stackedSegments, dense && styles.denseSegments]}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
         accessibilityRole="tablist"
         accessibilityLabel={accessibilityLabel}
@@ -113,7 +116,7 @@ export function Segmented<K extends string>({
             <Press
               key={o.key}
               outerStyle={styles.flex}
-              style={[styles.segment, stacked && styles.stackedSegment]}
+              style={[styles.segment, stacked && styles.stackedSegment, dense && styles.denseSegments]}
               onPress={() => {
                 if (active) return;
                 tick();
@@ -277,6 +280,8 @@ const makeStyles = ({ colors, fonts }: Theme) => {
     segment: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 999 },
     segmentInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 6 },
     stackedSegments: { minHeight: 56 },
+    denseTrough: { padding: 2 },
+    denseSegments: { minHeight: 36 },
     stackedSegment: { minHeight: 56, borderRadius: 18 },
     // Stacked labels keep to their own segment: as wide as it, less 8 each side, and wrap to a second line on a
     // narrow phone instead of running into the next label.

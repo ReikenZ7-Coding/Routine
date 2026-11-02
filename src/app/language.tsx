@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useDesktop } from '../components/desktop/context';
+import { LanguagePage } from '../components/desktop/LanguagePage';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../components/Button';
@@ -7,8 +9,9 @@ import { FocusTimer } from '../components/FocusTimer';
 import { LanguagePicker, LanguageTile } from '../components/LanguagePicker';
 import { Divider, Section } from '../components/Section';
 import { PageTitle } from '../components/PageTitle';
-import { ConfirmDelete, Sheet } from '../components/Sheet';
+import { Sheet } from '../components/Sheet';
 import { WordForm } from '../components/WordForm';
+import { GradeButton, LanguageSheet } from '../components/LanguageSheet';
 import {
   type Grade,
   inLine,
@@ -39,6 +42,11 @@ import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { plural } from '../lib/plural';
 
+/** The desktop draws its own page here; the phone keeps its screen. */
+export default function LanguageRoute() {
+  return useDesktop().on ? <LanguagePage /> : <LanguageScreen />;
+}
+
 const TARGETS = [10, 15, 20, 30];
 const QUICK_MINUTES = [5, 10, 15];
 
@@ -48,7 +56,7 @@ function cardSize(word: string): number {
   return n <= 4 ? 64 : n <= 8 ? 48 : n <= 16 ? 36 : 28;
 }
 
-export default function LanguageScreen() {
+function LanguageScreen() {
   const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, language: state, updateLanguage, damaged } = useStore();
@@ -411,72 +419,6 @@ export default function LanguageScreen() {
   );
 }
 
-/** One language's options: practise it, or stop learning it (which asks first, and says its words go too). */
-function LanguageSheet({
-  lang,
-  showing,
-  words,
-  onClose,
-  onShow,
-  onRemove,
-}: {
-  lang?: StudyLanguage;
-  showing: boolean;
-  words: number;
-  onClose: () => void;
-  onShow: () => void;
-  onRemove: () => void;
-}) {
-  const styles = useStyles(makeStyles);
-  // Holds the last language while the sheet slides away, so its content doesn't blank out mid-exit.
-  const [shown, setShown] = useState(lang);
-  if (lang && lang !== shown) setShown(lang);
-  const l = lang ?? shown;
-  const native = l ? infoFor(l).native : '';
-  return (
-    <Sheet visible={!!lang} title={l?.name ?? ''} onClose={onClose}>
-      {l ? (
-        <>
-          <Text style={styles.sheetText}>{`${native !== l.name ? `${inLine(native)} · ` : ''}${plural(words, 'word')}`}</Text>
-          {!showing && <Button label={`Practise ${l.name}`} onPress={onShow} style={styles.sheetButton} />}
-          <ConfirmDelete
-            label={`Remove ${l.name}`}
-            question={
-              words > 0
-                ? `Remove ${l.name}? Its ${plural(words, 'word')} go too. Your practice minutes and streak stay.`
-                : `Remove ${l.name}? Your practice minutes and streak stay.`
-            }
-            confirmLabel="Remove"
-            onConfirm={onRemove}
-          />
-        </>
-      ) : null}
-    </Sheet>
-  );
-}
-
-function GradeButton({
-  label,
-  sub,
-  onPress,
-  tone,
-}: {
-  label: string;
-  sub: string;
-  onPress: () => void;
-  tone: 'danger' | 'primary' | 'muted';
-}) {
-  const { colors } = useTheme();
-  const styles = useStyles(makeStyles);
-  const color = tone === 'danger' ? colors.danger : tone === 'primary' ? colors.link : colors.text;
-  return (
-    <Glass tier="control" style={styles.gradeButton} onPress={onPress} accessibilityLabel={`${label}, ${sub}`}>
-      <Text style={[styles.gradeLabel, { color }]}>{label}</Text>
-      <Text style={styles.gradeSub}>{sub}</Text>
-    </Glass>
-  );
-}
-
 const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
@@ -535,7 +477,6 @@ const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
     langMeta: { fontFamily: fonts.body, fontSize: 14, lineHeight: 20, color: colors.muted },
     sheetText: { ...type.hint, marginBottom: 8 },
     sheetList: { marginHorizontal: -14 },
-    sheetButton: { marginTop: 16 },
     reviewScreen: { flex: 1, padding: 16, alignItems: 'center', justifyContent: 'center', gap: 12 },
     reviewTop: {
       position: 'absolute',
@@ -565,9 +506,6 @@ const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
     cardMeaning: { fontFamily: fonts.body, fontSize: 18, color: colors.text, textAlign: 'center' },
     cardHint: { ...type.hint, marginTop: 8 },
     grades: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
-    gradeButton: { flex: 1, minHeight: 64, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
-    gradeLabel: { fontFamily: fonts.bodyBold, fontSize: 16 },
-    gradeSub: { fontFamily: fonts.body, fontSize: 13, color: colors.muted, marginTop: 2 },
     reviewDoneTitle: { fontFamily: fonts.display, fontSize: 22, color: colors.text },
     reviewDoneText: { fontFamily: fonts.body, fontSize: 16, color: colors.muted },
     doneButton: { alignSelf: 'stretch', marginTop: 12 },

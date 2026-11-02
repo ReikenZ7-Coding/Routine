@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { inboxOpen, itemsFor, toggleItem } from '../src/lib/inbox.ts';
 import { type Routine, iconFor } from '../src/lib/routines.ts';
-import { formatSpan, parseClock, timedRoutines, upNext } from '../src/lib/timeline.ts';
+import { formatSpan, laneOut, parseClock, timedRoutines, upNext } from '../src/lib/timeline.ts';
 
 const r = (id: string, start?: string, duration?: number, extra: Partial<Routine> = {}): Routine => ({
   id,
@@ -64,4 +64,33 @@ test('icons are guessed from the name when none is picked', () => {
   assert.equal(iconFor({ name: 'Yoga workout' }), 'body');
   assert.equal(iconFor({ name: 'Have a coffee' }), 'cafe');
   assert.equal(iconFor({ name: 'Anything', icon: 'heart' }), 'heart');
+});
+
+test('laneOut puts overlapping blocks side by side and leaves the rest full width', () => {
+  // 07:00-07:15 alone; 21:00-21:30 and 21:15-21:45 overlap; 21:30-22:00 reuses the first lane of that cluster.
+  const lanes = laneOut([
+    { start: 1260, end: 1290 },
+    { start: 420, end: 435 },
+    { start: 1275, end: 1305 },
+    { start: 1290, end: 1320 },
+  ]);
+  assert.deepEqual(lanes, [
+    { lane: 0, lanes: 2 },
+    { lane: 0, lanes: 1 },
+    { lane: 1, lanes: 2 },
+    { lane: 0, lanes: 2 },
+  ]);
+});
+
+test('laneOut gives blocks that only touch one lane each', () => {
+  assert.deepEqual(
+    laneOut([
+      { start: 600, end: 630 },
+      { start: 630, end: 660 },
+    ]),
+    [
+      { lane: 0, lanes: 1 },
+      { lane: 0, lanes: 1 },
+    ],
+  );
 });

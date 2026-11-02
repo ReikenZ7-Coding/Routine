@@ -961,7 +961,7 @@ Per-look roles (frontmatter `<look>-title`, `-section-title`, `-sheet-title`, `-
 
 ## Layout
 
-Symphony OS is a phone app used one-handed for a few seconds at a time. Every screen is a single column with 16px side gutters, inside a frame the art is drawn for (400 by 860dp). There are no breakpoints. The answer to "what do I do now?" sits at the top: the next routine on Today, today's session on Gym, today's practice on Language.
+Symphony OS is a phone app used one-handed for a few seconds at a time. Every screen is a single column with 16px side gutters, inside a frame the art is drawn for (400 by 860dp). The phone has no breakpoints; on the web from 1024dp wide the same routes draw the desktop shell instead (see "Desktop" below), and the phone layout is never changed by it. The answer to "what do I do now?" sits at the top: the next routine on Today, today's session on Gym, today's practice on Language.
 
 **One layout per screen.** Every look shows the same components in the same order and the same places, with the same controls and the same behaviour. Header art is the one structural freedom a look has, and it only ever sits behind the same header: Paper's mountains flush with the top of the frame, Pine's canopy slab, the bare world on Lavender and Stone.
 
@@ -1136,6 +1136,33 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **The light clock:** one clock at the root of the app, so the orbs, beam, sun and moon carry on where they were when you switch tabs; it pauses in the background and wraps at a common multiple of every period so nothing jumps. Periods: Lavender 90s orbit, Stone 22s sway, Paper 30s sun drift and 40s mist slide, Pine 16s drift, bloom 6s, halo 1.8s, loading sweep 1.2s.
 - **Reduced motion:** transforms stop (no squeeze, no rise, no slide, no sheen parallax, no pop, no sweeps, no halo); state changes keep their fades, because a crossfade is the reduced form of motion and a 0ms cut is not. Rings and bars crossfade to the new value instead of sweeping; the tab drop fades out and in at its new place; sheets fade. A card's first-mount entrance is the one thing that simply appears, since nothing changes state when a screen first draws. The lights park at a quarter of their path and the bloom rests at 0.8.
 
+## Desktop (the web build, 1024dp and wider)
+
+The desktop takes the three references' layout and keeps the four looks: every colour, material, radius, typeface and light below comes from the same tokens as the phone. `useDesktop().on` is the one switch (web only, 1024dp and wider; compact 1024 to 1279, comfortable from 1280). Each route file draws `<XPage />` when it is on and its phone screen otherwise, so a desktop change can never reach the phone; the phone stills are diffed against the baseline after every desktop step.
+
+**The shell.** A floating sidebar (264dp, or a 72dp rail; Ctrl+B) with the pages in three groups, Needs you and the day's progress; a top bar with breadcrumbs, the search palette (Ctrl+K), the look switch, the reminders bell and New (Ctrl+N, then R, T, G or W); the page in one scroll on the bare world. Forms open as side panels from the right (the phone's sheets, 440dp wide). Settings and Your week are pages (`/settings`, `/stats`); on the phone those links land on Today's sheets.
+
+**The page.** A header (the title in the display face, one sentence of facts with its figures in body medium, secondary actions as 40dp glass buttons on the right) over a 12-column grid with a 20dp gutter (16 when compact), at most 1440 wide. A panel is pane glass with a 36dp header row (an h2 and a quiet subtitle) and 20dp padding; a span narrower than 280dp takes the whole row; a column stacks several panels in one span. The first six panels rise in 40ms apart, once per visit. Glass nested in a panel is inset, as on the phone.
+
+**Hover and focus.** Every desktop pressable is a `Hover` (or `Press` and interactive `Glass`, which light up the same way on the desktop only): the look's hover light (`material.hover`, fill and rim) fades in over 120ms and out over 160ms under the pointer and under keyboard focus, with the global focus ring on top. Nothing appears on hover alone. Targets are 40dp (36 for pills, chips, segments and row buttons), each with a role and a label.
+
+**Desktop kit** (`src/components/desktop/Kit.tsx`): the 40dp inset pebble, the tick ring (26dp in a 40 target; square for to-dos and groceries), round icon buttons, 36dp pills (the chosen one filled with the primary), chip rows as radio groups, group headers, the honest empty line, the labelled search field and page shortcuts (Ctrl+[ and Ctrl+], live only while the page is on screen). `Segmented` takes `dense` for 36dp segments in a 40dp trough beside the header buttons.
+
+**Pages.**
+- **Overview:** the desktop's home (hero, day line, Needs you, the trail, agenda, week chart, groceries, gym, language).
+- **Today:** the phone's trail in a span-7 column (cards stop at 720 wide; each routine card has a visible edit button), and beside it the month with its marks and moods, the Balance rings and the day's note. Previous and next day (Ctrl+[ and ]); another day shows in the title and breadcrumbs, and New's to-do goes on that day.
+- **Calendar:** Week (Monday to Sunday; an all-day lane of chips for anytime routines, the workout, practice, groceries and to-dos, three per day then "N more"; a 05:00 to midnight grid in 48dp hours that opens two hours before now; routines as blocks in the kind's soft wash (at 40% of its alpha on desktop glass, so their text holds 4.5:1) with a half-strength kind rim, side by side when they overlap, a tick ring on blocks 40dp and taller, done and skipped blocks recede to plain inset with a struck title; the now line under the blocks) or Month (each day's planned or done count, its kind dots and a past day's mood; a day opens Today on that date). An empty half hour lights up with its time under the pointer and starts a weekly routine there (New, then Routine, does the same from the keyboard). A legend of the five kinds sits under the grid.
+- **Inbox:** a board of three panels: To sort (the composer on top), Planned (grouped by day) and Done this week. Each row: the box, the title and its day, a Plan button (Today, Tomorrow, the next five weekdays, back to the inbox) and more (Rename, Delete), opening inline under the row.
+- **Gym:** today's session as the hero (each exercise on one row: name and plan line, the weight stepper, the set bubbles; "New best" where it belongs; the rest timer in the hero's corner), beside it Weekly plan, History and Personal records. A rest day offers "Do a session anyway". No plan: the starter plans.
+- **Language:** Today's practice and the review card (Space or Enter turns it; 1, 2 and 3 grade it while it has focus, and the grade buttons say so), beside them Focus, My words (searchable) and the languages.
+- **Library:** the routines shelf as a table: the search field and the When and Repeat chips on one line (wrapping when narrow), then Today, Not today and Ideas in one panel of 64dp rows (pebble, name and schedule, streak pill, reminder bell, tick, more).
+- **Groceries:** one panel per aisle in two columns, beside them Bought today and Coming up; Share list and Add an item in the header.
+- **Music:** the full player as hero glass (art up to 320, what is playing, the seek bar, shuffle, previous, the play disc, next, repeat, the sleep timer), beside it the three focus sounds as tiles and the library.
+- **Settings:** your name, the four looks side by side, the phone calendar, backup, "This computer" (where things are saved) and the keyboard shortcuts.
+- **Your week:** the week chart at full height, best streaks ranked with bars, personal records, and "When things get done": weekdays by part of the day over four weeks, each cell filled by the share done (`whenDone` in `src/lib/stats.ts`), each focusable with its sentence.
+
+**Contrast.** `scripts/check-contrast.py` gates the desktop frame too: text tokens on pane, control, receded, inset, sheet, hover and the kinds' soft washes (drawn at 40% of a translucent wash's alpha on desktop glass: `SHELL.wash`, `DESK_WASH` in the gate) over the wide world at its worst light; the sidebar chrome; titles and notes on the bare world in 1440x900, 1280x800 and 1024x768 windows; the now line, chart bars and the focus ring at 3:1.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -1146,7 +1173,7 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **Do** keep focus rings: 2px in the text colour on pressable surfaces and 1.5px around fields on Android, `:focus-visible` on the web. Never remove them.
 - **Do** keep reading text at 16px and secondary lines at 14px; go smaller only for the short marks the Sixteen Floor Rule lists.
 - **Do** use Ionicons for icons, drawn in role colours.
-- **Do** make every action reachable by tap or long press with a screen-reader action as well; nothing relies on hover.
+- **Do** make every action reachable by tap or long press with a screen-reader action as well; nothing relies on hover. On the desktop every hover state is also a focus state, and every row keeps a visible "more" button.
 - **Do** fade, ease or spring every change of state (selection 150ms, press 120 and 160ms, ease-out).
 - **Do** put a visible label above every input.
 - **Do** keep the bottom navigation at five items or fewer.

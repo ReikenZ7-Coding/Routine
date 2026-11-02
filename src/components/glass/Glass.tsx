@@ -32,7 +32,8 @@ import {
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { type Radii, useTheme } from '../../theme';
 import { GLASS_GRAIN } from '../Art';
-import { EASE_OUT, FOCUS_RING, useReduceMotion } from '../Motion';
+import { useDesktop } from '../desktop/context';
+import { EASE_OUT, FOCUS_RING, keyboardFocus, useReduceMotion } from '../Motion';
 import { Bloom } from './Bloom';
 import { clearOf, softenGradient, thicker } from './colour';
 import { GlassLens } from './GlassLens';
@@ -207,9 +208,14 @@ export function Glass({
   const scale = useSharedValue(1);
   const press = useSharedValue(0);
   const focus = useSharedValue(0);
+  const hover = useSharedValue(0);
+  // In the desktop shell, a pressable surface lights up under the pointer and under keyboard focus (the hover
+  // light, 120 ms in and 160 ms out). The phone never draws or listens for it.
+  const desktop = useDesktop().on;
   const squeeze = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const pressLight = useAnimatedStyle(() => ({ opacity: press.get() }));
   const focusRing = useAnimatedStyle(() => ({ opacity: focus.get() }));
+  const hoverLight = useAnimatedStyle(() => ({ opacity: hover.get() }));
 
   // Layers --------------------------------------------------------------------------------------------
   const chromeThin = tier === 'chrome' && !CAN_LIVE_BLUR;
@@ -305,6 +311,17 @@ export function Glass({
           style={[StyleSheet.absoluteFill, styles.tile, { opacity: m.grain }]}
         />
       ) : null}
+      {interactive && desktop && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            innerCorners,
+            { borderWidth: 1, borderColor: m.hover.rim, backgroundColor: m.hover.fill },
+            hoverLight,
+          ]}
+        />
+      )}
       <InsideGlass.Provider value>
         <RecededContext.Provider value={!!receded}>{children}</RecededContext.Provider>
       </InsideGlass.Provider>
@@ -389,8 +406,18 @@ export function Glass({
       delayLongPress={400}
       onPressIn={pressIn}
       onPressOut={pressOut}
-      onFocus={FOCUS_RING ? () => focus.set(withTiming(1, FADE_IN)) : undefined}
-      onBlur={FOCUS_RING ? () => focus.set(withTiming(0, FADE_OUT)) : undefined}
+      onFocus={
+        FOCUS_RING
+          ? () => focus.set(withTiming(1, FADE_IN))
+          : desktop
+            ? (e) => {
+                if (keyboardFocus(e)) hover.set(withTiming(1, FADE_IN));
+              }
+            : undefined
+      }
+      onBlur={FOCUS_RING ? () => focus.set(withTiming(0, FADE_OUT)) : desktop ? () => hover.set(withTiming(0, FADE_OUT)) : undefined}
+      onHoverIn={desktop ? () => hover.set(withTiming(1, FADE_IN)) : undefined}
+      onHoverOut={desktop ? () => hover.set(withTiming(0, FADE_OUT)) : undefined}
       disabled={disabled}
       hitSlop={slop}
       pressRetentionOffset={16}

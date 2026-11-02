@@ -40,6 +40,8 @@ export interface TrailItem {
   progress?: { value: number; total: number };
   onPress?: () => void;
   onLongPress?: () => void;
+  /** The desktop's visible edit button beside the tick (the phone edits with a long press). */
+  onMore?: () => void;
 }
 
 export interface BalanceRing {
@@ -73,6 +75,11 @@ interface Props {
   onStats: () => void;
   onSettings: () => void;
   onAdd: () => void;
+  /** The desktop's Today draws only the streak pill, the trail and its hint here: its header, calendar and Balance
+   *  are drawn by the page around it. */
+  only?: 'trail';
+  /** The how-to line under the trail, when the screen words it differently (the desktop clicks, it doesn't hold). */
+  hint?: string;
 }
 
 const RAIL = 56;
@@ -100,7 +107,8 @@ export function TrailHome(p: Props) {
   // Header art drawn behind the header (Paper's mountains). Pine's slab comes from Canopy; the other looks show
   // the world itself. Neither changes where anything in the header sits.
   // The desktop shows Today in a column on the wide world, without the phone's portrait header art.
-  const art = HEADER_RATIOS[name] !== undefined && !desktop.on;
+  const art = HEADER_RATIOS[name] !== undefined && !desktop.on && !p.only;
+  const trailOnly = p.only === 'trail';
   const slab = !!colors.material.canopy;
 
   const heights = p.items.map((it) => rows[it.key] ?? 0);
@@ -177,13 +185,17 @@ export function TrailHome(p: Props) {
         )}
         {/* The same box in every look: on Pine the slab is drawn behind it and its padding takes the place of the
             margins, so the header row and everything under it land in the same place. */}
-        <Canopy bleed={p.topInset} style={slab ? { paddingTop: p.topInset + TOP, paddingBottom: FOOT - SLAB_RIM } : styles.headerBox}>
-          {top}
-        </Canopy>
+        {trailOnly ? null : (
+          <>
+            <Canopy bleed={p.topInset} style={slab ? { paddingTop: p.topInset + TOP, paddingBottom: FOOT - SLAB_RIM } : styles.headerBox}>
+              {top}
+            </Canopy>
 
-        <Collapse open={p.calendarOpen}>
-          <Glass style={styles.calendar}>{p.calendar}</Glass>
-        </Collapse>
+            <Collapse open={p.calendarOpen}>
+              <Glass style={styles.calendar}>{p.calendar}</Glass>
+            </Collapse>
+          </>
+        )}
 
         <Glass tier="control" radius={999} style={styles.streak}>
           <View style={[styles.flamePebble, p.streak > 0 && styles.flamePebbleOn]}>
@@ -273,58 +285,66 @@ export function TrailHome(p: Props) {
         {p.items.some((it) => it.onLongPress || it.planOnly) ? (
           <View style={styles.hint}>
             <HintPane>
-              {planning
-                ? 'This day is still ahead. Tap a routine to change it, and tick things off on the day.'
-                : 'Tap a step to tick it off. Press and hold a routine to edit it.'}
+              {p.hint ??
+                (planning
+                  ? 'This day is still ahead. Tap a routine to change it, and tick things off on the day.'
+                  : 'Tap a step to tick it off. Press and hold a routine to edit it.')}
             </HintPane>
           </View>
         ) : null}
-
-        <View style={[styles.sectionHead, styles.sectionHeadTight]}>
-          <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
-            Balance
-          </Text>
-          <Press
-            onPress={() => setBalanceOpen((o) => !o)}
-            style={styles.iconBtn}
-            accessibilityLabel={balanceOpen ? 'Hide balance' : 'Show balance'}
-            accessibilityState={{ expanded: balanceOpen }}
-          >
-            <Chevron open={balanceOpen} color={colors.text} />
-          </Press>
-        </View>
-        <Glass>
-          <Collapse open={balanceOpen}>
-            <View style={styles.rings}>
-              {p.balance.map((b) => {
-                const rest = b.total === 0;
-                return (
-                  <View
-                    key={b.label}
-                    style={styles.ringWrap}
-                    accessible
-                    accessibilityLabel={`${b.label}: ${b.value} of ${b.total} ${b.unit}`}
-                  >
-                    <Ring size={92} stroke={12} progress={rest ? 0 : b.value / b.total} color={b.color} track={colors.track}>
-                      <Text style={[styles.ringValue, { color: rest ? colors.faint : b.color }]}>{rest ? '–' : b.value}</Text>
-                      <Text style={styles.ringUnit}>{rest ? 'rest' : `of ${b.total}`}</Text>
-                    </Ring>
-                    <Text style={styles.ringLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-                      {b.label}
-                    </Text>
-                  </View>
-                );
-              })}
+        {trailOnly ? null : (
+          <>
+            <View style={[styles.sectionHead, styles.sectionHeadTight]}>
+              <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
+                Balance
+              </Text>
+              <Press
+                onPress={() => setBalanceOpen((o) => !o)}
+                style={styles.iconBtn}
+                accessibilityLabel={balanceOpen ? 'Hide balance' : 'Show balance'}
+                accessibilityState={{ expanded: balanceOpen }}
+              >
+                <Chevron open={balanceOpen} color={colors.text} />
+              </Press>
             </View>
-          </Collapse>
-          <Collapse open={!balanceOpen}>
-            <Text style={styles.balanceFolded}>
-              {p.balance.map((b) => (b.total === 0 ? `${b.label} rest` : `${b.label} ${b.value}/${b.total}`)).join('  ·  ')}
-            </Text>
-          </Collapse>
-        </Glass>
+            <Glass>
+              <Collapse open={balanceOpen}>
+                <BalanceRings balance={p.balance} />
+              </Collapse>
+              <Collapse open={!balanceOpen}>
+                <Text style={styles.balanceFolded}>
+                  {p.balance.map((b) => (b.total === 0 ? `${b.label} rest` : `${b.label} ${b.value}/${b.total}`)).join('  ·  ')}
+                </Text>
+              </Collapse>
+            </Glass>
+          </>
+        )}
       </View>
     </LensHeaderContext.Provider>
+  );
+}
+
+/** The three Balance rings in a row (routines, gym sets, practice minutes); a ring with nothing planned rests. */
+export function BalanceRings({ balance }: { balance: BalanceRing[] }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
+  return (
+    <View style={styles.rings}>
+      {balance.map((b) => {
+        const rest = b.total === 0;
+        return (
+          <View key={b.label} style={styles.ringWrap} accessible accessibilityLabel={`${b.label}: ${b.value} of ${b.total} ${b.unit}`}>
+            <Ring size={92} stroke={12} progress={rest ? 0 : b.value / b.total} color={b.color} track={colors.track}>
+              <Text style={[styles.ringValue, { color: rest ? colors.faint : b.color }]}>{rest ? '–' : b.value}</Text>
+              <Text style={styles.ringUnit}>{rest ? 'rest' : `of ${b.total}`}</Text>
+            </Ring>
+            <Text style={styles.ringLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+              {b.label}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
   );
 }
 
@@ -461,13 +481,19 @@ function TrailRow({
         onLayout={(e) => {
           const { height, width } = e.nativeEvent.layout;
           onLayout(Math.round(height));
-          setCardW((w) => (Math.abs(w - (width - RAIL)) < 1 ? w : width - RAIL));
+          const w = width - RAIL - (item.onMore ? 46 : 0);
+          setCardW((was) => (Math.abs(was - w) < 1 ? was : w));
         }}
       >
         <View style={styles.nodeCol}>
           <Node state={state} summit={summit} />
         </View>
         {card}
+        {item.onMore ? (
+          <Press onPress={item.onMore} style={styles.more} overlay={colors.material.pressFill} accessibilityLabel={`Edit ${item.title}`}>
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+          </Press>
+        ) : null}
       </View>
     </Enter>
   );
@@ -724,6 +750,7 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
     clearButton: { marginTop: 18, alignSelf: 'stretch' },
     balanceFolded: { ...type.small, paddingHorizontal: 20, paddingVertical: 16 },
     iconBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+    more: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginLeft: 6 },
     rings: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 18, paddingTop: 18 },
     ringWrap: { alignItems: 'center', gap: 10 },
     ringValue: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, fontVariant: ['tabular-nums'] },

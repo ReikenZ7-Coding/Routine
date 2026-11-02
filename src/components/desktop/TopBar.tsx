@@ -14,13 +14,13 @@ import { SelectFade } from '../Motion';
 import { Swatch } from '../SettingsSheet';
 import type { AddKind } from './api';
 import { Hover } from './Hover';
-import { MOD } from './nav';
+import { type Href, MOD } from './nav';
 
 export type Menu = 'look' | 'bell' | 'new' | null;
 
 export interface Crumb {
   label: string;
-  href?: '/overview';
+  href?: Href;
 }
 
 export function TopBar({

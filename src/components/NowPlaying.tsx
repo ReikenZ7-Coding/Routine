@@ -123,19 +123,19 @@ export function NowPlaying() {
 type Sounds = ReturnType<typeof useSounds>;
 
 /** The line over the player: what kind of thing is playing. */
-function topLine(s: Sounds): string {
+export function topLine(s: Sounds): string {
   if (!isTrack(s.current)) return 'Focus sounds · loops until you stop';
   return s.queuePlace ? `Your music · ${s.queuePlace.at} of ${s.queuePlace.of}` : 'Your music';
 }
 
 /** The line under the title: a sound's description, or what plays next. */
-function subLine(s: Sounds): string {
+export function subLine(s: Sounds): string {
   if (!isTrack(s.current)) return s.current.subtitle;
   if (s.upNext) return `Next: ${s.upNext}`;
   return s.queuePlace && s.queuePlace.of > 1 ? 'Last song. Turn on repeat to keep going' : 'Plays to the end';
 }
 
-function shuffleProps(s: Sounds): { label: string; onPress: () => void; active?: boolean; toggle?: boolean } {
+export function shuffleProps(s: Sounds): { label: string; onPress: () => void; active?: boolean; toggle?: boolean } {
   if (!isTrack(s.current)) return { label: 'Shuffle to another sound', onPress: s.shuffle };
   return { label: 'Shuffle', onPress: s.shuffle, active: s.shuffleOn, toggle: true };
 }
@@ -144,7 +144,7 @@ function shuffleProps(s: Sounds): { label: string; onPress: () => void; active?:
  * Repeat for songs. A focus sound always loops, so its slot shows a quiet loop mark instead (not a button), and
  * the row keeps five controls either way; the two crossfade when you switch between a sound and a song.
  */
-function RepeatSlot() {
+export function RepeatSlot() {
   const s = useSounds();
   const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
@@ -179,7 +179,7 @@ function RepeatSlot() {
 }
 
 /** A song gets a seek bar; a focus sound's loop shows its progress only. */
-function Timeline() {
+export function Timeline() {
   const s = useSounds();
   return isTrack(s.current) ? (
     <Seek position={s.position} length={s.length} onSeek={s.seek} label={s.current.name} />
@@ -436,7 +436,7 @@ function Round({ icon, label, onPress }: { icon: string; label: string; onPress:
 }
 
 /** The sleep timer's minutes beside the title: fades in when a timer is set and out when it ends. */
-function TimerBadge({ minutes }: { minutes: number }) {
+export function TimerBadge({ minutes }: { minutes: number }) {
   const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
   const [shown, setShown] = useState(minutes);
@@ -459,7 +459,7 @@ function TimerBadge({ minutes }: { minutes: number }) {
 }
 
 /** The art; a new sound's scene (or a song's calm scene and note) fades in over the old one instead of cutting. */
-function FadeSwapScene({ id, size }: { id: string; size: number }) {
+export function FadeSwapScene({ id, size }: { id: string; size: number }) {
   return (
     <View style={{ width: size, height: size }}>
       {[...SOUNDS.map((x) => x.id), 'calm'].map((v) => (
@@ -481,7 +481,7 @@ function timerLabel(minutes: number): string {
  * never rests on a faint fill alone: a lit inset disc, the glyph in the accent, and an accent dot under it (as
  * music players do). The accent is gated at 3:1 on the disc (scripts/check-contrast.py, "player toggle").
  */
-function Control({
+export function Control({
   icon,
   label,
   onPress,

@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useDesktop } from '../components/desktop/context';
+import { InboxPage } from '../components/desktop/InboxPage';
 import { type ComponentRef, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { Glass, GlassScroll } from '../components/Glass';
@@ -13,8 +15,13 @@ import { addDays, friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 
+/** The desktop draws its own page here; the phone keeps its screen. */
+export default function InboxRoute() {
+  return useDesktop().on ? <InboxPage /> : <InboxScreen />;
+}
+
 /** Quick to-dos: write them down now, put them on a day later. */
-export default function InboxScreen() {
+function InboxScreen() {
   const { colors, kinds, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const input = useRef<ComponentRef<typeof TextInput>>(null);

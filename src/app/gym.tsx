@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useDesktop } from '../components/desktop/context';
+import { GymPage } from '../components/desktop/GymPage';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '../components/Button';
@@ -32,6 +34,11 @@ import { useContentBottom, useFabBottom } from '../components/NowPlaying';
 import { Skeleton } from '../components/Skeleton';
 import { plural } from '../lib/plural';
 
+/** The desktop draws its own page here; the phone keeps its screen. */
+export default function GymRoute() {
+  return useDesktop().on ? <GymPage /> : <GymScreen />;
+}
+
 const REST_SECONDS = 90;
 const TIMER_IN = FadeInDown.duration(240).easing(EASE_OUT);
 const TIMER_OUT = FadeOut.duration(160).easing(EASE_OUT);
@@ -43,7 +50,7 @@ const PLAN_PAD = 14;
 const PLAN_DAY = 52;
 const PLAN_NAME_INSET = PLAN_PAD + PLAN_DAY;
 
-export default function GymScreen() {
+function GymScreen() {
   const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, gym, updateGym } = useStore();

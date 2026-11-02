@@ -28,9 +28,9 @@ const AISLE_ICONS: [RegExp, IconName][] = [
   [/drink|beverage|juice/i, 'wine-outline'],
   [/clean|house|home/i, 'home-outline'],
 ];
-const aisleIcon = (aisle: string): IconName => AISLE_ICONS.find(([re]) => re.test(aisle))?.[1] ?? 'basket-outline';
+export const aisleIcon = (aisle: string): IconName => AISLE_ICONS.find(([re]) => re.test(aisle))?.[1] ?? 'basket-outline';
 
-function byAisle(items: GroceryItem[]): [string, GroceryItem[]][] {
+export function byAisle(items: GroceryItem[]): [string, GroceryItem[]][] {
   const groups = new Map<string, GroceryItem[]>();
   for (const item of items) {
     const key = item.aisle || NO_AISLE;
@@ -41,7 +41,7 @@ function byAisle(items: GroceryItem[]): [string, GroceryItem[]][] {
     .map(([k, v]) => [k, v.sort((x, y) => x.name.localeCompare(y.name))]);
 }
 
-function subtitle(item: GroceryItem): string {
+export function subtitle(item: GroceryItem): string {
   return [item.quantity, describeRepeat(item.repeat)].filter(Boolean).join(' · ');
 }
 

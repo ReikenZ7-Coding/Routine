@@ -11,7 +11,13 @@ import { Bar, Collapse, Press } from './Motion';
 const LENGTHS = [15, 25];
 
 /** A focus countdown that logs the minutes practised when it ends or is stopped. */
-export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
+export function FocusTimer({
+  onLog,
+  bare,
+}: {
+  onLog: (minutes: number) => void;
+  /** Content only, without its own title: the desktop puts it in a panel. */ bare?: boolean;
+}) {
   const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const [length, setLength] = useState(15);
@@ -56,16 +62,19 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
   const secs = Math.ceil(left / 1000);
   const total = run ? run.end - run.start : length * 60000;
 
+  const Box = bare ? View : Glass;
   return (
-    <Glass style={styles.card}>
+    <Box style={bare ? styles.bare : styles.card}>
       {/* The length switch has its own row under the title, so the title never wraps beside it; it folds away
           while a session runs. */}
       <View>
-        <Text style={styles.title} accessibilityRole="header">
-          Focus session
-        </Text>
+        {bare ? null : (
+          <Text style={styles.title} accessibilityRole="header">
+            Focus session
+          </Text>
+        )}
         <Collapse open={!run}>
-          <View style={styles.lengths}>
+          <View style={bare ? undefined : styles.lengths}>
             <Segmented
               accessibilityLabel="Session length"
               options={LENGTHS.map((m) => ({ key: String(m), label: `${m} min` }))}
@@ -106,13 +115,14 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
       <Text style={type.hint}>
         {run ? 'Phone down, books open. Minutes are logged for you.' : 'Minutes are added to today when it ends.'}
       </Text>
-    </Glass>
+    </Box>
   );
 }
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     card: { padding: 16, marginTop: 12, gap: 12 },
+    bare: { gap: 12 },
     title: type.sectionTitle,
     lengths: { marginTop: 12 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },

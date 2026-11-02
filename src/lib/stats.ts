@@ -61,3 +61,40 @@ export function dayStreak(routines: Routine[], today: string): number {
   }
   return n;
 }
+
+export type DayPart = 'morning' | 'afternoon' | 'evening' | 'anytime';
+
+/** The part of the day a routine belongs to: its start time when it has one, else its chosen time. */
+export function partOf(r: Pick<Routine, 'start' | 'time'>): DayPart {
+  if (r.start) {
+    const hour = Number(r.start.slice(0, 2));
+    return hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+  }
+  return r.time;
+}
+
+export interface WhenCell {
+  planned: number;
+  done: number;
+}
+
+/**
+ * When things get done: for each part of the day, seven cells from Monday to Sunday, each the routine occasions
+ * planned there over the last `days` days up to today (skips left out) and how many got done.
+ */
+export function whenDone(routines: Routine[], today: string, days = 28): Record<DayPart, WhenCell[]> {
+  const empty = () => Array.from({ length: 7 }, () => ({ planned: 0, done: 0 }));
+  const out: Record<DayPart, WhenCell[]> = { morning: empty(), afternoon: empty(), evening: empty(), anytime: empty() };
+  for (let i = 0; i < days; i++) {
+    const date = addDays(today, -i);
+    const [y, m, d] = date.split('-').map(Number);
+    const monFirst = (new Date(y, m - 1, d).getDay() + 6) % 7;
+    for (const r of routines) {
+      if (!isScheduled(r, date) || isSkipped(r, date)) continue;
+      const cell = out[partOf(r)][monFirst];
+      cell.planned++;
+      if (isDoneOn(r, date)) cell.done++;
+    }
+  }
+  return out;
+}

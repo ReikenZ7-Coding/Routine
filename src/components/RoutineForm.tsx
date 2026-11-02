@@ -39,6 +39,8 @@ interface Props {
   onSkip?: () => void;
   skippedToday?: boolean;
   onClose: () => void;
+  /** A new routine's starting values (the desktop calendar's empty slot fills its weekday and start time). */
+  draft?: Partial<RoutineFields>;
 }
 
 function choiceFor(r: Repeat): RepeatChoice {
@@ -47,7 +49,7 @@ function choiceFor(r: Repeat): RepeatChoice {
   return r.n === 1 ? 'daily' : 'everyN';
 }
 
-export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose }: Props) {
+export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose, draft }: Props) {
   const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
@@ -72,24 +74,24 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
     if (!visible) return;
     setErrors({});
     setNotice(undefined);
-    const r = routine?.repeat ?? { kind: 'everyNDays', n: 1 };
-    setName(routine?.name ?? '');
+    // Editing fills the form from the routine; a new one from its draft, if it has one (the phone has none).
+    const seed: Partial<RoutineFields> | undefined = routine ?? draft;
+    const r = seed?.repeat ?? { kind: 'everyNDays', n: 1 };
+    setName(seed?.name ?? '');
     setChoice(choiceFor(r));
     setEveryN(r.kind === 'everyNDays' && r.n > 1 ? String(r.n) : '2');
     setDays(r.kind === 'weekdays' ? r.days : []);
-    setTime(routine?.time ?? 'anytime');
-    setCounter(!!routine?.target);
-    setTarget(String(routine?.target ?? 8));
-    setRemind(!!routine?.reminder);
+    setTime(seed?.time ?? 'anytime');
+    setCounter(!!seed?.target);
+    setTarget(String(seed?.target ?? 8));
+    setRemind(!!seed?.reminder);
     setRemindAt(
-      routine?.reminder
-        ? formatTime(routine.reminder.hour, routine.reminder.minute)
-        : (routine?.start ?? DEFAULT_REMINDER[routine?.time ?? 'anytime']),
+      seed?.reminder ? formatTime(seed.reminder.hour, seed.reminder.minute) : (seed?.start ?? DEFAULT_REMINDER[seed?.time ?? 'anytime']),
     );
-    setStart(routine?.start ?? '');
-    setDuration(routine?.duration ?? 15);
-    setIcon(routine?.icon);
-  }, [visible, routine]);
+    setStart(seed?.start ?? '');
+    setDuration(seed?.duration ?? 15);
+    setIcon(seed?.icon);
+  }, [visible, routine, draft]);
 
   async function save() {
     const found: Errors = {};

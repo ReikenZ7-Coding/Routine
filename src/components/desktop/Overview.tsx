@@ -706,8 +706,10 @@ function AgendaPanel({ plan, now, today }: { plan: DayPlan; now: number; today: 
 
 type Series = 'routines' | 'gym' | 'practice';
 
-function WeekPanel() {
+/** The week chart: Overview's panel, and larger on the Your week page (`tall`). */
+export function WeekPanel({ span = 8, index = 4, tall = false }: { span?: number; index?: number; tall?: boolean } = {}) {
   const { kinds, colors, type } = useTheme();
+  const trackH = tall ? 280 : 160;
   const styles = useStyles(makeStyles);
   const { routines, gym, language, today } = useStore();
   const [series, setSeries] = useState<Series>('routines');
@@ -733,12 +735,13 @@ function WeekPanel() {
   };
   return (
     <Panel
-      span={8}
-      index={4}
-      title="Your week"
-      subtitle="The last 7 days"
+      span={span}
+      index={index}
+      title={tall ? 'The last 7 days' : 'Your week'}
+      subtitle={tall ? 'Hover or focus a day for its numbers' : 'The last 7 days'}
       right={
         <Segmented
+          dense
           accessibilityLabel="Series"
           value={series}
           onChange={setSeries}
@@ -754,9 +757,9 @@ function WeekPanel() {
         <Text style={styles.empty}>Your week fills in as you tick things off.</Text>
       ) : (
         <>
-          <View style={styles.chart}>
+          <View style={[styles.chart, { height: trackH + 40 }]}>
             {series === 'practice' ? (
-              <View style={[styles.targetLine, { bottom: 28 + (target / max) * 160, borderColor: colors.label }]} pointerEvents="none" />
+              <View style={[styles.targetLine, { bottom: 28 + (target / max) * trackH, borderColor: colors.label }]} pointerEvents="none" />
             ) : null}
             {days.map((d, i) => (
               <WeekBar
@@ -767,13 +770,17 @@ function WeekPanel() {
                 label={say(d)}
                 today={d.date === today}
                 letter={WEEKDAY_SHORT[parseKey(d.date).getDay()][0]}
+                trackH={trackH}
               />
             ))}
           </View>
-          <Text style={[type.body, styles.weekSentence]}>
-            {pct === null ? 'No routines were planned' : `${pct}% of routines done`}, {plural(s.gymDays, 'gym day')} and {s.practiceMinutes}
-            {' '}min of {practiceSubject(language.languages)} practice.
-          </Text>
+          {tall ? null : (
+            <Text style={[type.body, styles.weekSentence]}>
+              {pct === null ? 'No routines were planned' : `${pct}% of routines done`}, {plural(s.gymDays, 'gym day')} and{' '}
+              {s.practiceMinutes}
+              {' '}min of {practiceSubject(language.languages)} practice.
+            </Text>
+          )}
         </>
       )}
     </Panel>
@@ -787,6 +794,7 @@ function WeekBar({
   label,
   today,
   letter,
+  trackH,
 }: {
   value: number;
   index: number;
@@ -794,6 +802,7 @@ function WeekBar({
   label: string;
   today: boolean;
   letter: string;
+  trackH: number;
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
@@ -817,7 +826,7 @@ function WeekBar({
       {hover ? (
         <View style={[styles.barHover, { backgroundColor: colors.material.hover.fill, borderColor: colors.material.hover.rim }]} />
       ) : null}
-      <View style={[styles.barTrack, { backgroundColor: colors.track }]}>
+      <View style={[styles.barTrack, { backgroundColor: colors.track, height: trackH, width: trackH > 160 ? 40 : 28 }]}>
         <Animated.View style={[styles.barFill, { backgroundColor: fill }, bar]} />
       </View>
       <View style={[styles.dayDisc, today && { backgroundColor: colors.primary }]}>

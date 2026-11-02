@@ -72,6 +72,13 @@ export function Row({ match, children }: { match?: boolean; children: ReactNode 
   );
 }
 
+/** A stack of panels sharing one span of the grid (Today's Month, Balance and note beside the trail). */
+export function Column({ span, children }: { span: number; children: ReactNode }) {
+  const width = useSpan(span);
+  const m = useShellMetrics();
+  return <View style={{ width, gap: m.gutter }}>{children}</View>;
+}
+
 /** A figure inside a subtitle: body medium in the text ink. */
 export function Fig({ children }: { children: ReactNode }) {
   const { fonts, colors } = useTheme();

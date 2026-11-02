@@ -71,8 +71,9 @@ export const NAV: NavGroup[] = [
 
 export const NAV_ITEMS: NavItem[] = NAV.flatMap((g) => g.items);
 
-/** Routes that draw a desktop page of their own; the rest show their phone layout in a centred column for now. */
-export const DESKTOP_PAGES = new Set(['overview', 'calendar', 'music']);
+/** Every place the shell can go: the sidebar's pages, and Settings and Your week (reached from the user card, the
+ *  palette and Overview). */
+export type Href = NavItem['href'] | '/settings' | '/stats';
 
 /** Which sidebar item the current path belongs to. */
 export function pageOf(pathname: string): NavItem | undefined {

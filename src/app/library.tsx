@@ -1,4 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useDesktop } from '../components/desktop/context';
+import { LibraryPage } from '../components/desktop/LibraryPage';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
@@ -11,11 +13,16 @@ import GroceriesScreen from '../screens/GroceriesScreen';
 import RoutinesScreen, { type RepeatFilter, type WhenFilter } from '../screens/RoutinesScreen';
 import { type Theme, useStyles, useTheme } from '../theme';
 
+/** The desktop draws its own page here; the phone keeps its screen. */
+export default function LibraryRoute() {
+  return useDesktop().on ? <LibraryPage /> : <LibraryScreen />;
+}
+
 type Shelf = 'routines' | 'groceries';
 
 /** Everything you keep: routines and the grocery list, with search and (for routines) filters. One layout in every
  *  look. */
-export default function LibraryScreen() {
+function LibraryScreen() {
   const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const params = useLocalSearchParams<{ shelf?: string }>();

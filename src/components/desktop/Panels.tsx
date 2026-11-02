@@ -1,6 +1,6 @@
-// The forms and panels the desktop shell opens from anywhere (the New menu, the command palette, the user card,
-// a page's actions): the same forms as the phone's Add sheet, Settings, Your week and Backup. On a wide window
-// each Sheet presents itself as the floating panel on the right.
+// The forms the desktop shell opens from anywhere (the New menu, the command palette, a page's actions, a calendar
+// slot): the same forms as the phone's Add sheet, and Backup. On a wide window each Sheet presents itself as the
+// floating panel on the right. Settings and Your week are pages of their own on the desktop.
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { currentLanguage, newWord } from '../../lib/language';
@@ -10,21 +10,26 @@ import { BackupSheet } from '../BackupSheet';
 import { Button } from '../Button';
 import { Field, Input } from '../Field';
 import { GroceryForm } from '../GroceryForm';
-import { RoutineForm } from '../RoutineForm';
-import { SettingsSheet } from '../SettingsSheet';
+import { type RoutineFields, RoutineForm } from '../RoutineForm';
 import { Sheet } from '../Sheet';
-import { StatsSheet } from '../StatsSheet';
 import { WordForm } from '../WordForm';
 import type { ShellPanel } from './api';
+import { longDate } from './nav';
 
 export function Panels({
   panel,
   editing,
+  draft,
+  day,
   onOpen,
   onClose,
 }: {
   panel: ShellPanel;
   editing?: Routine;
+  /** A new routine's starting values (a calendar slot). */
+  draft?: Partial<RoutineFields>;
+  /** The day Today is showing, when it is not today: a new to-do goes on it. */
+  day?: string;
   onOpen: (p: ShellPanel) => void;
   onClose: () => void;
 }) {
@@ -38,10 +43,12 @@ export function Panels({
     setTodoError(undefined);
     onClose();
   };
+  const on = day && day !== today ? day : today;
+  const onLabel = on === today ? 'today' : longDate(on);
   const addTodo = () => {
     const title = todo.trim();
     if (!title) return setTodoError('Write what you want to do first.');
-    updateInbox((items) => [{ id: newId(), title, date: today, createdAt: new Date().toISOString() }, ...items]);
+    updateInbox((items) => [{ id: newId(), title, date: on, createdAt: new Date().toISOString() }, ...items]);
     setTodo('');
     close();
   };
@@ -49,7 +56,7 @@ export function Panels({
   return (
     <>
       <Sheet visible={panel === 'todo'} title="New to-do" onClose={close}>
-        <Field label="To-do for today" error={todoError}>
+        <Field label={`To-do for ${onLabel}`} error={todoError}>
           <Input
             value={todo}
             onChangeText={(t) => {
@@ -64,11 +71,12 @@ export function Panels({
             accessibilityLabel="New to-do"
           />
         </Field>
-        <Button label="Add for today" onPress={addTodo} style={styles.save} />
+        <Button label={`Add for ${onLabel}`} onPress={addTodo} style={styles.save} />
       </Sheet>
       <RoutineForm
         visible={panel === 'routine'}
         routine={editing}
+        draft={draft}
         onClose={close}
         onSave={(f) => {
           updateRoutines((rs) =>
@@ -112,8 +120,6 @@ export function Panels({
           close();
         }}
       />
-      <StatsSheet visible={panel === 'stats'} onClose={close} />
-      <SettingsSheet visible={panel === 'settings'} onClose={close} onBackup={() => onOpen('backup')} />
       <BackupSheet visible={panel === 'backup'} onClose={close} />
     </>
   );

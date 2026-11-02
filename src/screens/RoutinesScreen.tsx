@@ -30,7 +30,7 @@ import { Glass, GlassScroll } from '../components/Glass';
 export type WhenFilter = 'all' | Routine['time'];
 export type RepeatFilter = 'all' | 'daily' | 'some' | 'once';
 
-function matchesRepeat(r: Routine, f: RepeatFilter): boolean {
+export function matchesRepeat(r: Routine, f: RepeatFilter): boolean {
   if (f === 'all') return true;
   if (f === 'once') return r.repeat.kind === 'once';
   const daily = r.repeat.kind === 'everyNDays' && r.repeat.n === 1;

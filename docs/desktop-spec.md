@@ -1,6 +1,6 @@
 # Symphony OS on a wide window: the desktop shell
 
-Status: the shell (sidebar, top bar, palette, menus, side panels), Overview, Calendar, Music, Groceries and the wide worlds are built; Today, Inbox, Gym, Language and Library still show their phone layout in a centred column. Written 2 November 2026 for the Windows build (Electron around the Expo web export). The phone app is the reference for everything this document does not change, and it must not change at all.
+Status: the shell (sidebar, top bar, palette, menus, side panels), the wide worlds and every page in section 9 are built: Overview, Today, Calendar (week and month), Inbox, Gym, Language, Library, Groceries, Music, Settings and Your week (with "When things get done"). Still to come: right-click menus, a menu for more than four languages on Language (it falls back to a chip row), and keeping imported songs on the computer. Written 2 November 2026 for the Windows build (Electron around the Expo web export). The phone app is the reference for everything this document does not change, and it must not change at all.
 
 Matthew's decision on the three desktop references: **their layout, our four looks.** The desktop copies the references' layout (where things sit, how big they are, how they behave). Every colour, material, radius, typeface and light comes from the four looks already in `src/theme.ts`, `assets/art/looks.json`, `DESIGN.md` and `.impeccable/design.json`. If this file and those disagree on a colour or a material, they win.
 

@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import {
   type AccessibilityRole,
   type AccessibilityState,
-  Platform,
   Pressable,
   type Role,
   type StyleProp,
@@ -14,21 +13,10 @@ import {
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useTheme } from '../../theme';
-import { EASE_OUT, FADE, useReduceMotion } from '../Motion';
+import { EASE_OUT, FADE, keyboardFocus, useReduceMotion } from '../Motion';
 
 const IN = { duration: 120, easing: EASE_OUT, ...FADE };
 const OUT = { duration: 160, easing: EASE_OUT, ...FADE };
-
-/** Keyboard focus only (the :focus-visible rule), so a mouse click doesn't leave the hover light on. */
-function keyboardFocus(e: unknown): boolean {
-  if (Platform.OS !== 'web') return true;
-  const target = (e as { nativeEvent?: { target?: { matches?: (q: string) => boolean } } })?.nativeEvent?.target;
-  try {
-    return !!target?.matches?.(':focus-visible');
-  } catch {
-    return true;
-  }
-}
 
 export interface HoverProps {
   onPress?: () => void;

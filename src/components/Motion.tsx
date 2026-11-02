@@ -37,7 +37,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnUI } from 'react-native-worklets';
 import Svg, { Circle } from 'react-native-svg';
-import { type Theme, useStyles } from '../theme';
+import { type Theme, useStyles, useTheme } from '../theme';
+import { useDesktop } from './desktop/context';
 
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
@@ -98,6 +99,17 @@ interface PressProps {
 const PRESS_IN = { duration: 120, easing: EASE_OUT };
 const PRESS_OUT = { duration: 160, easing: EASE_OUT };
 
+/** Keyboard focus only (the :focus-visible rule), so a mouse click doesn't leave the desktop's hover light on. */
+export function keyboardFocus(e: unknown): boolean {
+  if (Platform.OS !== 'web') return true;
+  const target = (e as { nativeEvent?: { target?: { matches?: (q: string) => boolean } } })?.nativeEvent?.target;
+  try {
+    return !!target?.matches?.(':focus-visible');
+  } catch {
+    return true;
+  }
+}
+
 /** Press feedback: a 3% squeeze in 120ms from press-in, so the tap feels answered before the finger lifts, and
  *  optionally a pressed colour that fades in under the content. Under reduced motion the squeeze is skipped and
  *  the fade stays. On Android a keyboard or D-pad focus draws a 2px ring in the text colour (the web uses
@@ -122,11 +134,17 @@ export function Press({
   const scale = useSharedValue(1);
   const pressed = useSharedValue(0);
   const focus = useSharedValue(0);
+  const hover = useSharedValue(0);
   const reduced = useReduceMotion();
   const ringColor = useStyles(ringColorOf);
+  const { colors } = useTheme();
+  // In the desktop shell the pointer resting on it, or keyboard focus, fades in the look's hover light (120 ms in,
+  // 160 ms out). The phone never draws or listens for it.
+  const desktop = useDesktop().on;
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   const overlayStyle = useAnimatedStyle(() => ({ opacity: pressed.get() }));
   const ring = useAnimatedStyle(() => ({ opacity: focus.get() }));
+  const hoverStyle = useAnimatedStyle(() => ({ opacity: hover.get() }));
   const flat = StyleSheet.flatten(style) ?? {};
   const radius = flat.borderRadius;
   // Absolute layers sit inside the border; they bleed over it so a pressed or focused pill keeps its shape.
@@ -159,8 +177,24 @@ export function Press({
       disabled={disabled}
       onPressIn={pressIn}
       onPressOut={pressOut}
-      onFocus={FOCUS_RING ? () => focus.set(withTiming(1, { ...PRESS_IN, ...FADE })) : undefined}
-      onBlur={FOCUS_RING ? () => focus.set(withTiming(0, { ...PRESS_OUT, ...FADE })) : undefined}
+      onFocus={
+        FOCUS_RING
+          ? () => focus.set(withTiming(1, { ...PRESS_IN, ...FADE }))
+          : desktop
+            ? (e) => {
+                if (keyboardFocus(e)) hover.set(withTiming(1, { ...PRESS_IN, ...FADE }));
+              }
+            : undefined
+      }
+      onBlur={
+        FOCUS_RING
+          ? () => focus.set(withTiming(0, { ...PRESS_OUT, ...FADE }))
+          : desktop
+            ? () => hover.set(withTiming(0, { ...PRESS_OUT, ...FADE }))
+            : undefined
+      }
+      onHoverIn={desktop ? () => hover.set(withTiming(1, { ...PRESS_IN, ...FADE })) : undefined}
+      onHoverOut={desktop ? () => hover.set(withTiming(0, { ...PRESS_OUT, ...FADE })) : undefined}
       style={outerStyle}
       hitSlop={hitSlop}
       pressRetentionOffset={16}
@@ -172,6 +206,25 @@ export function Press({
       onAccessibilityAction={onAccessibilityAction}
     >
       <Animated.View style={[style, animated]}>
+        {desktop ? (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.layer,
+              {
+                top: bleed,
+                left: bleed,
+                right: bleed,
+                bottom: bleed,
+                borderRadius: radius,
+                backgroundColor: colors.material.hover.fill,
+                borderWidth: 1,
+                borderColor: colors.material.hover.rim,
+              },
+              hoverStyle,
+            ]}
+          />
+        ) : null}
         {overlay ? (
           <Animated.View
             pointerEvents="none"

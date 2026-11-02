@@ -9,7 +9,15 @@ import { FadeSwap, Pop, Press, SelectFade } from './Motion';
 import { Section } from './Section';
 
 /** A mood and a short note for a day. */
-export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
+export function DayNote({
+  date,
+  isToday,
+  bare,
+}: {
+  date: string;
+  isToday: boolean;
+  /** Content only: the desktop puts it in a panel. */ bare?: boolean;
+}) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   // Each mood is a disc of control glass with its name beneath; the chosen one fills with the look's done colour
@@ -24,9 +32,9 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
     if ((entry.note ?? '') !== note.trim()) updateJournal((j) => setEntry(j, date, { note }));
   };
 
-  return (
-    <Section title={isToday ? 'How was today?' : 'How it went'}>
-      <View style={styles.moods} accessibilityRole="radiogroup" accessibilityLabel="Mood">
+  const body = (
+    <>
+      <View style={[styles.moods, bare && styles.moodsBare]} accessibilityRole="radiogroup" accessibilityLabel="Mood">
         {MOODS.map((m) => {
           const active = mood === m.value;
           const choose = () => updateJournal((j) => setEntry(j, date, { mood: active ? undefined : m.value }));
@@ -56,7 +64,7 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
           );
         })}
       </View>
-      <Field label={isToday ? 'A line about today' : 'A line about that day'} style={styles.noteField}>
+      <Field label={isToday ? 'A line about today' : 'A line about that day'} style={bare ? styles.noteBare : styles.noteField}>
         <Input
           value={note}
           onChangeText={setNote}
@@ -68,8 +76,10 @@ export function DayNote({ date, isToday }: { date: string; isToday: boolean }) {
           style={styles.note}
         />
       </Field>
-    </Section>
+    </>
   );
+  if (bare) return body;
+  return <Section title={isToday ? 'How was today?' : 'How it went'}>{body}</Section>;
 }
 
 const makeStyles = ({ colors, fonts, radii }: Theme) =>
@@ -92,5 +102,7 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     },
     discOn: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
     noteField: { marginHorizontal: 16, marginTop: 12, marginBottom: 16 },
+    moodsBare: { paddingHorizontal: 0, paddingTop: 0 },
+    noteBare: { marginTop: 16 },
     note: { minHeight: 48 },
   });

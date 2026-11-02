@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GlassScroll } from '../components/Glass';
@@ -15,25 +15,27 @@ import { SettingsSheet } from '../components/SettingsSheet';
 import { Sheet } from '../components/Sheet';
 import { StatsSheet } from '../components/StatsSheet';
 import { type TrailItem, TrailHome } from '../components/TrailHome';
+import { balanceRings, trailItems } from '../components/trailItems';
 import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
-import { currentLanguage, dueWords, newWord, practiceTitle, shortTitle } from '../lib/language';
+import { currentLanguage, dueWords, newWord } from '../lib/language';
 import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/deviceCalendar';
 import { dayPlan } from '../lib/day';
 import { nextSession } from '../lib/gym';
 import { toggleItem } from '../lib/inbox';
 import { moodOf } from '../lib/journal';
-import { type Routine, countOn, iconFor, isDoneOn, isScheduled, isSkipped, tapRoutine, toggleSkip } from '../lib/routines';
-import { boughtOn, friendlyDate, parseKey } from '../lib/schedule';
+import { type Routine, isScheduled, isSkipped, tapRoutine, toggleSkip } from '../lib/routines';
+import { friendlyDate, parseKey } from '../lib/schedule';
 import { useSounds } from '../lib/sounds';
 import { dayStreak } from '../lib/stats';
 import { newId, useStore } from '../lib/store';
 import { type TimedEntry, clock, upNext } from '../lib/timeline';
 import { Fab, useFabScroll } from '../components/Fab';
+import { useDesktop } from '../components/desktop/context';
+import { TodayPage } from '../components/desktop/TodayPage';
 import { Chevron, Press } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
-import { plural } from '../lib/plural';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 type Panel = 'stats' | 'settings' | 'backup' | 'add' | 'routine' | 'todo' | 'grocery' | 'word' | null;
@@ -60,7 +62,12 @@ function minutesNow(): number {
   return d.getHours() * 60 + d.getMinutes();
 }
 
-export default function TodayScreen() {
+/** Today: the trail in a column on the phone, the desktop's Today page in the shell. */
+export default function TodayRoute() {
+  return useDesktop().on ? <TodayPage /> : <TodayScreen />;
+}
+
+function TodayScreen() {
   const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const store = useStore();
@@ -95,6 +102,11 @@ export default function TodayScreen() {
   const [now, setNow] = useState(minutesNow());
 
   useEffect(() => setSelected(today), [today]);
+  // A link to a desktop page that the phone has as a sheet (Settings, Your week) lands here and opens it.
+  const params = useLocalSearchParams<{ open?: string }>();
+  useEffect(() => {
+    if (params.open === 'settings' || params.open === 'stats') setPanel(params.open);
+  }, [params.open]);
   useEffect(() => {
     const t = setInterval(() => setNow(minutesNow()), 30000);
     return () => clearInterval(t);
@@ -133,7 +145,6 @@ export default function TodayScreen() {
 
   // The day's things and its sums, shared with the desktop Overview and the sidebar's counts (lib/day).
   const plan = dayPlan({ routines, inbox, groceries, gym, language }, selected, today);
-  const dayRoutines = plan.routines;
   const { timed } = plan;
   const dayEvents = events[selected] ?? [];
   const eventEntries: TimedEntry[] = dayEvents
@@ -149,25 +160,10 @@ export default function TodayScreen() {
   const timeline = [...timed, ...eventEntries].sort((a, b) => a.start - b.start);
   const next = isToday ? upNext(timed, today, now) : undefined;
 
-  const dayTodos = plan.todos;
   const session = plan.session;
-  const gymProgress = plan.gym;
-  const gymDone = plan.gymDone;
   const upcoming = session ? undefined : nextSession(gym, selected);
-  // Language practice is one habit across every language. It joins the day once a language is chosen, and a
-  // past day keeps it if minutes were logged.
-  const learning = language.languages;
   const studying = currentLanguage(language);
-  // The balance ring has room for the language's name (up to ten letters).
-  const ringLabel = shortTitle(learning);
-  const practice = plan.practice;
-  const practiceDone = plan.practiceDone;
-  const showPractice = plan.showPractice;
   const toReview = dueWords(language, today).length;
-  const dayGroceries = plan.groceries;
-
-  // Progress: every routine, to-do and grocery item counts once, the workout and practice once each.
-  const planned = plan.planned;
   const { done, total } = plan;
 
   const replace = (r: Routine) => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? r : x)));
@@ -225,88 +221,14 @@ export default function TodayScreen() {
 
   // The day's things in one list: routines, to-dos, then the workout, practice and shopping, so the trail
   // matches the progress count.
-  const items: TrailItem[] = [
-    ...dayRoutines.map((r) => {
-      const count = r.target ? countOn(r, selected) : 0;
-      const when = r.start ? `${r.start}${r.duration ? ` · ${r.duration} min` : ''}` : 'Anytime';
-      return {
-        key: r.id,
-        title: r.name,
-        icon: iconFor(r),
-        color: kinds.routines.color,
-        ink: kinds.routines.text,
-        meta: isSkipped(r, selected) ? 'Skipped today' : r.target ? `${when} · ${count}/${r.target}` : when,
-        done: isDoneOn(r, selected),
-        skipped: isSkipped(r, selected),
-        progress: r.target && r.target > 1 ? { value: count, total: r.target } : undefined,
-        // A day still to come can be planned but not ticked off: a tap opens the routine to change it.
-        planOnly: isFuture,
-        onPress: isFuture ? () => edit(r) : () => tap(r),
-        onLongPress: () => edit(r),
-      };
-    }),
-    ...dayTodos.map((t) => ({
-      key: t.id,
-      title: t.title,
-      meta: 'To-do',
-      icon: 'checkbox-outline',
-      color: kinds.inbox.color,
-      ink: kinds.inbox.text,
-      done: !!t.doneOn,
-      planOnly: isFuture,
-      onPress: isFuture ? undefined : () => updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
-    })),
-    ...(session && gymProgress
-      ? [
-          {
-            key: 'gym',
-            title: session.name,
-            icon: 'barbell',
-            color: kinds.gym.color,
-            ink: kinds.gym.text,
-            meta: `Workout · ${gymProgress.done}/${gymProgress.total} sets`,
-            done: gymDone,
-            nav: true,
-            progress: { value: gymProgress.done, total: gymProgress.total },
-            onPress: () => router.navigate('/gym'),
-          },
-        ]
-      : []),
-    ...(showPractice
-      ? [
-          {
-            key: 'chinese',
-            title: practiceTitle(learning),
-            icon: 'language',
-            color: kinds.chinese.color,
-            ink: kinds.chinese.text,
-            meta: `${practice.minutes}/${language.target} min${toReview ? ` · ${plural(toReview, 'word')} to review` : ''}`,
-            done: practiceDone,
-            nav: true,
-            progress: { value: practice.minutes, total: language.target },
-            onPress: () => router.navigate('/language'),
-          },
-        ]
-      : []),
-    ...(dayGroceries.length > 0
-      ? [
-          {
-            key: 'groceries',
-            title: isPast ? 'Groceries bought' : 'Groceries',
-            icon: 'basket',
-            color: kinds.groceries.color,
-            ink: kinds.groceries.text,
-            meta: `${dayGroceries.filter((g) => boughtOn(g, selected)).length} of ${dayGroceries.length} bought · ${dayGroceries
-              .slice(0, 3)
-              .map((g) => g.name)
-              .join(', ')}${dayGroceries.length > 3 ? '…' : ''}`,
-            done: dayGroceries.every((g) => boughtOn(g, selected)),
-            nav: true,
-            onPress: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
-          },
-        ]
-      : []),
-  ];
+  const items: TrailItem[] = trailItems(plan, { selected, today }, language, kinds, toReview, {
+    tap,
+    edit,
+    toggleTodo: (id) => updateInbox((items) => items.map((x) => (x.id === id ? toggleItem(x, selected) : x))),
+    gym: () => router.navigate('/gym'),
+    language: () => router.navigate('/language'),
+    groceries: () => router.navigate({ pathname: '/library', params: { shelf: 'groceries' } }),
+  });
 
   return (
     <View style={styles.flex}>
@@ -335,29 +257,7 @@ export default function TodayScreen() {
                 : `Up next${NB}· ${clock(next.entry.start)}${NB}· in${NB}${formatLeft(next.minutes)}`
               : undefined
           }
-          balance={[
-            {
-              label: 'Routines',
-              value: planned.filter((r) => isDoneOn(r, selected)).length,
-              total: planned.length,
-              unit: planned.length === 1 ? 'routine' : 'routines',
-              color: kinds.routines.color,
-            },
-            {
-              label: 'Gym',
-              value: gymProgress?.done ?? 0,
-              total: gymProgress?.total ?? 0,
-              unit: 'sets',
-              color: kinds.gym.color,
-            },
-            {
-              label: ringLabel,
-              value: practice.minutes,
-              total: showPractice ? language.target : 0,
-              unit: 'min',
-              color: kinds.chinese.color,
-            },
-          ]}
+          balance={balanceRings(plan, selected, language, kinds)}
           calendarOpen={calendarOpen}
           onToggleCalendar={() => setCalendarOpen((o) => !o)}
           calendar={calendar}

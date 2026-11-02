@@ -18,12 +18,13 @@ import { THEME_OPTIONS, type Theme, useStyles, useTheme } from '../../theme';
 import { type AddKind, type ShellApi, ShellContext, type ShellPanel } from './api';
 import { Hover } from './Hover';
 import { SHELL, useShellMetrics } from './layout';
-import { MOD, NAV_ITEMS, type NavItem, longDate, pageOf, useNow } from './nav';
+import { type Href, MOD, NAV_ITEMS, longDate, pageOf, useNow } from './nav';
 import { type Command, Palette } from './Palette';
 import { Panels } from './Panels';
 import { Popover } from './Popover';
 import { Sidebar } from './Sidebar';
 import { BellMenu, type Crumb, LookMenu, type Menu, NewMenu, TopBar } from './TopBar';
+import type { RoutineFields } from '../RoutineForm';
 
 const KEY = 'routine.desktop.v1';
 const SLIDE = { duration: 260, easing: EASE_OUT };
@@ -93,14 +94,23 @@ export function DesktopShell({
   const [palette, setPalette] = useState(false);
   const [panel, setPanel] = useState<ShellPanel>(null);
   const [editing, setEditing] = useState<Routine | undefined>();
-  const open = useCallback((p: ShellPanel, routine?: Routine) => {
+  const [draft, setDraft] = useState<Partial<RoutineFields> | undefined>();
+  // The day Today shows, when it is not today: New's to-do goes on it and the breadcrumbs name it.
+  const [day, setDay] = useState<string | undefined>();
+  const open = useCallback((p: ShellPanel, routine?: Routine, fill?: Partial<RoutineFields>) => {
     setMenu(null);
+    // Settings and Your week are pages on the desktop; everything else is a form in the side panel.
+    if (p === 'settings' || p === 'stats') {
+      router.navigate(p === 'settings' ? '/settings' : '/stats');
+      return;
+    }
     setEditing(routine);
+    setDraft(routine ? undefined : fill);
     setPanel(p);
   }, []);
   const api = useMemo<ShellApi>(
-    () => ({ expanded, toggleSidebar, openPalette: () => setPalette(true), open }),
-    [expanded, toggleSidebar, open],
+    () => ({ expanded, toggleSidebar, openPalette: () => setPalette(true), open, day, setDay }),
+    [expanded, toggleSidebar, open, day],
   );
 
   const state = useMemo(() => ({ routines, inbox, groceries, gym, language }), [routines, inbox, groceries, gym, language]);
@@ -111,7 +121,7 @@ export function DesktopShell({
   const next = nextUp(plan, today, now);
   const studying = currentLanguage(language);
 
-  const go = useCallback((href: NavItem['href']) => {
+  const go = useCallback((href: Href) => {
     setMenu(null);
     router.navigate(href);
   }, []);
@@ -168,9 +178,20 @@ export function DesktopShell({
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const crumbs: Crumb[] = [{ label: 'Symphony OS', href: '/overview' }, { label: page?.label ?? 'Overview' }];
-  if (page?.key === 'language' && studying) crumbs.push({ label: studying.name });
-  if (page?.key === 'overview') crumbs[0] = { label: 'Symphony OS' };
+  // Real hierarchy only: "Symphony OS > Language > Chinese", "Symphony OS > Overview > Your week".
+  const path = pathname.replace(/\/+$/, '') || '/';
+  const crumbs: Crumb[] = [{ label: 'Symphony OS', href: '/overview' }];
+  if (path === '/settings') crumbs.push({ label: 'Settings' });
+  else if (path === '/stats') crumbs.push({ label: 'Overview', href: '/overview' }, { label: 'Your week' });
+  else {
+    crumbs.push({ label: page?.label ?? 'Overview' });
+    if (page?.key === 'language' && studying) crumbs.push({ label: studying.name });
+    if (page?.key === 'today' && day && day !== today) {
+      crumbs[1] = { label: 'Today', href: '/' };
+      crumbs.push({ label: longDate(day) });
+    }
+    if (page?.key === 'overview') crumbs[0] = { label: 'Symphony OS' };
+  }
 
   const commands = useMemo<Command[]>(() => {
     const goTo: Command[] = NAV_ITEMS.map((i, n) => ({
@@ -183,8 +204,8 @@ export function DesktopShell({
       run: () => go(i.href),
     }));
     goTo.push(
-      { id: 'go-settings', group: 'Go to', icon: 'settings-outline', title: 'Settings', hint: `${MOD} ,`, run: () => open('settings') },
-      { id: 'go-week', group: 'Go to', icon: 'stats-chart-outline', title: 'Your week', meta: 'The last 7 days', run: () => open('stats') },
+      { id: 'go-settings', group: 'Go to', icon: 'settings-outline', title: 'Settings', hint: `${MOD} ,`, run: () => go('/settings') },
+      { id: 'go-week', group: 'Go to', icon: 'stats-chart-outline', title: 'Your week', meta: 'The last 7 days', run: () => go('/stats') },
     );
     const adds: Command[] = [
       { id: 'add-routine', group: 'Add', icon: 'repeat', title: 'Routine', meta: 'Something you do regularly', run: () => add('routine') },
@@ -416,7 +437,7 @@ export function DesktopShell({
             </Popover>
           </WorldFrame>
           <Palette visible={palette} onClose={() => setPalette(false)} commands={commands} things={things} onInbox={toInbox} />
-          <Panels panel={panel} editing={editing} onOpen={(p) => open(p)} onClose={() => setPanel(null)} />
+          <Panels panel={panel} editing={editing} draft={draft} day={day} onOpen={(p) => open(p)} onClose={() => setPanel(null)} />
           {after}
         </View>
       </ShellContext.Provider>
