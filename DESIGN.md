@@ -1173,6 +1173,11 @@ A new screen is assembled from the shared kit, never from raw views with their o
 ### Sheets
 - Thick sheet glass rising from the bottom over a dimmed world (the look's backdrop): 320ms in on a soft decelerating curve, 220ms out, the dim fading in 200ms. A 40 by 4 grip at the top that can be dragged down to close. The lens follows the sheet as it moves. The keyboard lifts the sheet by as much room as there is above it, then shrinks the scroll. Reduced motion: the sheet fades instead of sliding.
 
+### The player
+- One shared player for the focus sounds and your own songs (`src/lib/sounds.tsx`). Lavender, Stone and Pine open it full screen in their own world; Paper opens it as a sheet. The top bar stays put (close on the left, the sleep timer's moon on the right); the art, name, seek line and transport scroll with "Focus sounds" (the segmented picker, or Paper's list), "Your music" and "Playlists" below them.
+- Transport: shuffle, previous, play, next, repeat. For a focus sound shuffle picks another sound and the repeat slot fades away (a sound always loops). For songs shuffle and repeat are toggles whose on state is a lit inset disc that fades in. Songs get a seek bar that can be dragged; a loop shows progress only.
+- Your music and Playlists are panes of rows: an inset tile (a note for a song, a list or link glyph for a playlist), the name, a meta line, and a 44dp more button that opens the rename or remove sheet. Playlist links show the service in words ("Opens in Spotify"), never its logo or colours. Empty panes say what the section is for and offer the one action.
+
 ### Loading
 - Never a blank screen or a bare spinner on the world: the screen's first panes appear empty in the look's own glass with a soft band of light passing across them.
 
@@ -1210,7 +1215,7 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **Do** put a visible label above every input.
 - **Do** keep the bottom navigation at five items or fewer.
 - **Do** respect the system's reduced-motion setting through `useReduceMotion()`: drop transforms, keep fades.
-- **Do** keep the saved data keys (`routine.routines.v1`, `routine.gym.v1`, `routine.chinese.v1`, `routine.groceries.v1`, `routine.settings.v1`, `routine.journal.v1`, `routine.inbox.v1`) and their data shapes compatible through any redesign.
+- **Do** keep the saved data keys (`routine.routines.v1`, `routine.gym.v1`, `routine.chinese.v1`, `routine.groceries.v1`, `routine.settings.v1`, `routine.journal.v1`, `routine.inbox.v1`, `routine.music.v1`) and their data shapes compatible through any redesign.
 - **Do** build a new screen from the shared kit (`Glass`, `Press`, `Button`, `Chip`, `Segmented`, `Field`, `Section`, `PageTitle`, `Sheet`, `Fab`, the motion pieces), branch on `theme.glass` and the material's `canopy`, `tag` and `orb` rather than on look names, and check it in all four looks.
 - **Do** let done things recede (faint ink, a line through a done title, a dimmed tile, a thinner body) and the one next thing be lit.
 - **Do** keep secondary text in the look's own tinted near-ink; never set grey text on grey glass.

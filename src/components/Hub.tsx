@@ -64,17 +64,24 @@ export function Segmented<K extends string>({
   const shown = useSharedValue(1);
   const placed = useRef(false);
   const reduced = useReduceMotion();
-  const index = Math.max(
-    0,
-    options.findIndex((o) => o.key === value),
-  );
+  // A value that matches no option (the player while one of your songs plays) fades the drop out.
+  const found = options.findIndex((o) => o.key === value);
+  const index = Math.max(0, found);
   const slot = width ? width / options.length : 0;
   useEffect(() => {
     if (!slot) return;
     const to = index * slot;
-    if (!placed.current) {
+    if (found < 0) {
+      // Hidden from the first draw if nothing is chosen yet; faded out if something was.
+      shown.set(placed.current ? withTiming(0, BLINK) : 0);
+      placed.current = true;
+    } else if (!placed.current) {
       placed.current = true;
       x.set(to);
+      shown.set(1);
+    } else if (shown.get() < 1) {
+      x.set(to);
+      shown.set(withTiming(1, BLINK));
     } else if (reduced) {
       shown.set(
         withTiming(0, BLINK, (done) => {
@@ -87,7 +94,7 @@ export function Segmented<K extends string>({
     } else {
       x.set(withTiming(to, SLIDE));
     }
-  }, [index, slot, reduced, x, shown]);
+  }, [index, found, slot, reduced, x, shown]);
   const drop = useAnimatedStyle(() => ({ opacity: shown.get(), transform: [{ translateX: x.get() }] }));
   return (
     <Glass tier="control" radius={stacked ? radii.control : radii.pill} style={styles.trough}>

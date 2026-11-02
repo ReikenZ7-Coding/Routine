@@ -1,7 +1,9 @@
 // Everything in one JSON string, so people can move to a new phone or keep a copy. The `chinese` part holds
 // language practice (every language, its words and the minutes log); it keeps that name so old backups restore.
+// The `music` part holds playlist links and the details of imported songs, not the audio files themselves; older
+// backups have none, and restoring one leaves the music as it is.
 
-export const BACKUP_KEYS = ['groceries', 'gym', 'chinese', 'routines', 'journal', 'inbox'] as const;
+export const BACKUP_KEYS = ['groceries', 'gym', 'chinese', 'routines', 'journal', 'inbox', 'music'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];
 export type BackupData = Record<BackupKey, unknown>;
 
@@ -33,5 +35,6 @@ export function parseBackup(text: string): BackupData {
     routines: raw.routines,
     journal: raw.journal && typeof raw.journal === 'object' ? raw.journal : {},
     inbox: Array.isArray(raw.inbox) ? raw.inbox : [],
+    music: raw.music && typeof raw.music === 'object' ? raw.music : null,
   };
 }

@@ -138,7 +138,12 @@ export function TrailHome(p: Props) {
         </Press>
       </View>
       <View style={styles.topButtons}>
-        <Round icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'} label="Focus sounds" onPress={p.onSounds} dot={p.soundsPlaying} />
+        <Round
+          icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'}
+          label="Sounds and music"
+          onPress={p.onSounds}
+          dot={p.soundsPlaying}
+        />
         <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
         <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
       </View>

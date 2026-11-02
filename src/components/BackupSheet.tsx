@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Platform, Share, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { type BackupData, makeBackup, parseBackup } from '../lib/backup';
+import { musicToSave } from '../lib/music';
 import { useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Button } from './Button';
@@ -18,7 +19,7 @@ const GROW = LinearTransition.duration(240).easing(EASE_OUT);
 export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { type } = useTheme();
   const styles = useStyles(makeStyles);
-  const { groceries, gym, language, routines, journal, inbox, restore } = useStore();
+  const { groceries, gym, language, routines, journal, inbox, music, restore } = useStore();
   const [pasted, setPasted] = useState('');
   const [shown, setShown] = useState<string | null>(null);
   const [error, setError] = useState<string | undefined>();
@@ -32,7 +33,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
   }, [visible]);
 
   const exportAll = async () => {
-    const text = makeBackup({ groceries, gym, chinese: language, routines, journal, inbox });
+    const text = makeBackup({ groceries, gym, chinese: language, routines, journal, inbox, music: musicToSave(music) });
     if (Platform.OS === 'web') return setShown(text);
     setExporting(true);
     try {
@@ -65,6 +66,9 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
   return (
     <Sheet visible={visible} title="Backup" onClose={onClose}>
       <Text style={type.hint}>Everything stays on this phone. Keep a copy somewhere safe, or move it to a new phone.</Text>
+      <Text style={[type.hint, styles.note]}>
+        Your playlist links and song names are in the backup, but not the music files themselves. On a new phone, import your songs again.
+      </Text>
 
       <Text style={styles.label}>Save a copy</Text>
       <Button label="Export backup" icon="share-outline" onPress={exportAll} busy={exporting} />
@@ -93,7 +97,9 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
         {pending ? (
           <Animated.View key="ask" entering={SHOW} exiting={HIDE} style={styles.ask}>
             <Text style={styles.question} accessibilityLiveRegion="polite">
-              Replace everything? Your routines, gym, language practice, groceries and notes will be replaced by the backup.
+              {pending.music
+                ? 'Replace everything? Your routines, gym, language practice, groceries, notes and playlist links will be replaced by the backup. Songs already on this phone stay.'
+                : 'Replace everything? Your routines, gym, language practice, groceries and notes will be replaced by the backup. Your music and playlist links stay as they are.'}
             </Text>
             <View style={styles.answers}>
               <Button label="Keep mine" variant="secondary" onPress={() => setPending(null)} style={styles.answer} />
@@ -113,6 +119,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     label: { ...type.label, marginTop: 20, marginBottom: 8 },
+    note: { marginTop: 8 },
     code: { fontFamily: fonts.mono, fontSize: 13, minHeight: 96, maxHeight: 180, textAlignVertical: 'top' },
     gap: { marginTop: 12 },
     ask: { gap: 12 },

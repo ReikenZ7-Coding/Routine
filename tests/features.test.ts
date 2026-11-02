@@ -109,6 +109,7 @@ test('backups round-trip and reject other text', () => {
     routines: [daily()],
     journal: {},
     inbox: [],
+    music: { tracks: [], links: [], repeat: false, shuffle: false },
   };
   assert.deepEqual(parseBackup(makeBackup(data)), data);
   assert.throws(() => parseBackup('hello'), /doesn't look like/);

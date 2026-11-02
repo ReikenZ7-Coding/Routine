@@ -1,25 +1,48 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { type LayoutChangeEvent, Modal, PanResponder, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Segmented } from './Hub';
 import Animated from 'react-native-reanimated';
+import { Chip } from './Chip';
+import { FieldError } from './Field';
 import { Dim, FadeSwap, rise, Press, SelectFade } from './Motion';
+import { MusicForms, type MusicForm, MusicHeading, MusicLibrary } from './MusicLibrary';
 import { Sheet } from './Sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SOUNDS, useSounds } from '../lib/sounds';
+import { clock } from '../lib/music';
+import { type NowItem, SOUNDS, useSounds } from '../lib/sounds';
 import { SceneArt } from './Art';
-import { Glass, WorldFrame } from './Glass';
+import { Glass, GlassScroll, WorldFrame } from './Glass';
 import { MINI_HEIGHT, useBar } from './glass/chrome';
 import { alphaOf } from './glass/colour';
 import { type Theme, useStyles, useTheme } from '../theme';
 
-/** Art for a sound: the look's own scene for it (rain, waves, focus), cropped to a rounded tile. */
-export function SoundArt({ size, id, radius }: { icon?: string; size: number; id?: string; radius?: number }) {
+/** Art for a sound: the look's own scene for it (rain, waves, focus), cropped to a rounded tile. One of your
+ *  songs shows the look's calm scene under a frosted note. */
+export function SoundArt({ size, id, radius, track }: { icon?: string; size: number; id?: string; radius?: number; track?: boolean }) {
   return (
     <View style={{ width: size, height: size, borderRadius: radius ?? size * 0.22, overflow: 'hidden' }}>
-      <SceneArt width={size} height={size} variant={id} />
+      <SceneArt width={size} height={size} variant={track ? 'calm' : id} />
+      {track ? <NoteMark size={size} /> : null}
     </View>
   );
 }
+
+/** The frosted note laid over a song's scene, scaled to the art. */
+function NoteMark({ size }: { size: number }) {
+  const styles = useStyles(makeStyles);
+  const { colors } = useTheme();
+  const disc = Math.round(size * 0.42);
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.noteWrap]}>
+      <View style={[styles.noteDisc, { width: disc, height: disc, borderRadius: disc / 2 }]}>
+        <Ionicons name="musical-notes" size={Math.round(disc * 0.48)} color={colors.text} />
+      </View>
+    </View>
+  );
+}
+
+const isTrack = (c: NowItem) => c.kind === 'track';
 
 /** Small player above the tab bar once a sound has been started. */
 export function MiniPlayer({ bottom }: { bottom: number }) {
@@ -35,15 +58,15 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
         tint={colors.material.chromeTint}
         style={styles.mini}
         onPress={() => s.setSheetOpen(true)}
-        accessibilityLabel="Open focus sounds"
+        accessibilityLabel={`Open the player, ${s.current.name}`}
       >
-        <SoundArt icon={s.current.icon} id={s.current.id} size={38} />
+        <SoundArt id={s.current.id} track={isTrack(s.current)} size={38} />
         <View style={styles.flex}>
           <Text style={styles.miniTitle} numberOfLines={1}>
             {s.current.name}
           </Text>
           <Text style={styles.miniSub} numberOfLines={1}>
-            {s.playing ? 'Playing' : 'Paused'} · Focus sounds
+            {s.playing ? 'Playing' : 'Paused'} · {isTrack(s.current) ? 'Your music' : 'Focus sounds'}
           </Text>
         </View>
         <Press
@@ -66,50 +89,69 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
 
 const MINI_IN = rise();
 
-/** Full "now playing" sheet with the sound list. */
+/** The player: full screen in its own world on Lavender, Stone and Pine, a sheet of milk glass on Paper. Your
+ *  music and playlist links sit under the focus sounds; their forms open over it. */
 export function NowPlaying() {
-  const { colors, type, radii, glass, name } = useTheme();
-  const styles = useStyles(makeStyles);
+  const { glass, name } = useTheme();
   const s = useSounds();
+  const [form, setForm] = useState<MusicForm>(null);
+  const forms = <MusicForms form={form} onClose={() => setForm(null)} />;
 
   // Lavender, Stone and Pine open a full-screen player in their own world (Pine's in the night forest, as on the
   // training hub it follows); Paper keeps a sheet of milk glass.
   if (glass || name === 'pine') {
     return (
-      <Modal
-        visible={s.sheetOpen}
-        animationType="slide"
-        statusBarTranslucent
-        navigationBarTranslucent
-        onRequestClose={() => s.setSheetOpen(false)}
-      >
-        <GlassPlayer />
-      </Modal>
+      <>
+        <Modal
+          visible={s.sheetOpen}
+          animationType="slide"
+          statusBarTranslucent
+          navigationBarTranslucent
+          onRequestClose={() => s.setSheetOpen(false)}
+        >
+          <GlassPlayer onForm={setForm} />
+        </Modal>
+        {forms}
+      </>
     );
   }
 
+  // Paper: the player sheet steps aside while a form is up, and comes back when it closes.
   return (
-    <Sheet visible={s.sheetOpen} title="Now playing" onClose={() => s.setSheetOpen(false)}>
-      <Text style={type.small}>Focus sounds · loops until you stop</Text>
-      <View style={styles.art}>
-        {name === 'paper' ? (
-          // Paper frames the scene like a print under milk glass: a wide white mat and a soft, deep shadow.
-          <View style={styles.paperFrame}>
-            <SoundArt id={s.current.id} size={204} radius={20} />
-          </View>
-        ) : (
-          <SoundArt id={s.current.id} size={220} />
-        )}
-      </View>
-      <Text style={styles.name}>{s.current.name}</Text>
-      <Text style={type.small}>{s.current.subtitle}</Text>
+    <>
+      <Sheet visible={s.sheetOpen && !form} title="Now playing" onClose={() => s.setSheetOpen(false)}>
+        <PaperPlayer onForm={setForm} />
+      </Sheet>
+      {forms}
+    </>
+  );
+}
 
-      <Progress position={s.position} length={s.length} />
+function PaperPlayer({ onForm }: { onForm: (f: MusicForm) => void }) {
+  const { colors, type, radii } = useTheme();
+  const styles = useStyles(makeStyles);
+  const s = useSounds();
+  const track = isTrack(s.current);
+  return (
+    <>
+      <Text style={type.small}>{topLine(s)}</Text>
+      <View style={styles.art}>
+        {/* Paper frames the scene like a print under milk glass: a wide white mat and a soft, deep shadow. */}
+        <View style={styles.paperFrame}>
+          <SoundArt id={s.current.id} track={track} size={204} radius={20} />
+        </View>
+      </View>
+      <Text style={styles.name} numberOfLines={2}>
+        {s.current.name}
+      </Text>
+      <Text style={type.small}>{subLine(s)}</Text>
+
+      <Timeline />
+      <FieldError message={s.playError} />
 
       <View style={styles.controls}>
-        <Press style={styles.side} overlay={colors.material.pressFill} onPress={() => s.skip(-1)} accessibilityLabel="Previous sound">
-          <Ionicons name="play-skip-back" size={24} color={colors.text} />
-        </Press>
+        <Control icon="shuffle" {...shuffleProps(s)} small />
+        <Control icon="play-skip-back" label={track ? 'Previous song' : 'Previous sound'} onPress={() => s.skip(-1)} />
         <Press
           style={styles.bigButton}
           overlay={colors.material.pressFill}
@@ -124,14 +166,22 @@ export function NowPlaying() {
             style={s.playing ? undefined : styles.playNudge}
           />
         </Press>
-        <Press style={styles.side} overlay={colors.material.pressFill} onPress={() => s.skip(1)} accessibilityLabel="Next sound">
-          <Ionicons name="play-skip-forward" size={24} color={colors.text} />
-        </Press>
+        <Control icon="play-skip-forward" label={track ? 'Next song' : 'Next sound'} onPress={() => s.skip(1)} />
+        <RepeatSlot />
+      </View>
+      <View style={styles.timerRow}>
+        <Chip
+          label={s.timer ? `Sleep in ${s.timer} min` : 'Sleep timer'}
+          active={!!s.timer}
+          onPress={s.cycleTimer}
+          accessibilityLabel={timerLabel(s.timer)}
+        />
       </View>
 
+      <MusicHeading title="Focus sounds" />
       <View style={styles.list}>
         {SOUNDS.map((x) => {
-          const active = x.id === s.current.id;
+          const active = !track && x.id === s.current.id;
           return (
             <Press
               key={x.id}
@@ -152,7 +202,55 @@ export function NowPlaying() {
           );
         })}
       </View>
-    </Sheet>
+      <MusicLibrary onForm={onForm} />
+    </>
+  );
+}
+
+type Sounds = ReturnType<typeof useSounds>;
+
+/** The line over the player: what kind of thing is playing. */
+function topLine(s: Sounds): string {
+  if (!isTrack(s.current)) return 'Focus sounds · loops until you stop';
+  return s.queuePlace ? `Your music · ${s.queuePlace.at} of ${s.queuePlace.of}` : 'Your music';
+}
+
+/** The line under the title: a sound's description, or what plays next. */
+function subLine(s: Sounds): string {
+  if (!isTrack(s.current)) return s.current.subtitle;
+  if (s.upNext) return `Next: ${s.upNext}`;
+  return s.queuePlace && s.queuePlace.of > 1 ? 'Last song. Turn on repeat to keep going' : 'Plays to the end';
+}
+
+function shuffleProps(s: Sounds): { label: string; onPress: () => void; active?: boolean; toggle?: boolean } {
+  if (!isTrack(s.current)) return { label: 'Shuffle to another sound', onPress: s.shuffle };
+  return { label: 'Shuffle', onPress: s.shuffle, active: s.shuffleOn, toggle: true };
+}
+
+/** Repeat for songs; a focus sound always loops, so the slot fades away and holds the row's balance. */
+function RepeatSlot() {
+  const s = useSounds();
+  const track = isTrack(s.current);
+  return (
+    <View
+      pointerEvents={track ? 'auto' : 'none'}
+      importantForAccessibility={track ? 'auto' : 'no-hide-descendants'}
+      accessibilityElementsHidden={!track}
+    >
+      <Dim on={!track} to={0}>
+        <Control icon="repeat" label="Repeat all" onPress={s.toggleRepeat} active={s.repeatOn} toggle small />
+      </Dim>
+    </View>
+  );
+}
+
+/** A song gets a seek bar; a focus sound's loop shows its progress only. */
+function Timeline() {
+  const s = useSounds();
+  return isTrack(s.current) ? (
+    <Seek position={s.position} length={s.length} onSeek={s.seek} label={s.current.name} />
+  ) : (
+    <Progress position={s.position} length={s.length} />
   );
 }
 
@@ -202,60 +300,137 @@ const makeProgressStyles = ({ colors, fonts, name }: Theme) =>
     time: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
   });
 
-const sec = (n: number) => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
+const sec = (n: number) => clock(n);
 
 /**
- * Full-screen player for the glass looks: large artwork, the sound's name, a progress line,
- * round transport controls and a glass bar for picking a sound.
+ * A song's seek bar: the same rail, fill and knob as the loop's progress, but it can be dragged or tapped to a
+ * point. While a finger is down the knob follows it and the time shows where it will land; screen readers get
+ * an adjustable control that steps ten seconds at a time.
  */
-function GlassPlayer() {
+function Seek({ position, length, onSeek, label }: { position: number; length: number; onSeek: (s: number) => void; label: string }) {
+  const styles = useStyles(makeProgressStyles);
+  const [drag, setDrag] = useState<number | null>(null);
+  const width = useRef(0);
+  const startX = useRef(0);
+  const latest = useRef({ length, onSeek });
+  latest.current = { length, onSeek };
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const at = (x: number) => (width.current > 0 ? Math.max(0, Math.min(1, x / width.current)) * latest.current.length : 0);
+  const pan = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => latest.current.length > 0,
+        onMoveShouldSetPanResponder: (_, g) => latest.current.length > 0 && Math.abs(g.dx) > Math.abs(g.dy),
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: (e) => {
+          if (settle.current) clearTimeout(settle.current);
+          startX.current = e.nativeEvent.locationX;
+          setDrag(at(startX.current));
+        },
+        onPanResponderMove: (_, g) => setDrag(at(startX.current + g.dx)),
+        onPanResponderRelease: (_, g) => {
+          const to = at(startX.current + g.dx);
+          latest.current.onSeek(to);
+          setDrag(to);
+          // Hold the knob where it was let go until the player catches up, so it never jumps back.
+          settle.current = setTimeout(() => setDrag(null), 450);
+        },
+        onPanResponderTerminate: () => setDrag(null),
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+  const shown = drag ?? position;
+  const pct = length > 0 ? Math.min(1, shown / length) : 0;
+  const step = (d: number) => onSeek(Math.max(0, Math.min(length, position + d)));
+  return (
+    <View>
+      <View
+        style={styles.row}
+        onLayout={(e: LayoutChangeEvent) => (width.current = e.nativeEvent.layout.width)}
+        {...pan.panHandlers}
+        accessible
+        accessibilityRole="adjustable"
+        accessibilityLabel={`Position in ${label}`}
+        accessibilityValue={{ min: 0, max: Math.round(length), now: Math.round(position), text: `${sec(position)} of ${sec(length)}` }}
+        accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+        onAccessibilityAction={(e) => step(e.nativeEvent.actionName === 'increment' ? 10 : -10)}
+      >
+        <View pointerEvents="none" style={styles.rail} />
+        <View pointerEvents="none" style={[styles.fill, { width: `${pct * 100}%` }]} />
+        <View pointerEvents="none" style={[styles.knob, { left: `${pct * 100}%` }]} />
+      </View>
+      <View style={styles.times} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+        <Text style={styles.time}>{sec(shown)}</Text>
+        <Text style={styles.time}>{length > 0 ? sec(length) : '–:––'}</Text>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Full-screen player for the glass looks: large artwork, the name, a progress line, round transport controls,
+ * then (scrolling) the focus sounds, your music and your playlist links. The bar at the top stays put.
+ */
+function GlassPlayer({ onForm }: { onForm: (f: MusicForm) => void }) {
   const { colors, name } = useTheme();
   const styles = useStyles(makeGlassStyles);
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const s = useSounds();
   const stone = name === 'stone';
+  const track = isTrack(s.current);
   // Artwork fills the width but leaves room for the controls on short phones.
-  const art = Math.min(width - (stone ? 64 : 72), height * 0.42);
+  const art = Math.min(width - (stone ? 64 : 72), height * 0.4);
   const close = () => s.setSheetOpen(false);
   const iconColor = colors.text;
+  const scene = track ? 'calm' : s.current.id;
 
   return (
     <View style={styles.root}>
       {/* The player is a world of its own, with the same moving light as the screens. */}
       <WorldFrame>
-        <View style={[styles.body, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 16 }]}>
-          <View style={styles.top}>
-            {stone ? (
-              <Glass tier="control" radius={22} style={styles.round} onPress={close} accessibilityLabel="Close player">
-                <Ionicons name="chevron-back" size={20} color={iconColor} />
-              </Glass>
-            ) : (
-              <Press onPress={close} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel="Close player">
-                <Ionicons name="chevron-down" size={26} color={iconColor} />
-              </Press>
-            )}
-            <View style={styles.topCenter}>
-              <Text style={styles.topTitle}>Now Playing</Text>
-              {!stone && <Text style={styles.topSub}>Focus sounds · loops until you stop</Text>}
-            </View>
-            {/* The sleep timer lives in the transport row; this keeps the title centred. */}
-            <View style={styles.round} />
+        <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
+          {stone ? (
+            <Glass tier="control" radius={22} style={styles.round} onPress={close} accessibilityLabel="Close player">
+              <Ionicons name="chevron-back" size={20} color={iconColor} />
+            </Glass>
+          ) : (
+            <Press onPress={close} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel="Close player">
+              <Ionicons name="chevron-down" size={26} color={iconColor} />
+            </Press>
+          )}
+          <View style={styles.topCenter}>
+            <Text style={styles.topTitle}>Now Playing</Text>
+            <Text style={styles.topSub} numberOfLines={1}>
+              {topLine(s)}
+            </Text>
           </View>
+          {stone ? (
+            <Glass tier="control" radius={22} style={styles.round} onPress={s.cycleTimer} accessibilityLabel={timerLabel(s.timer)}>
+              <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={18} color={iconColor} />
+            </Glass>
+          ) : (
+            <Press onPress={s.cycleTimer} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel={timerLabel(s.timer)}>
+              <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={20} color={iconColor} />
+            </Press>
+          )}
+        </View>
 
+        <GlassScroll style={styles.flex} contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}>
           <View style={styles.artWrap}>
             {stone ? (
               // Stone frames the stones in a lit glass mount; the scene crossfades when the sound changes.
               <Glass tier="hero" radius={30} style={styles.frame}>
                 <View style={[styles.artClip, { width: art - 20, height: art - 20, borderRadius: 22 }]}>
-                  <FadeSwapScene id={s.current.id} size={art - 20} />
+                  <FadeSwapScene id={scene} size={art - 20} />
                 </View>
               </Glass>
             ) : (
               <View
                 style={[styles.artClip, name === 'pine' ? styles.artLift : styles.artGlow, { width: art, height: art, borderRadius: 32 }]}
               >
-                <FadeSwapScene id={s.current.id} size={art} />
+                <FadeSwapScene id={scene} size={art} />
                 <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.artRim]} />
               </View>
             )}
@@ -267,7 +442,7 @@ function GlassPlayer() {
                 {s.current.name}
               </Text>
               <Text style={styles.subtitle} numberOfLines={1}>
-                {s.current.subtitle}
+                {subLine(s)}
               </Text>
             </View>
             {s.timer ? (
@@ -279,12 +454,13 @@ function GlassPlayer() {
           </View>
 
           <View style={styles.progress}>
-            <Progress position={s.position} length={s.length} />
+            <Timeline />
+            <FieldError message={s.playError} />
           </View>
 
           <View style={styles.controls}>
-            <Control stone={stone} icon="shuffle" label="Shuffle to another sound" onPress={s.shuffle} small />
-            <Control stone={stone} icon="play-skip-back" label="Previous sound" onPress={() => s.skip(-1)} />
+            <Control icon="shuffle" {...shuffleProps(s)} small />
+            <Control icon="play-skip-back" label={track ? 'Previous song' : 'Previous sound'} onPress={() => s.skip(-1)} />
             <Press
               onPress={s.toggle}
               style={[styles.big, stone ? styles.bigStone : styles.bigLavender]}
@@ -299,33 +475,35 @@ function GlassPlayer() {
                 style={s.playing ? undefined : styles.playNudge}
               />
             </Press>
-            <Control stone={stone} icon="play-skip-forward" label="Next sound" onPress={() => s.skip(1)} />
-            <Control stone={stone} icon={s.timer ? 'moon' : 'moon-outline'} label={timerLabel(s.timer)} onPress={s.cycleTimer} small />
+            <Control icon="play-skip-forward" label={track ? 'Next song' : 'Next sound'} onPress={() => s.skip(1)} />
+            <RepeatSlot />
           </View>
 
-          <View style={styles.flex} />
           <View style={styles.picker}>
+            <MusicHeading title="Focus sounds" />
             <Segmented
               stacked
-              accessibilityLabel="Sound"
+              accessibilityLabel="Focus sound"
               options={SOUNDS.map((x) => ({ key: x.id, label: x.name, icon: x.icon }))}
-              value={s.current.id}
+              value={track ? '' : s.current.id}
               onChange={(id) => s.play(id)}
             />
           </View>
-        </View>
+          <MusicLibrary onForm={onForm} />
+        </GlassScroll>
       </WorldFrame>
     </View>
   );
 }
 
-/** The sound's art; a new sound's scene fades in over the old one instead of cutting. */
+/** The art; a new sound's scene (or a song's calm scene and note) fades in over the old one instead of cutting. */
 function FadeSwapScene({ id, size }: { id: string; size: number }) {
   return (
     <View style={{ width: size, height: size }}>
-      {SOUNDS.map((x) => (
-        <Dim key={x.id} on={x.id !== id} to={0} style={StyleSheet.absoluteFill}>
-          <SceneArt width={size} height={size} variant={x.id} />
+      {[...SOUNDS.map((x) => x.id), 'calm'].map((v) => (
+        <Dim key={v} on={v !== id} to={0} style={StyleSheet.absoluteFill}>
+          <SceneArt width={size} height={size} variant={v} />
+          {v === 'calm' ? <NoteMark size={size} /> : null}
         </Dim>
       ))}
     </View>
@@ -336,29 +514,43 @@ function timerLabel(minutes: number): string {
   return minutes ? `Sleep timer: ${minutes} minutes. Tap to change` : 'Sleep timer off. Tap to set';
 }
 
+/**
+ * A round transport control. Stone sets each in its own glass circle; the other looks keep them bare and bright.
+ * A toggle (shuffle or repeat for songs) shows its on state as a lit inset disc that fades in.
+ */
 function Control({
-  stone,
   icon,
   label,
   onPress,
   small,
+  active,
+  toggle,
 }: {
-  stone: boolean;
   icon: string;
   label: string;
   onPress: () => void;
   small?: boolean;
+  active?: boolean;
+  toggle?: boolean;
 }) {
-  const { colors } = useTheme();
+  const { colors, name } = useTheme();
   const styles = useStyles(makeGlassStyles);
-  const glyph = <Ionicons name={icon as 'shuffle'} size={small ? 18 : 22} color={colors.text} />;
-  // Stone sets each control in its own glass circle; Lavender keeps them bare and bright.
+  const stone = name === 'stone';
+  const a11y = toggle
+    ? { accessibilityLabel: `${label}, ${active ? 'on' : 'off'}`, accessibilityState: { checked: !!active } }
+    : { accessibilityLabel: label };
+  const glyph = (
+    <>
+      {toggle ? <SelectFade on={!!active} radius={26} style={styles.controlOn} /> : null}
+      <Ionicons name={icon as 'shuffle'} size={small ? 18 : 22} color={colors.text} />
+    </>
+  );
   return stone ? (
-    <Glass tier="control" radius={26} style={styles.control} onPress={onPress} accessibilityLabel={label}>
+    <Glass tier="control" radius={26} style={styles.control} onPress={onPress} {...a11y}>
       {glyph}
     </Glass>
   ) : (
-    <Press onPress={onPress} style={styles.control} overlay={colors.material.pressFill} accessibilityLabel={label}>
+    <Press onPress={onPress} style={styles.control} overlay={colors.material.pressFill} {...a11y}>
       {glyph}
     </Press>
   );
@@ -367,14 +559,14 @@ function Control({
 const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: colors.bg },
-    body: { flex: 1, paddingHorizontal: 24 },
+    body: { paddingHorizontal: 24 },
     flex: { flex: 1 },
-    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingBottom: 4 },
     round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     topCenter: { flex: 1, alignItems: 'center' },
     topTitle: { fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold, fontSize: 16, color: colors.text },
     topSub: { marginTop: 2, fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-    artWrap: { alignItems: 'center', marginTop: 24 },
+    artWrap: { alignItems: 'center', marginTop: 16 },
     frame: { padding: 9 },
     artClip: { overflow: 'hidden' },
     // Lavender's art is the hero: its rose light spills down into the world below it.
@@ -412,6 +604,11 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     progress: { marginTop: 10 },
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
     control: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+    controlOn: {
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.litRim,
+    },
     big: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
     bigLavender: {
       backgroundColor: colors.node,
@@ -424,7 +621,7 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
       boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
     },
     playNudge: { marginLeft: 4 },
-    picker: { marginTop: 20 },
+    picker: { marginTop: 16 },
   });
 
 const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
@@ -452,7 +649,8 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
     miniNudge: { marginLeft: 2 },
     art: { alignItems: 'center', marginVertical: 20 },
     name: { ...type.sheetTitle },
-    controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 32, marginTop: 12 },
+    controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+    timerRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 12 },
     side: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
     bigButton: {
       width: 72,
@@ -465,7 +663,17 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
       justifyContent: 'center',
     },
     playNudge: { marginLeft: 4 },
-    list: { marginTop: 20, gap: 6 },
+    list: { gap: 6 },
+    noteWrap: { alignItems: 'center', justifyContent: 'center' },
+    noteDisc: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.rimTop,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
+    },
     item: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 8, minHeight: 60, borderRadius: radii.inset },
     itemActive:
       name === 'paper'

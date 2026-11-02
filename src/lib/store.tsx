@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import { EMPTY_LANGUAGE, type LanguageState, upgradeLanguageState } from './language';
 import type { BackupData } from './backup';
 import { EMPTY_GYM, type GymState } from './gym';
+import { EMPTY_MUSIC, type MusicState, mergeRestoredMusic, musicToSave, upgradeMusicState } from './music';
 import type { InboxItem } from './inbox';
 import type { Journal } from './journal';
 import type { ThemeName } from '../theme';
@@ -18,6 +19,8 @@ const ROUTINES_KEY = 'routine.routines.v1';
 const SETTINGS_KEY = 'routine.settings.v1';
 const JOURNAL_KEY = 'routine.journal.v1';
 const INBOX_KEY = 'routine.inbox.v1';
+/** Imported songs (details only; the files live in the app's folder) and saved playlist links. */
+const MUSIC_KEY = 'routine.music.v1';
 
 export interface Settings {
   /** User allowed Routine to read the phone's calendars. */
@@ -62,6 +65,9 @@ interface Store {
   updateJournal: (fn: (j: Journal) => Journal) => void;
   inbox: InboxItem[];
   updateInbox: (fn: (i: InboxItem[]) => InboxItem[]) => void;
+  music: MusicState;
+  /** Apply a pure update to your music and playlist links. */
+  updateMusic: (fn: (m: MusicState) => MusicState) => void;
   /** Replace everything with a restored backup. */
   restore: (data: BackupData) => void;
 }
@@ -81,21 +87,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [journal, setJournal] = useState<Journal>({});
   const [inbox, setInbox] = useState<InboxItem[]>([]);
+  const [music, setMusic] = useState<MusicState>(EMPTY_MUSIC);
   const [today, setToday] = useState(dateKey());
   const loaded = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY, LANGUAGE_KEY, ROUTINES_KEY, SETTINGS_KEY, JOURNAL_KEY, INBOX_KEY])
-      .then(([[, groceriesRaw], [, gymRaw], [, languageRaw], [, routinesRaw], [, settingsRaw], [, journalRaw], [, inboxRaw]]) => {
-        if (inboxRaw) setInbox(JSON.parse(inboxRaw));
-        if (journalRaw) setJournal(JSON.parse(journalRaw));
-        if (groceriesRaw) setGroceries(JSON.parse(groceriesRaw));
-        if (gymRaw) setGym(JSON.parse(gymRaw));
-        // Older saves (Chinese only) are upgraded in memory; the next save writes the new fields alongside.
-        if (languageRaw) setLanguage(upgradeLanguageState(JSON.parse(languageRaw)));
-        if (routinesRaw) setRoutines(JSON.parse(routinesRaw));
-        if (settingsRaw) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(settingsRaw) });
-      })
+    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY, LANGUAGE_KEY, ROUTINES_KEY, SETTINGS_KEY, JOURNAL_KEY, INBOX_KEY, MUSIC_KEY])
+      .then(
+        ([[, groceriesRaw], [, gymRaw], [, languageRaw], [, routinesRaw], [, settingsRaw], [, journalRaw], [, inboxRaw], [, musicRaw]]) => {
+          // No music saved yet (every save before music existed) reads as an empty library, and a damaged music
+          // save never stops the rest from loading.
+          if (musicRaw) {
+            try {
+              setMusic(upgradeMusicState(JSON.parse(musicRaw)));
+            } catch {
+              // Keep the empty library.
+            }
+          }
+          if (inboxRaw) setInbox(JSON.parse(inboxRaw));
+          if (journalRaw) setJournal(JSON.parse(journalRaw));
+          if (groceriesRaw) setGroceries(JSON.parse(groceriesRaw));
+          if (gymRaw) setGym(JSON.parse(gymRaw));
+          // Older saves (Chinese only) are upgraded in memory; the next save writes the new fields alongside.
+          if (languageRaw) setLanguage(upgradeLanguageState(JSON.parse(languageRaw)));
+          if (routinesRaw) setRoutines(JSON.parse(routinesRaw));
+          if (settingsRaw) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(settingsRaw) });
+        },
+      )
       .catch(() => {})
       .finally(() => {
         loaded.current = true;
@@ -138,6 +156,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(INBOX_KEY, JSON.stringify(inbox)).catch(() => {});
   }, [inbox]);
 
+  useEffect(() => {
+    if (!loaded.current) return;
+    AsyncStorage.setItem(MUSIC_KEY, JSON.stringify(musicToSave(music))).catch(() => {});
+  }, [music]);
+
   const updateInbox = useCallback((fn: (i: InboxItem[]) => InboxItem[]) => setInbox(fn), []);
   const updateJournal = useCallback((fn: (j: Journal) => Journal) => setJournal(fn), []);
   const restore = useCallback((data: BackupData) => {
@@ -148,7 +171,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setRoutines(data.routines as Routine[]);
     setJournal(data.journal as Journal);
     setInbox(data.inbox as InboxItem[]);
+    setMusic((m) => mergeRestoredMusic(m, data.music));
   }, []);
+  const updateMusic = useCallback((fn: (m: MusicState) => MusicState) => setMusic(fn), []);
   const updateSettings = useCallback((changes: Partial<Settings>) => setSettings((s) => ({ ...s, ...changes })), []);
   const updateRoutines = useCallback((fn: (r: Routine[]) => Routine[]) => setRoutines(fn), []);
   const updateGym = useCallback((fn: (g: GymState) => GymState) => setGym(fn), []);
@@ -211,6 +236,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateJournal,
       inbox,
       updateInbox,
+      music,
+      updateMusic,
       restore,
     }),
     [
@@ -234,6 +261,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateJournal,
       inbox,
       updateInbox,
+      music,
+      updateMusic,
       restore,
     ],
   );
