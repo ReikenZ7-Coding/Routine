@@ -1,0 +1,110 @@
+name: Windows desktop
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+
+      - name: Cache Electron downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-${{ runner.os }}-${{ hashFiles('desktop/package-lock.json') }}
+
+      # Typecheck and the app's tests run in the Android workflow on the same commit.
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Export the web app
+        run: npx expo export --platform web
+        env:
+          EXPO_OFFLINE: 1
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm ci
+
+      # electron-builder copies dist/ into the app as web/; this checks it first (scripts, no inline script).
+      - name: Check the web export
+        working-directory: desktop
+        run: npm run web
+
+      - name: Test the desktop wrapper
+        working-directory: desktop
+        run: npm test
+
+      - name: Number the build
+        working-directory: desktop
+        run: npm pkg set version=1.0.${{ github.run_number }}
+
+      - name: Build the Windows installer
+        working-directory: desktop
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      - name: Install it the way a user would
+        timeout-minutes: 5
+        run: |
+          $p = Start-Process -FilePath "desktop/release/Symphony-OS-Setup-1.0.${{ github.run_number }}.exe" -ArgumentList '/S' -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "The installer stopped with exit code $($p.ExitCode)." }
+          $exe = Get-ChildItem -Path "$env:LOCALAPPDATA\Programs" -Recurse -Filter 'Symphony OS.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw 'The installer finished but Symphony OS.exe is not in %LOCALAPPDATA%\Programs.' }
+          "Installed at $($exe.FullName)"
+          "SYMPHONY_EXE=$($exe.FullName)" >> $env:GITHUB_ENV
+
+      # Opens the installed app twice: it must render, load a deep route, pass the Content-Security-Policy and
+      # keep localStorage across the restart (src/smoke.js).
+      - name: Smoke-test the installed app
+        working-directory: desktop
+        timeout-minutes: 8
+        run: node scripts/smoke.mjs "$env:SYMPHONY_EXE"
+
+      - name: Name the installer
+        run: Copy-Item "desktop/release/Symphony-OS-Setup-1.0.${{ github.run_number }}.exe" "symphony-os-setup-${{ github.run_number }}.exe"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symphony-os-windows
+          path: symphony-os-setup-${{ github.run_number }}.exe
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: symphony-os-windows-smoke
+          path: desktop/release/smoke/
+          if-no-files-found: ignore
+
+      - name: Publish a downloadable build
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-${{ github.run_number }}
+          name: Symphony OS for Windows ${{ github.run_number }} (${{ github.ref_name }})
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          files: symphony-os-setup-${{ github.run_number }}.exe
+          body: |
+            Windows test build from `${{ github.ref_name }}` at ${{ github.sha }}.
+
+            Download `symphony-os-setup-${{ github.run_number }}.exe` and open it. It installs for your Windows account (no admin needed) and adds Symphony OS to the Start menu and the desktop.
+
+            This build isn't signed yet, so Windows may say "Windows protected your PC". Choose **More info**, then **Run anyway**.
+
+            Installing a newer build over this one keeps your routines and settings (they live in `%APPDATA%\Symphony OS`).

@@ -1,0 +1,72 @@
+{
+  "name": "symphony-os",
+  "productName": "Symphony OS",
+  "version": "1.0.0",
+  "description": "Symphony OS for Windows",
+  "author": "reikenz7",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "web": "node scripts/web.mjs",
+    "web:export": "node scripts/web.mjs --export",
+    "start": "node scripts/web.mjs && electron .",
+    "test": "node --test test/*.test.js",
+    "smoke": "node scripts/smoke.mjs",
+    "dist": "node scripts/web.mjs && electron-builder --win nsis --x64 --publish never",
+    "dist:dir": "node scripts/web.mjs && electron-builder --dir --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.reikenz7.symphonyos",
+    "productName": "Symphony OS",
+    "publish": null,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      {
+        "from": "../dist",
+        "to": "web",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": false
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Symphony-OS-Setup-${version}.${ext}",
+      "shortcutName": "Symphony OS",
+      "uninstallDisplayName": "Symphony OS",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}
