@@ -446,7 +446,7 @@
           "#C9C9C9",
           "#EEEEEE"
         ],
-        "note": "Light square behind a row icon (Pine trail) and its in-card progress track. Translucent: 18% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "A light square of the look's colour (kept for small tiles). Translucent: 18% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "lavender-inset-fill": {
         "role": "neutral",
@@ -542,7 +542,7 @@
           "#B7C7FB",
           "#E2EDFF"
         ],
-        "note": "Dim over the world under a sheet; also the fade under Lavender hero text. Translucent: 45% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "Dim over the world under a sheet. Translucent: 45% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "lavender-edge-top": {
         "role": "neutral",
@@ -1294,7 +1294,7 @@
           "#CCC9C0",
           "#F0EEE8"
         ],
-        "note": "Light square behind a row icon (Pine trail) and its in-card progress track. Translucent: 10% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "A light square of the look's colour (kept for small tiles). Translucent: 10% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "stone-inset-fill": {
         "role": "neutral",
@@ -1390,7 +1390,7 @@
           "#CAC9C5",
           "#EFEEEB"
         ],
-        "note": "Dim over the world under a sheet; also the fade under Lavender hero text. Translucent: 50% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "Dim over the world under a sheet. Translucent: 50% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "stone-edge-top": {
         "role": "neutral",
@@ -2143,7 +2143,7 @@
           "#C9C9C7",
           "#EEEEED"
         ],
-        "note": "Light square behind a row icon (Pine trail) and its in-card progress track."
+        "note": "A light square of the look's colour (kept for small tiles)."
       },
       "paper-inset-fill": {
         "role": "neutral",
@@ -2239,7 +2239,7 @@
           "#C7CAC5",
           "#EDEFEC"
         ],
-        "note": "Dim over the world under a sheet; also the fade under Lavender hero text. Translucent: 22% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "Dim over the world under a sheet. Translucent: 22% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "paper-edge-top": {
         "role": "neutral",
@@ -2991,7 +2991,7 @@
           "#9ED8C0",
           "#D2F9E8"
         ],
-        "note": "Light square behind a row icon (Pine trail) and its in-card progress track. Translucent: 10% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "A light square of the look's colour (kept for small tiles). Translucent: 10% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "pine-inset-fill": {
         "role": "neutral",
@@ -3087,7 +3087,7 @@
           "#C0CCCA",
           "#E8F1EF"
         ],
-        "note": "Dim over the world under a sheet; also the fade under Lavender hero text. Translucent: 55% alpha over glass or the world. Ramp is of the opaque hue."
+        "note": "Dim over the world under a sheet. Translucent: 55% alpha over glass or the world. Ramp is of the opaque hue."
       },
       "pine-edge-top": {
         "role": "neutral",
@@ -3670,10 +3670,6 @@
         "displayName": "Card Title",
         "purpose": "Name on a Library grid card (Paper; Pine uses pine-card-title)."
       },
-      "lavender-display": {
-        "displayName": "Lavender Display",
-        "purpose": "Lavender hero card title: what is up next."
-      },
       "lavender-title": {
         "displayName": "Lavender Title",
         "purpose": "Screen title (Lavender)."
@@ -3698,10 +3694,6 @@
         "displayName": "Lavender Num",
         "purpose": "Changing numbers, tabular (Lavender)."
       },
-      "lavender-row-title": {
-        "displayName": "Lavender Row Title",
-        "purpose": "Today row title on Lavender; a done row drops to Regular, faint, struck through."
-      },
       "lavender-button": {
         "displayName": "Lavender Button",
         "purpose": "Button label (Lavender)."
@@ -3709,10 +3701,6 @@
       "lavender-tab-label": {
         "displayName": "Lavender Tab Label",
         "purpose": "Tab bar labels on Lavender (the caption floor)."
-      },
-      "stone-display": {
-        "displayName": "Stone Display",
-        "purpose": "Stone greeting in window light."
       },
       "stone-title": {
         "displayName": "Stone Title",
@@ -3802,10 +3790,6 @@
         "displayName": "Pine Badge",
         "purpose": "Status pills and the canopy count badge (Pine). Set in uppercase (textTransform: uppercase)."
       },
-      "pine-tag": {
-        "displayName": "Pine Tag",
-        "purpose": "The near-black tag on the trail hero (\"Up next · 21:00\"). Set in uppercase (textTransform: uppercase)."
-      },
       "pine-card-title": {
         "displayName": "Pine Card Title",
         "purpose": "Name on a Library grid card (Pine)."
@@ -3838,7 +3822,7 @@
       {
         "name": "lavender-control",
         "value": "0px 8px 18px -6px rgba(22,24,112,0.50)",
-        "purpose": "Header buttons, search pills, category circles, glass floating buttons."
+        "purpose": "Header buttons, search pills, the streak pill, glass floating buttons."
       },
       {
         "name": "lavender-receded",
@@ -3883,7 +3867,7 @@
       {
         "name": "stone-control",
         "value": "4px 14px 30px -10px rgba(14,13,8,0.34), 0px 1px 2px rgba(14,13,8,0.18)",
-        "purpose": "Header buttons, search pills, category circles, glass floating buttons."
+        "purpose": "Header buttons, search pills, the streak pill, glass floating buttons."
       },
       {
         "name": "stone-receded",
@@ -3911,11 +3895,6 @@
         "purpose": "Inner rim lines (and inner glow) drawn above the content of every lensed surface."
       },
       {
-        "name": "stone-hero-pill",
-        "value": "inset 0px 1px 0px rgba(255,251,233,0.75), 0px 8px 22px rgba(230,208,160,0.30)",
-        "purpose": "Stone's champagne recommendation pill: inner top light and the lit glow."
-      },
-      {
         "name": "paper-float",
         "value": "0px 0px 0px 0.5px rgba(30,34,28,0.07), 0px 1px 1px rgba(30,34,28,0.05), 0px 10px 28px -6px rgba(46,52,40,0.16), 0px 26px 52px -20px rgba(46,52,40,0.14)",
         "purpose": "Chrome (tab bar, mini player) and floating surfaces."
@@ -3933,7 +3912,7 @@
       {
         "name": "paper-control",
         "value": "0px 6px 16px -4px rgba(46,52,40,0.18)",
-        "purpose": "Header buttons, search pills, category circles, glass floating buttons."
+        "purpose": "Header buttons, search pills, the streak pill, glass floating buttons."
       },
       {
         "name": "paper-receded",
@@ -3983,7 +3962,7 @@
       {
         "name": "pine-control",
         "value": "0px 10px 24px -6px rgba(0,8,6,0.50), 0px 1px 2px rgba(0,8,6,0.30)",
-        "purpose": "Header buttons, search pills, category circles, glass floating buttons."
+        "purpose": "Header buttons, search pills, the streak pill, glass floating buttons."
       },
       {
         "name": "pine-receded",
@@ -4118,14 +4097,9 @@
         "purpose": "Trailing edge of the tab drop; then the drop's rim glints once, 100ms in and 220ms out."
       },
       {
-        "name": "done-bloom",
-        "value": "600ms",
-        "purpose": "Lavender: the rose light opening when the whole day is done."
-      },
-      {
         "name": "trail-halo",
         "value": "1800ms loop on ease-out, to 1.4x",
-        "purpose": "The lit trail node breathing (Paper, Pine); off under reduced motion."
+        "purpose": "The lit trail node breathing (every look); off under reduced motion."
       },
       {
         "name": "bloom",
@@ -4158,19 +4132,9 @@
         "purpose": "The moon glow drifting."
       },
       {
-        "name": "hero-art",
-        "value": "400ms",
-        "purpose": "Lavender: the hero's light study crossfading from 'dusk' to 'waves' when the day is done."
-      },
-      {
         "name": "tick-sweep",
         "value": "520ms",
-        "purpose": "Paper: one pass of light across a trail card when its step is ticked (never on mount, never under reduced motion)."
-      },
-      {
-        "name": "mount-sweep",
-        "value": "900ms after a 240ms delay",
-        "purpose": "Pine: one pass of moonlight across the trail's lit hero card when the trail first shows (never under reduced motion)."
+        "purpose": "Every look: one pass of the look's sheen across a trail card when its step is ticked (never on mount, never under reduced motion)."
       },
       {
         "name": "fab-step",
@@ -4181,36 +4145,12 @@
   },
   "components": [
     {
-      "name": "Hero and Category Circles (Lavender)",
-      "kind": "card",
-      "refersTo": "lavender-hero",
-      "description": "Lavender's 212dp hero: a full-bleed light study (gradients stand in for the 'dusk' scene image) under a fade of the backdrop indigo, white Bold 32 title and white meta, the white 'Mark done' pill with the rose action glow, and a breathing bloom. Under it, 56dp category circles of control glass tinted at 36% of the kind; a done one fills with the rose done gradient.",
-      "html": "<div class=\"ds-world-lav\"><div class=\"ds-hero-lav\"><div class=\"ds-hero-lav-art\" aria-hidden=\"true\"></div><div class=\"ds-hero-lav-fade\" aria-hidden=\"true\"></div><div class=\"ds-hero-lav-title\">Stretch</div><div class=\"ds-hero-lav-meta\">Up next · At 21:00 · in 53 min</div><button class=\"ds-hero-lav-pill\" aria-label=\"Mark done: Stretch\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Mark done</button></div><div class=\"ds-circles-lav\"><div class=\"ds-circle-lav-item\"><button class=\"ds-circle-lav\" style=\"--tint: rgba(201,168,255,0.36)\" aria-label=\"Routines\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4\"/></svg></button><span>Routines</span></div><div class=\"ds-circle-lav-item\"><button class=\"ds-circle-lav ds-circle-lav-done\" aria-label=\"Gym, done today\" aria-pressed=\"true\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg></button><span>Gym</span></div><div class=\"ds-circle-lav-item\"><button class=\"ds-circle-lav\" style=\"--tint: rgba(255,179,230,0.36)\" aria-label=\"Chinese\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6h9M8.5 4v2M6 6c1 4 4 7 7 8M11 6c-1 4-4 7-7 8M13 20l4-9 4 9M14.5 17h5\"/></svg></button><span>Chinese</span></div><div class=\"ds-circle-lav-item\"><button class=\"ds-circle-lav\" style=\"--tint: rgba(159,240,208,0.36)\" aria-label=\"Groceries\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5v13c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z\"/><path d=\"M12 6v13\"/></svg></button><span>Groceries</span></div></div></div>",
-      "css": ".ds-world-lav { background: linear-gradient(180deg, #6470CC, #5563C2, #3D48A4); padding: 24px; border-radius: 0; font-family: 'DM Sans', system-ui, sans-serif; } .ds-hero-lav { position: relative; overflow: hidden; display: flex; flex-direction: column; box-sizing: border-box; height: 212px; padding: 20px; border-radius: 28px; border: 1px solid; border-top-color: rgba(255,255,255,0.80); border-left-color: rgba(255,255,255,0.40); border-right-color: rgba(255,255,255,0.22); border-bottom-color: rgba(255,170,230,0.40); background: linear-gradient(rgba(48,54,168,0.10), rgba(48,54,168,0.10)); box-shadow: 0px 18px 40px -8px rgba(22,24,112,0.50), 0px 2px 6px rgba(22,24,112,0.24), 0px 22px 50px -6px rgba(255,120,210,0.34), inset 0px 1px 0px rgba(255,255,255,0.55), inset 0px -1px 0px rgba(255,150,220,0.28), inset 0px 0px 20px rgba(220,200,255,0.14); } .ds-hero-lav-art { position: absolute; inset: 0; background: radial-gradient(60% 70% at 85% 30%, rgba(255,170,225,0.75), rgba(255,170,225,0) 70%), radial-gradient(70% 60% at 20% 90%, rgba(150,170,255,0.6), rgba(150,170,255,0) 70%), linear-gradient(170deg, #7C6FD8, #4E4BB8 60%, #3B3A9C); } .ds-hero-lav-fade { position: absolute; inset: 0; background: linear-gradient(127deg, rgba(20,24,96,0.78), rgba(20,24,96,0) 70%); } .ds-hero-lav::after { content: \"\"; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(60% 60% at 30% 20%, rgba(200,206,255,0.06), rgba(200,206,255,0) 70%); animation: ds-bloom-lav 6s ease-in-out infinite; } @keyframes ds-bloom-lav { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } } .ds-hero-lav-title { position: relative; max-width: 78%; font-weight: 700; font-size: 32px; line-height: 36px; letter-spacing: -0.6px; color: #FFFFFF; } .ds-hero-lav-meta { position: relative; max-width: 72%; margin-top: 6px; font-size: 14px; line-height: 19px; color: #FFFFFF; } .ds-hero-lav-pill { position: relative; margin-top: auto; align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 20px 0 16px; border: none; border-radius: 24px; background: linear-gradient(180deg, #FFFFFF, rgba(255,255,255,0.86)); color: #4A35C8; font-family: inherit; font-weight: 700; font-size: 16px; box-shadow: 0px 10px 26px -6px rgba(255,120,210,0.60), 0px 2px 6px rgba(22,24,112,0.30); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-hero-lav-pill:active { transform: scale(0.97); } .ds-hero-lav-pill:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; } .ds-circles-lav { display: flex; justify-content: space-between; margin-top: 20px; } .ds-circle-lav-item { width: 72px; display: flex; flex-direction: column; align-items: center; gap: 8px; font-weight: 500; font-size: 13px; line-height: 17px; color: #FBFAFF; text-align: center; } .ds-circle-lav { width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; color: #FFFFFF; border: 1px solid; border-top-color: rgba(255,255,255,0.80); border-left-color: rgba(255,255,255,0.40); border-right-color: rgba(255,255,255,0.22); border-bottom-color: rgba(255,170,230,0.40); background-image: linear-gradient(var(--tint, transparent), var(--tint, transparent)), radial-gradient(70% 55% at 90% 115%, rgba(255,150,220,0.24), rgba(255,150,220,0) 70%), radial-gradient(60% 50% at 0% 0%, rgba(170,190,255,0.10), rgba(170,190,255,0) 70%), linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06)), linear-gradient(rgba(48,54,168,0.10), rgba(48,54,168,0.10)); box-shadow: 0px 8px 18px -6px rgba(22,24,112,0.50), inset 0px 1px 0px rgba(255,255,255,0.55); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-circle-lav-done { background: linear-gradient(180deg, #FFC4EE, #FFA6DF); color: #2A1A78; } .ds-circle-lav:active { transform: scale(0.97); } .ds-circle-lav:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-property: opacity, background-color, border-color, color !important; } [class^=\"ds-\"]:active { transform: none !important; } }"
-    },
-    {
       "name": "Primary Button (Lavender)",
       "kind": "button",
       "refersTo": "lavender-button-primary",
       "description": "The one main action: a violet pill with a lit inner top edge. Squeezes to 0.97 in 120ms and fades in a press light.",
       "html": "<div class=\"ds-world-lav\"><button class=\"ds-btn-primary-lav\">Save routine</button></div>",
       "css": ".ds-world-lav { background: linear-gradient(180deg, #6470CC, #5563C2, #3D48A4); padding: 24px; border-radius: 0; } .ds-btn-primary-lav { font-family: 'DM Sans', system-ui, sans-serif; font-weight: 700; font-size: 16px; color: #FFFFFF; min-height: 48px; padding: 0 24px; border: none; border-radius: 999px; background: linear-gradient(180deg, #7458E8, #5638CC); box-shadow: inset 0px 1px 0px rgba(255,255,255,0.55); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-btn-primary-lav:hover { filter: brightness(1.06); } .ds-btn-primary-lav:active { transform: scale(0.97); } .ds-btn-primary-lav:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; }"
-    },
-    {
-      "name": "Routine Rows with Tick (Lavender)",
-      "kind": "custom",
-      "refersTo": "lavender-tick-done",
-      "description": "Lavender's Today rows: a solid kind-pastel tile with an Indigo Ink glyph, a Bold 17 title and meta, and a 30dp tick ring in a 44dp target. Done: the rose done gradient fades into the ring with a pop; the row recedes (thinner body, whisper shadow), the tile dims to 55%, and the title drops to Regular in faint ink with a line through it.",
-      "html": "<div class=\"ds-world-lav\"><div class=\"ds-rows-lav\"><div class=\"ds-row-lav\"><div class=\"ds-row-lav-tile\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 3c3.5 4.3 6 7.6 6 10.6A6 6 0 0 1 6 13.6C6 10.6 8.5 7.3 12 3z\"/></svg></div><div class=\"ds-row-lav-text\"><div class=\"ds-row-lav-title\">Drink water</div><div class=\"ds-row-lav-meta\">Anytime · 3/8</div></div><button class=\"ds-tick-lav\" role=\"checkbox\" aria-checked=\"false\" aria-label=\"Mark Drink water done\"><span class=\"ds-tick-lav-ring\"></span></button></div><div class=\"ds-row-lav ds-row-lav-done\"><div class=\"ds-row-lav-tile\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 3c3.5 4.3 6 7.6 6 10.6A6 6 0 0 1 6 13.6C6 10.6 8.5 7.3 12 3z\"/></svg></div><div class=\"ds-row-lav-text\"><div class=\"ds-row-lav-title\">Rise and shine</div><div class=\"ds-row-lav-meta\">Completed</div></div><button class=\"ds-tick-lav\" role=\"checkbox\" aria-checked=\"true\" aria-label=\"Mark Rise and shine done\"><span class=\"ds-tick-lav-ring\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg></span></button></div></div></div>",
-      "css": ".ds-world-lav { background: linear-gradient(180deg, #6470CC, #5563C2, #3D48A4); padding: 24px; border-radius: 0; font-family: 'DM Sans', system-ui, sans-serif; } .ds-rows-lav { display: flex; flex-direction: column; gap: 10px; } .ds-row-lav { display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; min-height: 66px; box-sizing: border-box; background-image: radial-gradient(70% 55% at 90% 115%, rgba(255,150,220,0.24), rgba(255,150,220,0) 70%), radial-gradient(60% 50% at 0% 0%, rgba(170,190,255,0.10), rgba(170,190,255,0) 70%), linear-gradient(160deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04)), linear-gradient(rgba(48,54,168,0.10), rgba(48,54,168,0.10)); border: 1px solid; border-top-color: rgba(255,255,255,0.80); border-left-color: rgba(255,255,255,0.40); border-right-color: rgba(255,255,255,0.22); border-bottom-color: rgba(255,170,230,0.40); border-radius: 20px; box-shadow: 0px 12px 28px -6px rgba(22,24,112,0.45), 0px 1px 3px rgba(22,24,112,0.20), inset 0px 1px 0px rgba(255,255,255,0.55), inset 0px -1px 0px rgba(255,150,220,0.28), inset 0px 0px 20px rgba(220,200,255,0.14); transition: box-shadow 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-row-lav-done { background-image: radial-gradient(70% 55% at 90% 115%, rgba(255,150,220,0.24), rgba(255,150,220,0) 70%), radial-gradient(60% 50% at 0% 0%, rgba(170,190,255,0.10), rgba(170,190,255,0) 70%), linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)), linear-gradient(rgba(48,54,168,0.10), rgba(48,54,168,0.10)); box-shadow: 0px 4px 12px -4px rgba(26,28,124,0.24), inset 0px 1px 0px rgba(255,255,255,0.55), inset 0px -1px 0px rgba(255,150,220,0.28), inset 0px 0px 20px rgba(220,200,255,0.14); } .ds-row-lav-tile { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: #C9A8FF; color: #2A1A78; box-shadow: inset 0px 1px 0px rgba(255,255,255,0.6); transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-row-lav-done .ds-row-lav-tile { opacity: 0.55; } .ds-row-lav-text { flex: 1; min-width: 0; } .ds-row-lav-title { font-weight: 700; font-size: 17px; color: #FFFFFF; } .ds-row-lav-done .ds-row-lav-title { font-weight: 400; color: #FAF9FF; text-decoration: line-through; } .ds-row-lav-meta { margin-top: 2px; font-size: 14px; line-height: 19px; color: #FBFAFF; } .ds-tick-lav { width: 44px; height: 44px; border-radius: 22px; border: none; background: transparent; display: grid; place-items: center; cursor: pointer; padding: 0; } .ds-tick-lav-ring { width: 30px; height: 30px; border-radius: 15px; box-sizing: border-box; display: grid; place-items: center; border: 1.5px solid rgba(255,255,255,0.70); background: rgba(255,255,255,0.04); color: #2A1A78; transition: background 150ms cubic-bezier(0.23, 1, 0.32, 1), border-color 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-tick-lav[aria-checked=\"true\"] .ds-tick-lav-ring { border-color: transparent; background: linear-gradient(180deg, #FFC4EE, #FFA6DF); animation: ds-pop 490ms; } @keyframes ds-pop { 0% { transform: scale(1); } 22% { transform: scale(1.25); } 60% { transform: scale(0.94); } 100% { transform: scale(1); } } .ds-tick-lav:active .ds-tick-lav-ring { transform: scale(0.97); } .ds-tick-lav:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 0; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-property: opacity, background-color, border-color, color !important; } [class^=\"ds-\"]:active { transform: none !important; } }"
-    },
-    {
-      "name": "Recommendation Card and Champagne Pill (Stone)",
-      "kind": "button",
-      "refersTo": "stone-hero-pill",
-      "description": "Stone's recommendation card: matte smoked hero glass with a specular hairline, a Light 30 title, and the 46dp champagne pill (radius 23) with an inner top light and the lit glow. Padding 22, 20 at the foot. Shadows fall down-right from the top-left window.",
-      "html": "<div class=\"ds-world-stone\"><div class=\"ds-card-stone\"><div class=\"ds-card-stone-title\">Stretch</div><div class=\"ds-card-stone-meta\">Up next · At 21:00 · in 1 h 2 min</div><button class=\"ds-pill-stone\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg>Mark done</button></div></div>",
-      "css": ".ds-world-stone { background: linear-gradient(180deg, #6E6C5A, #4F4E43, #36362D); padding: 24px; border-radius: 0; } .ds-card-stone { position: relative; background-image: radial-gradient(80% 70% at 0% 0%, rgba(255,236,196,0.10), rgba(255,236,196,0) 70%), radial-gradient(70% 60% at 100% 110%, rgba(10,10,6,0.20), rgba(10,10,6,0) 70%), linear-gradient(160deg, rgba(255,246,226,0.03), rgba(20,20,14,0.24)), linear-gradient(rgba(52,51,42,0.56), rgba(52,51,42,0.56)); border: 1px solid; border-top-color: rgba(255,247,228,0.42); border-left-color: rgba(255,247,228,0.22); border-right-color: rgba(255,247,228,0.07); border-bottom-color: rgba(0,0,0,0.28); border-radius: 28px; padding: 22px 22px 20px; box-shadow: 6px 20px 44px -12px rgba(14,13,8,0.40), 1px 2px 6px rgba(14,13,8,0.20), inset 0px 1px 0px rgba(255,250,236,0.12), inset 0px -1px 0px rgba(0,0,0,0.25), inset 0px -12px 20px rgba(10,10,6,0.20); font-family: 'DM Sans', system-ui, sans-serif; } .ds-card-stone::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,250,236,0.60) 30%, transparent); border-radius: 28px 28px 0 0; } .ds-card-stone-title { font-weight: 300; font-size: 30px; line-height: 36px; letter-spacing: -0.2px; color: #FFFBE9; } .ds-card-stone-meta { margin-top: 6px; font-size: 14px; line-height: 19px; color: #F1ECE0; } .ds-pill-stone { margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 20px; border-radius: 23px; font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; font-size: 16px; color: #2E2D24; border: 1px solid rgba(255,251,233,0.55); background: linear-gradient(180deg, #F3E9D2, #D3C39F); box-shadow: inset 0px 1px 0px rgba(255,251,233,0.75), 0px 8px 22px rgba(230,208,160,0.30); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-pill-stone:active { transform: scale(0.97); } .ds-pill-stone:focus-visible { outline: 2px solid #FFFBE9; outline-offset: 2px; }"
     },
     {
       "name": "Floating Tab Bar (Stone)",
@@ -4221,12 +4161,12 @@
       "css": ".ds-world-stone { background: linear-gradient(180deg, #6E6C5A, #4F4E43, #36362D); padding: 24px; border-radius: 0; } .ds-bar-stone { display: flex; padding: 6px; height: 72px; box-sizing: border-box; border-radius: 30px; background: linear-gradient(rgba(24,24,18,0.36), rgba(24,24,18,0.36)), linear-gradient(rgba(52,51,42,0.56), rgba(52,51,42,0.56)); backdrop-filter: blur(28px) saturate(1.1); border: 1px solid; border-top-color: rgba(255,247,228,0.42); border-left-color: rgba(255,247,228,0.22); border-right-color: rgba(255,247,228,0.07); border-bottom-color: rgba(0,0,0,0.28); box-shadow: 6px 20px 44px -12px rgba(14,13,8,0.40), 1px 2px 6px rgba(14,13,8,0.20); } .ds-tab-stone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 1px solid transparent; border-radius: 24px; background: transparent; color: #F1ECE0; font-family: 'DM Sans', system-ui, sans-serif; font-weight: 500; font-size: 12px; cursor: pointer; transition: color 180ms cubic-bezier(0.23, 1, 0.32, 1), background 220ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-tab-stone-on { color: #FFFBE9; background: linear-gradient(180deg, rgba(255,246,226,0.14), rgba(255,246,226,0.08)); border-color: rgba(255,247,228,0.08); border-top-color: rgba(255,247,228,0.45); box-shadow: 2px 6px 14px -6px rgba(14,13,8,0.45); } .ds-tab-stone:active { transform: scale(0.97); } .ds-tab-stone:focus-visible { outline: 2px solid #FFFBE9; outline-offset: -2px; }"
     },
     {
-      "name": "Trail (Paper)",
+      "name": "Trail (every look; Paper shown)",
       "kind": "custom",
       "refersTo": "paper-trail-node",
-      "description": "Paper's Today trail: a footpath of dots, the walked part in dense Pine Ink dots and the way ahead in sparser Pencil dots. The node is the only place a step shows its state (filled ink node when done, a lit ring with a breathing halo for the step up next, a waypoint ahead, a flag at the summit); rows carry no tick. A done card recedes, its pebble dims to 60% and its title goes faint with a line through it.",
-      "html": "<div class=\"ds-world-paper\"><div class=\"ds-trail-paper\"><svg class=\"ds-trail-paper-rail\" width=\"44\" height=\"258\" viewBox=\"0 0 44 258\" aria-hidden=\"true\"><path d=\"M22 129 C 10 156, 34 186, 22 215\" stroke=\"#5C625D\" stroke-width=\"2.5\" stroke-dasharray=\"1.5 8\" stroke-linecap=\"round\" fill=\"none\" opacity=\"0.55\"/><path d=\"M22 43 C 34 70, 10 100, 22 129\" stroke=\"#2F3A33\" stroke-width=\"3\" stroke-dasharray=\"2 6\" stroke-linecap=\"round\" fill=\"none\" opacity=\"0.85\"/></svg><div class=\"ds-step-paper ds-step-paper-done\"><div class=\"ds-node-col\"><span class=\"ds-node-paper-done\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg></span></div><button class=\"ds-card-paper\" role=\"checkbox\" aria-checked=\"true\" aria-label=\"Rise and shine, Completed\"><span class=\"ds-pebble-paper\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4\"/></svg></span><span class=\"ds-card-paper-text\"><span class=\"ds-card-paper-title\">Rise and shine</span><span class=\"ds-card-paper-meta\">Completed</span></span></button></div><div class=\"ds-step-paper ds-step-paper-lit\"><div class=\"ds-node-col\"><span class=\"ds-node-paper-halo\"></span><span class=\"ds-node-paper-lit\"><span></span></span></div><button class=\"ds-card-paper\" role=\"checkbox\" aria-checked=\"false\" aria-label=\"Read 20 pages, Up next at 21:30\"><span class=\"ds-pebble-paper\" style=\"--kind: #2F54EB; --kind-wash: rgba(47,84,235,0.12)\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5v13c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z\"/><path d=\"M12 6v13\"/></svg></span><span class=\"ds-card-paper-text\"><span class=\"ds-card-paper-title\">Read 20 pages</span><span class=\"ds-card-paper-meta\">Up next · 21:30 · in 2 h</span></span></button></div><div class=\"ds-step-paper\"><div class=\"ds-node-col\"><span class=\"ds-node-paper-way\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M6 3v18h2v-7h9l-2-3.5L17 7H8V3z\"/></svg></span></div><button class=\"ds-card-paper\" role=\"checkbox\" aria-checked=\"false\" aria-label=\"Chinese practice, 22:00\"><span class=\"ds-pebble-paper\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6h9M8.5 4v2M6 6c1 4 4 7 7 8M11 6c-1 4-4 7-7 8M13 20l4-9 4 9M14.5 17h5\"/></svg></span><span class=\"ds-card-paper-text\"><span class=\"ds-card-paper-title\">Chinese practice</span><span class=\"ds-card-paper-meta\">22:00 · 10 min</span></span></button></div></div></div>",
-      "css": ".ds-world-paper { background: linear-gradient(180deg, #F8F7F3, #EEEFEA, #E4E7E1); padding: 24px; border-radius: 0; font-family: 'DM Sans', system-ui, sans-serif; } .ds-trail-paper { position: relative; } .ds-trail-paper-rail { position: absolute; left: 0; top: 0; } .ds-step-paper { position: relative; display: flex; align-items: center; padding: 5px 0; } .ds-node-col { width: 44px; height: 34px; flex: none; display: grid; place-items: center; position: relative; } .ds-node-paper-done { width: 30px; height: 30px; border-radius: 15px; display: grid; place-items: center; background: #2F3A33; color: #FFFFFF; } .ds-node-paper-lit { width: 30px; height: 30px; border-radius: 15px; box-sizing: border-box; display: grid; place-items: center; border: 2.5px solid #2F3A33; background: rgba(255,255,255,0.80); box-shadow: 0px 6px 16px -4px rgba(46,52,40,0.18); } .ds-node-paper-lit span { width: 11px; height: 11px; border-radius: 6px; background: #2F3A33; } .ds-node-paper-halo { position: absolute; width: 34px; height: 34px; border-radius: 17px; box-sizing: border-box; border: 2px solid #2F3A33; animation: ds-halo 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite; } @keyframes ds-halo { from { opacity: 0.35; transform: scale(1); } to { opacity: 0; transform: scale(1.4); } } .ds-node-paper-way { width: 22px; height: 22px; border-radius: 11px; box-sizing: border-box; display: grid; place-items: center; border: 1.5px solid rgba(30,34,28,0.50); background: rgba(255,255,255,0.65); color: #4F5550; } .ds-card-paper { flex: 1; display: flex; align-items: center; gap: 14px; min-height: 76px; box-sizing: border-box; padding: 14px 16px 14px 14px; text-align: left; font-family: inherit; background-image: radial-gradient(70% 60% at 100% 0%, rgba(255,214,186,0.22), rgba(255,214,186,0) 70%), radial-gradient(90% 50% at 50% 120%, rgba(214,224,210,0.28), rgba(214,224,210,0) 70%), linear-gradient(170deg, rgba(255,255,255,0.84), rgba(255,255,255,0.70)); border: 1px solid; border-top-color: #FFFFFF; border-left-color: rgba(255,255,255,0.98); border-right-color: rgba(255,255,255,0.55); border-bottom-color: rgba(20,22,18,0.10); border-radius: 22px; box-shadow: 0px 0px 0px 0.5px rgba(30,34,28,0.07), 0px 1px 2px rgba(20,22,18,0.05), 0px 8px 22px -6px rgba(40,46,38,0.12), inset 0px 1px 0px #FFFFFF, inset 0px -1px 0px rgba(20,22,18,0.05); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-step-paper-done .ds-card-paper { background-image: radial-gradient(70% 60% at 100% 0%, rgba(255,214,186,0.22), rgba(255,214,186,0) 70%), linear-gradient(170deg, rgba(255,255,255,0.46), rgba(255,255,255,0.34)); box-shadow: 0px 0px 0px 0.5px rgba(30,34,28,0.07), inset 0px 1px 0px #FFFFFF; } .ds-pebble-paper { width: 44px; height: 44px; flex: none; border-radius: 16px; box-sizing: border-box; display: grid; place-items: center; background: linear-gradient(var(--kind-wash, transparent), var(--kind-wash, transparent)), rgba(255,255,255,0.65); border: 1px solid rgba(20,22,18,0.06); border-top-color: #FFFFFF; color: var(--kind, #131512); transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1), color 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-step-paper-done .ds-pebble-paper { opacity: 0.6; } .ds-card-paper-text { display: flex; flex-direction: column; gap: 1px; } .ds-card-paper-title { font-weight: 700; font-size: 16px; line-height: 21px; color: #131512; } .ds-step-paper-done .ds-card-paper-title { font-weight: 500; color: #5C625D; text-decoration: line-through; } .ds-card-paper-meta { font-size: 14px; line-height: 19px; color: #4F5550; } .ds-step-paper-lit .ds-card-paper-meta { font-weight: 500; color: #131512; } .ds-card-paper:active { transform: scale(0.97); } .ds-card-paper:focus-visible { outline: 2px solid #131512; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-property: opacity, background-color, border-color, color !important; } [class^=\"ds-\"]:active { transform: none !important; } }"
+      "description": "Today's trail, the same object in all four looks, drawn from each look's tokens (node, onNode, trailWalked, trailAhead, nodeAhead, nodeAheadFill, nodeCurrentFill); Paper shown. A footpath of dots, the walked part dense and strong, the way ahead sparser and fainter. The node shows the step's state (a filled node when done, a lit ring with a breathing halo for the step up next, a waypoint ahead, a flag at the summit). Each card is the tap target: one tap ticks it (or adds one to a counter), long press edits; it ends in a 26dp check ring that fills with the kind colour. The step up next is lit and its meta line reads in text ink. A done card recedes, its pebble dims to 60% and its title goes faint with a line through it.",
+      "html": "<div class=\"ds-world-paper\"><div class=\"ds-trail-paper\"><svg class=\"ds-trail-paper-rail\" width=\"44\" height=\"258\" viewBox=\"0 0 44 258\" aria-hidden=\"true\"><path d=\"M22 129 C 10 156, 34 186, 22 215\" stroke=\"#5C625D\" stroke-width=\"2.5\" stroke-dasharray=\"1.5 8\" stroke-linecap=\"round\" fill=\"none\" opacity=\"0.55\"/><path d=\"M22 43 C 34 70, 10 100, 22 129\" stroke=\"#2F3A33\" stroke-width=\"3\" stroke-dasharray=\"2 6\" stroke-linecap=\"round\" fill=\"none\" opacity=\"0.85\"/></svg><div class=\"ds-step-paper ds-step-paper-done\"><div class=\"ds-node-col\"><span class=\"ds-node-paper-done\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg></span></div><button class=\"ds-card-paper\" role=\"checkbox\" aria-checked=\"true\" aria-label=\"Rise and shine, Completed\"><span class=\"ds-pebble-paper\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4\"/></svg></span><span class=\"ds-card-paper-text\"><span class=\"ds-card-paper-title\">Rise and shine</span><span class=\"ds-card-paper-meta\">Completed</span></span><span class=\"ds-tick-paper\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 12.5l4.5 4.5L19 7.5\"/></svg></span></button></div><div class=\"ds-step-paper ds-step-paper-lit\"><div class=\"ds-node-col\"><span class=\"ds-node-paper-halo\"></span><span class=\"ds-node-paper-lit\"><span></span></span></div><button class=\"ds-card-paper\" role=\"checkbox\" aria-checked=\"false\" aria-label=\"Read 20 pages, Up next at 21:30\"><span class=\"ds-pebble-paper\" style=\"--kind: #2A4BD6\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5v13c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z\"/><path d=\"M12 6v13\"/></svg></span><span class=\"ds-card-paper-text\"><span class=\"ds-card-paper-title\">Read 20 pages</span><span class=\"ds-card-paper-meta\">Up next · 21:30 · in 2 h</span></span><span class=\"ds-tick-paper\"></span></button></div><div class=\"ds-step-paper\"><div class=\"ds-node-col\"><span class=\"ds-node-paper-way\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M6 3v18h2v-7h9l-2-3.5L17 7H8V3z\"/></svg></span></div><button class=\"ds-card-paper\" role=\"checkbox\" aria-checked=\"false\" aria-label=\"Chinese practice, 22:00\"><span class=\"ds-pebble-paper\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 6h9M8.5 4v2M6 6c1 4 4 7 7 8M11 6c-1 4-4 7-7 8M13 20l4-9 4 9M14.5 17h5\"/></svg></span><span class=\"ds-card-paper-text\"><span class=\"ds-card-paper-title\">Chinese practice</span><span class=\"ds-card-paper-meta\">22:00 · 10 min</span></span><span class=\"ds-tick-paper\"></span></button></div></div></div>",
+      "css": ".ds-world-paper { background: linear-gradient(180deg, #F8F7F3, #EEEFEA, #E4E7E1); padding: 24px; border-radius: 0; font-family: 'DM Sans', system-ui, sans-serif; } .ds-trail-paper { position: relative; } .ds-trail-paper-rail { position: absolute; left: 0; top: 0; } .ds-step-paper { position: relative; display: flex; align-items: center; padding: 5px 0; } .ds-node-col { width: 44px; height: 34px; flex: none; display: grid; place-items: center; position: relative; } .ds-node-paper-done { width: 30px; height: 30px; border-radius: 15px; display: grid; place-items: center; background: #2F3A33; color: #FFFFFF; } .ds-node-paper-lit { width: 30px; height: 30px; border-radius: 15px; box-sizing: border-box; display: grid; place-items: center; border: 2.5px solid #2F3A33; background: rgba(255,255,255,0.80); box-shadow: 0px 6px 16px -4px rgba(46,52,40,0.18); } .ds-node-paper-lit span { width: 11px; height: 11px; border-radius: 6px; background: #2F3A33; } .ds-node-paper-halo { position: absolute; width: 34px; height: 34px; border-radius: 17px; box-sizing: border-box; border: 2px solid #2F3A33; animation: ds-halo 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite; } @keyframes ds-halo { from { opacity: 0.35; transform: scale(1); } to { opacity: 0; transform: scale(1.4); } } .ds-node-paper-way { width: 22px; height: 22px; border-radius: 11px; box-sizing: border-box; display: grid; place-items: center; border: 1.5px solid rgba(30,34,28,0.50); background: rgba(255,255,255,0.65); color: #4F5550; } .ds-card-paper { flex: 1; display: flex; align-items: center; gap: 14px; min-height: 76px; box-sizing: border-box; padding: 14px 16px 14px 14px; text-align: left; font-family: inherit; background-image: radial-gradient(70% 60% at 100% 0%, rgba(255,214,186,0.22), rgba(255,214,186,0) 70%), radial-gradient(90% 50% at 50% 120%, rgba(214,224,210,0.28), rgba(214,224,210,0) 70%), linear-gradient(170deg, rgba(255,255,255,0.84), rgba(255,255,255,0.70)); border: 1px solid; border-top-color: #FFFFFF; border-left-color: rgba(255,255,255,0.98); border-right-color: rgba(255,255,255,0.55); border-bottom-color: rgba(20,22,18,0.10); border-radius: 22px; box-shadow: 0px 0px 0px 0.5px rgba(30,34,28,0.07), 0px 1px 2px rgba(20,22,18,0.05), 0px 8px 22px -6px rgba(40,46,38,0.12), inset 0px 1px 0px #FFFFFF, inset 0px -1px 0px rgba(20,22,18,0.05); cursor: pointer; transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms cubic-bezier(0.23, 1, 0.32, 1), border-color 120ms cubic-bezier(0.23, 1, 0.32, 1), opacity 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-step-paper-done .ds-card-paper { background-image: radial-gradient(70% 60% at 100% 0%, rgba(255,214,186,0.22), rgba(255,214,186,0) 70%), linear-gradient(170deg, rgba(255,255,255,0.46), rgba(255,255,255,0.34)); box-shadow: 0px 0px 0px 0.5px rgba(30,34,28,0.07), inset 0px 1px 0px #FFFFFF; } .ds-pebble-paper { width: 44px; height: 44px; flex: none; border-radius: 16px; box-sizing: border-box; display: grid; place-items: center; background: linear-gradient(var(--kind-wash, transparent), var(--kind-wash, transparent)), rgba(255,255,255,0.65); border: 1px solid rgba(20,22,18,0.06); border-top-color: #FFFFFF; color: var(--kind, #131512); transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1), color 150ms cubic-bezier(0.23, 1, 0.32, 1); } .ds-step-paper-done .ds-pebble-paper { opacity: 0.6; } .ds-tick-paper { margin-left: auto; width: 26px; height: 26px; flex: none; border-radius: 13px; box-sizing: border-box; display: grid; place-items: center; border: 2px solid rgba(30,34,28,0.50); color: #FFFFFF; } .ds-step-paper-done .ds-tick-paper { background: #2F54EB; border-color: #2F54EB; } .ds-step-paper-lit .ds-card-paper { border: 1.5px solid #131512; } .ds-card-paper-text { display: flex; flex-direction: column; gap: 1px; } .ds-card-paper-title { font-weight: 700; font-size: 16px; line-height: 21px; color: #131512; } .ds-step-paper-done .ds-card-paper-title { font-weight: 500; color: #5C625D; text-decoration: line-through; } .ds-card-paper-meta { font-size: 14px; line-height: 19px; color: #4F5550; } .ds-step-paper-lit .ds-card-paper-meta { font-weight: 500; color: #131512; } .ds-card-paper:active { transform: scale(0.97); } .ds-card-paper:focus-visible { outline: 2px solid #131512; outline-offset: 2px; } @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-property: opacity, background-color, border-color, color !important; } [class^=\"ds-\"]:active { transform: none !important; } }"
     },
     {
       "name": "Filter Chips (Paper)",
@@ -4271,14 +4211,14 @@
   ],
   "narrative": {
     "northStar": "The Window on the Day",
-    "overview": "Every surface in Routine is a pane of glass held up to a world, and that world has its own weather and its own light. The light never stops moving: a rose and an azure orb circle slowly behind Lavender, a beam of window light sways across Stone's room, a low sun and a band of mist drift over Paper's mountains, a moon glow wanders over Pine's canopy. The glass catches that light as it passes, so a list of chores feels like looking out of a window at a particular hour, not like filling in a form. The person picks the hour that suits them in Settings, and each one is a complete world: its own backdrop, its own glass, its own type voice, its own layout family, its own reward.\n\nWhat stays the same across all four is the physics. There is one glass material with a fixed stack of layers and a fixed set of tiers; one light clock that runs at the root of the app; one motion grammar where every change of state fades, eases or springs and nothing ever cuts; one contrast gate that rebuilds each look pixel by pixel and refuses any text under 4.5:1. The four looks are four tunings of the same instrument. A new screen should be designed once against the shared system, then voiced per look through tokens, never forked into four layouts unless the look's layout family already differs.\n\nThe density is calm and single-column: one thing per pane, generous 16px gutters, one primary action per screen, and the \"what do I do now?\" answer at the top of every screen. The feel is quiet, lit and tactile, never techy. Rejected outright: generic dashboard tiles, decorative glass, grey text on grey glass, illustration that reads as clip-art or as a stock AI picture (the lone figure in a portal and the drawn magnolia were both removed for this reason), and any mark that scolds the person for what they missed.",
+    "overview": "Every surface in Routine is a pane of glass held up to a world, and that world has its own weather and its own light. The light never stops moving: a rose and an azure orb circle slowly behind Lavender, a beam of window light sways across Stone's room, a low sun and a band of mist drift over Paper's mountains, a moon glow wanders over Pine's canopy. The glass catches that light as it passes, so a list of chores feels like looking out of a window at a particular hour, not like filling in a form. The person picks the hour that suits them in Settings, and each one is a complete world: its own backdrop, its own glass, its own type voice, its own reward. Underneath, every look is the same app: the same screens, with the same components in the same order and the same places, doing the same things.\n\nWhat stays the same across all four is the physics. There is one glass material with a fixed stack of layers and a fixed set of tiers; one light clock that runs at the root of the app; one motion grammar where every change of state fades, eases or springs and nothing ever cuts; one contrast gate that rebuilds each look pixel by pixel and refuses any text under 4.5:1. The four looks are four tunings of the same instrument. A new screen should be designed once against the shared system, then voiced per look through tokens, never forked into four layouts. A look may differ only in its colours, its glass material, its backdrop and header art, its typeface and weights, and the small radius and rim details its tokens carry.\n\nThe density is calm and single-column: one thing per pane, generous 16px gutters, one primary action per screen, and the \"what do I do now?\" answer at the top of every screen. The feel is quiet, lit and tactile, never techy. Rejected outright: generic dashboard tiles, decorative glass, grey text on grey glass, illustration that reads as clip-art or as a stock AI picture (the lone figure in a portal and the drawn magnolia were both removed for this reason), and any mark that scolds the person for what they missed.",
     "keyCharacteristics": [
       "One glass material with six tiers (hero, pane, control, inset, sheet, chrome), tuned per look through `colors.material`.",
       "A world behind the glass: a rendered backdrop, a pre-blurred lens image, and moving light layers on one shared clock.",
       "Done and skipped things recede into the world (a done title goes faint with a line through it); the one thing up next is lit.",
       "Text contrast of at least 4.5:1 everywhere, enforced by a script against the real pixels, not by eye.",
       "Every change of state fades, eases or springs; nothing cuts. Most run 120 to 320ms on one ease-out; rewards and progress take longer. Reduced motion drops travel and keeps fades.",
-      "Two layout families: floating glass (Lavender, Stone) and trail with hubs (Paper, Pine)."
+      "One layout per screen in every look: the looks differ in colour, material, backdrop and header art and type, never in what is shown or where."
     ],
     "rules": [
       {
@@ -4318,7 +4258,7 @@
       },
       {
         "name": "The Sixteen Floor Rule",
-        "body": "Reading text is 16px and secondary lines are 14px; no sentence is ever set smaller. Below 14px sit only short marks that are not sentences: labels and captions (13; Paper's labels stay at 14), category circle and tile labels (13), counts in segments, chips, ticks and badges (13), tab labels (13 on Lavender, 12 elsewhere), status pills (Paper Bold 12, Pine Bold 11 capitals, Pine's trail tag 10.5) and the counter inside a 24px check box (12). Nothing goes below 10.5px.",
+        "body": "Reading text is 16px and secondary lines are 14px; no sentence is ever set smaller. Below 14px sit only short marks that are not sentences: labels and captions (13; Paper's labels stay at 14), counts in segments, chips, ticks and badges (13), tab labels (13 on Lavender, 12 elsewhere), status pills (Paper Bold 12, Pine Bold 11 capitals) and the counter inside a 24px check box (12). Nothing goes below 11px.",
         "section": "typography"
       },
       {
@@ -4356,7 +4296,7 @@
       "**Do** keep the bottom navigation at five items or fewer.",
       "**Do** respect the system's reduced-motion setting through `useReduceMotion()`: drop transforms, keep fades.",
       "**Do** keep the saved data keys (`routine.routines.v1`, `routine.gym.v1`, `routine.chinese.v1`, `routine.groceries.v1`, `routine.settings.v1`, `routine.journal.v1`, `routine.inbox.v1`) and their data shapes compatible through any redesign.",
-      "**Do** build a new screen from the shared kit (`Glass`, `Press`, `Button`, `Chip`, `Segmented`, `Field`, `Section`, `PageTitle`, `Sheet`, `Fab`, the motion pieces), branch on `theme.glass` and the material's `canopy`, `tag` and `orb` rather than on look names, and check it in all four looks.",
+      "**Do** build a new screen from the shared kit (`Glass`, `Press`, `Button`, `Chip`, `Segmented`, `Field`, `Section`, `PageTitle`, `Sheet`, `Fab`, the motion pieces), branch on the material's `canopy`, `tag` and `orb` rather than on look names (never on `theme.glass`: every screen has one layout), and check it in all four looks.",
       "**Do** let done things recede (faint ink, a line through a done title, a dimmed tile, a thinner body) and the one next thing be lit.",
       "**Do** keep secondary text in the look's own tinted near-ink; never set grey text on grey glass."
     ],
