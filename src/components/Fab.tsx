@@ -4,7 +4,6 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { type Theme, useStyles, useTheme } from '../theme';
-import { Glass } from './Glass';
 import { alphaOf, clearOf } from './glass/colour';
 import { EASE_OUT, Press, useReduceMotion } from './Motion';
 import { useFabBottom } from './NowPlaying';
@@ -39,10 +38,9 @@ export function useFabScroll() {
 
 const STEP = { duration: 220, easing: EASE_OUT, reduceMotion: ReduceMotion.Never };
 
-/** The screen's one floating action: a 56 disc filled with the look's primary, clear of the tab bar and the mini
- *  player. Lavender's is a solid violet bead with a lit rim, so it stands apart from the glass it floats over;
- *  Paper's is ink glass with a faint lit top edge and a specular cap; Pine's mint disc of control glass wears the
- *  same cap. While the page scrolls down it slides 24 down and fades out (only fades under reduced motion). */
+/** The screen's one floating action, the same in every look: a 56 disc filled with the look's primary, its rim lit
+ *  at the top, a specular cap and the look's action glow, clear of the tab bar and the mini player. While the page
+ *  scrolls down it slides 24 down and fades out (only fades under reduced motion). */
 export function Fab({
   icon = 'add',
   onPress,
@@ -54,7 +52,7 @@ export function Fab({
   accessibilityLabel: string;
   hidden?: boolean;
 }) {
-  const { colors, name } = useTheme();
+  const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const bottom = useFabBottom();
   const reduced = useReduceMotion();
@@ -66,7 +64,6 @@ export function Fab({
     opacity: 1 - away.get(),
     transform: [{ translateY: reduced ? 0 : away.get() * 24 }],
   }));
-  const solid = name === 'paper' || name === 'lavender';
   return (
     <Animated.View
       pointerEvents={hidden ? 'none' : 'box-none'}
@@ -74,24 +71,10 @@ export function Fab({
       accessibilityElementsHidden={hidden}
       style={[styles.spot, { bottom }, anim]}
     >
-      {solid ? (
-        <Press
-          style={[styles.ink, name === 'lavender' && styles.bead]}
-          haptic
-          overlay={alphaOf(colors.onPrimary, 0.1)}
-          onPress={onPress}
-          accessibilityLabel={accessibilityLabel}
-        >
-          <View pointerEvents="none" style={styles.specular} />
-          <Ionicons name={icon as 'add'} size={28} color={colors.onPrimary} />
-        </Press>
-      ) : (
-        <Glass tier="control" radius={28} style={styles.fab} onPress={onPress} accessibilityLabel={accessibilityLabel}>
-          <View pointerEvents="none" style={styles.fill} />
-          {name === 'pine' && <View pointerEvents="none" style={styles.specular} />}
-          <Ionicons name={icon as 'add'} size={28} color={colors.onPrimary} />
-        </Glass>
-      )}
+      <Press style={styles.disc} haptic overlay={alphaOf(colors.onPrimary, 0.1)} onPress={onPress} accessibilityLabel={accessibilityLabel}>
+        <View pointerEvents="none" style={styles.specular} />
+        <Ionicons name={icon as 'add'} size={28} color={colors.onPrimary} />
+      </Press>
     </Animated.View>
   );
 }
@@ -100,23 +83,7 @@ const makeStyles = ({ colors }: Theme) => {
   const lip = colors.material.rimTop;
   return StyleSheet.create({
     spot: { position: 'absolute', right: 20 },
-    fab: {
-      width: 56,
-      height: 56,
-      alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: colors.actionGlow,
-    },
-    fill: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: colors.primary,
-      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
-    },
-    ink: {
+    disc: {
       width: 56,
       height: 56,
       borderRadius: 28,
@@ -125,12 +92,6 @@ const makeStyles = ({ colors }: Theme) => {
       backgroundColor: colors.primary,
       backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
       borderWidth: 1,
-      borderColor: alphaOf(lip, 0.08),
-      borderTopColor: alphaOf(lip, 0.24),
-      boxShadow: `${colors.litGlow}, 0px 2px 4px ${alphaOf(colors.primary, 0.12)}`,
-    },
-    // Lavender: a solid bead, its rim lit at the top, its one glow the rose action light.
-    bead: {
       borderColor: alphaOf(lip, 0.3),
       borderTopColor: lip,
       boxShadow: colors.actionGlow,

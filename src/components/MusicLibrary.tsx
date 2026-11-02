@@ -1,6 +1,6 @@
 // Your own music and saved playlist links, shown in the player under the focus sounds. Rows sit on the look's
-// glass panes; editing opens a sheet (the player hands its forms to MusicForms so Paper's player sheet can step
-// aside while a form is up).
+// glass panes; editing opens a sheet over the player (the player hands its forms to MusicForms, which draws them
+// outside the player's modal).
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
@@ -438,7 +438,7 @@ function LinkSheet({ visible, link, onClose }: { visible: boolean; link?: Playli
   );
 }
 
-const makeStyles = ({ colors, radii, name }: Theme) =>
+const makeStyles = ({ colors, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     section: { marginTop: 28 },

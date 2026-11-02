@@ -184,7 +184,7 @@ function Swatch({ look }: { look: ThemeName }) {
   );
 }
 
-const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     label: { ...type.label, marginTop: 12, marginBottom: 10 },
@@ -198,10 +198,8 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
       borderTopColor: colors.material.inset.borderTop,
       backgroundColor: colors.material.inset.fill,
     },
-    // Stone's chosen look is ringed in champagne; the other looks use their text colour.
-    // Pine's is ringed in its mint edge light.
-    themeRing:
-      name === 'stone' || name === 'pine' ? { borderWidth: 1.5, borderColor: colors.litRim } : { borderWidth: 2, borderColor: colors.text },
+    // The chosen look is ringed in the look's lit rim (white, champagne, ink or mint).
+    themeRing: { borderWidth: 2, borderColor: colors.litRim },
     swatch: { height: 88, borderRadius: 14, padding: 8, justifyContent: 'space-between', overflow: 'hidden' },
     swatchRidges: { position: 'absolute', left: '-23%', width: '100%', top: '35%' },
     swatchArt: { width: '100%', height: '100%' },
@@ -233,10 +231,11 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
     swatchButton: { alignSelf: 'flex-end', width: 24, height: 24, borderRadius: 12 },
     checkOn: {
       backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
-      // Paper's check sits on its swatch in a white ring, so it reads on the light world.
-      ...(name === 'paper' ? { borderWidth: 2, borderColor: colors.material.rimTop } : null),
+      // The check sits on its swatch in a ring of the glass's top rim, so it reads on any look's world.
+      borderWidth: 2,
+      borderColor: colors.material.rimTop,
     },
-    themeName: { fontFamily: fonts.bodyBold, fontSize: name === 'stone' ? 15 : 14, color: colors.text, marginTop: 8 },
+    themeName: { fontFamily: fonts.bodyBold, fontSize: 14, color: colors.text, marginTop: 8 },
     themeDesc: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted, marginTop: 2 },
     check: { position: 'absolute', top: 14, right: 14, width: 24, height: 24 },
     row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, paddingVertical: 14, paddingHorizontal: 16 },

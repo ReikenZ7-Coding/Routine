@@ -469,7 +469,7 @@ export function rise() {
   }).duration(280);
 }
 
-/** A small caption in the look's label voice, the way the hubs name a group of filters. */
+/** A small caption in the look's label voice (sentence case in every look), naming a group of filters. */
 export function Micro({ children, color }: { children: ReactNode; color?: string }) {
   const styles = useStyles(makeStyles);
   return <Text style={[styles.micro, color ? { color } : null]}>{children}</Text>;

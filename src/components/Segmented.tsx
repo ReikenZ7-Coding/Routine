@@ -1,27 +1,15 @@
-// The hub pieces for the page looks' Library: a segmented switch with a gliding pill, filter chips
-// under small captions, section headers with the kind's icon, and the routine cards in the grid.
+// Choosing controls shared by every look: a segmented switch with a gliding drop (the Library's shelves, the
+// focus sounds, the daily target) and a captioned row of filter chips (the Library's When and Repeat, Language's
+// "Learning").
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type LayoutChangeEvent, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Glass, GlassScroll, useGlassScroll } from './Glass';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import {
-  type Routine,
-  countOn,
-  isDoneOn,
-  isScheduled,
-  isSkipped,
-  iconFor,
-  routineSubtitle,
-  streak,
-  tapRoutine,
-  TIME_LABELS,
-} from '../lib/routines';
-import { describeRepeat } from '../lib/schedule';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { alphaOf } from './glass/colour';
-import { EASE_OUT, FADE, FadeSwap, Micro, Pop, Press, SelectFade, useReduceMotion } from './Motion';
+import { EASE_OUT, FADE, FadeSwap, Micro, Press, SelectFade, useReduceMotion } from './Motion';
 
 function tick() {
   if (Platform.OS !== 'web') Haptics.selectionAsync().catch(() => {});
@@ -266,158 +254,8 @@ function FilterChip<K extends string>({
   );
 }
 
-/** A section header: the kind's icon, the title and a count badge. */
-export function HubHeader({
-  icon,
-  title,
-  count,
-  color,
-  right,
-}: {
-  icon: string;
-  title: string;
-  count?: number;
-  color: string;
-  right?: ReactNode;
-}) {
-  const { type, colors, name } = useTheme();
-  const styles = useStyles(makeStyles);
-  // Paper keeps its section marks in ink on a glass pebble, and a header that already says "1/4 done" needs no
-  // second count beside it.
-  const paper = name === 'paper';
-  return (
-    <View style={styles.hubHead}>
-      <View style={[styles.hubIcon, paper ? styles.hubPebble : { backgroundColor: `${color}22` }]}>
-        <Ionicons name={icon as 'sunny'} size={paper ? 15 : 14} color={paper ? colors.text : color} />
-      </View>
-      <Text style={[type.sectionTitle, styles.flex]} numberOfLines={1} accessibilityRole="header">
-        {title}
-      </Text>
-      {right}
-      {count !== undefined && !(paper && right) && (
-        <View style={styles.count}>
-          <Text style={styles.countText}>{count}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-/** A routine in the grid: its time-of-day badge, name, schedule, a streak pill and a tick for today. */
-/** A short phrase such as "Every day" never breaks across lines; a long schedule still wraps. */
-const keepTogether = (phrase: string) => (phrase.length <= 14 ? phrase.replace(/ /g, '\u00A0') : phrase);
-
-export function RoutineCard({
-  routine: r,
-  today,
-  width,
-  onChange,
-  onOpen,
-}: {
-  routine: Routine;
-  today: string;
-  width: number;
-  onChange?: (r: Routine) => void;
-  onOpen: () => void;
-}) {
-  const { colors, kinds, name } = useTheme();
-  const styles = useStyles(makeStyles);
-  // Paper ticks in ink (its done colour), like every other done mark on the page. Pine's cards carry a moon orb in
-  // their top-right corner, as on the training hub they are modelled on.
-  const paper = name === 'paper';
-  const orb = !!colors.material.orb;
-  const done = isDoneOn(r, today);
-  const skipped = isSkipped(r, today);
-  const counter = !!r.target && r.target > 1;
-  const n = streak(r, today);
-  const scheduled = isScheduled(r, today);
-  const canTick = !!onChange && scheduled && !skipped;
-  const count = counter ? countOn(r, today) : 0;
-  const tickLabel =
-    counter && !done ? `Add one to ${r.name}, ${count} of ${r.target}` : done ? `${r.name} done, tap to undo` : `Mark ${r.name} done`;
-  return (
-    <Glass
-      style={[styles.card, { width }]}
-      receded={done || skipped}
-      onPress={onOpen}
-      accessibilityLabel={`${r.name}, ${routineSubtitle(r, today)}`}
-      accessibilityHint="Opens the editor"
-    >
-      {orb && <View style={styles.orb} pointerEvents="none" />}
-      <View style={styles.watermark} pointerEvents="none">
-        <Ionicons name={iconFor(r) as 'sunny'} size={96} color={colors.text} />
-      </View>
-      {/* The card's state (a streak, today, resting, skipped) leads; the time of day joins the schedule line, so
-          no label sits above the title. */}
-      <View style={styles.cardTop}>
-        <View style={[styles.level, n > 1 ? styles.levelHot : null]}>
-          <Text style={[styles.levelText, n > 1 ? styles.levelTextHot : null]}>
-            {skipped ? 'Skipped' : n > 1 ? `${n} in a row` : scheduled ? 'Today' : 'Resting'}
-          </Text>
-        </View>
-        {canTick && (
-          <Press
-            onPress={() => {
-              tick();
-              onChange!(tapRoutine(r, today));
-            }}
-            outerStyle={styles.tickSpot}
-            style={styles.tick}
-            overlay={colors.material.pressFill}
-            accessibilityRole={counter ? 'button' : 'checkbox'}
-            accessibilityState={counter ? undefined : { checked: done }}
-            accessibilityLabel={tickLabel}
-          >
-            <SelectFade
-              on={done}
-              color={paper ? undefined : kinds.routines.color}
-              radius={22}
-              bleed={2}
-              style={paper ? styles.tickDone : undefined}
-            />
-            <Pop done={done}>
-              <FadeSwap
-                on={done}
-                off={counter && count > 0 ? <Text style={styles.tickCount}>{count}</Text> : null}
-                onContent={<Ionicons name="checkmark" size={18} color={paper ? colors.onDone : colors.onKind} />}
-              />
-            </Pop>
-          </Press>
-        )}
-      </View>
-      <Text style={[styles.cardTitle, done && styles.cardTitleDone]} numberOfLines={2}>
-        {r.name}
-      </Text>
-      <Text style={styles.cardSub} numberOfLines={2}>
-        {TIME_LABELS[r.time]}
-        {r.start ? ` · ${r.start}` : ''}
-        {` · ${keepTogether(describeRepeat(r.repeat))}`}
-        {counter ? ` · ${r.target} a day` : ''}
-      </Text>
-      <View style={styles.cardBottom}>
-        <View style={styles.meta}>
-          {r.duration ? (
-            <>
-              <Ionicons name="time-outline" size={14} color={colors.muted} />
-              <Text style={styles.metaText}>{r.duration} min</Text>
-            </>
-          ) : r.reminder ? (
-            <>
-              <Ionicons name="notifications-outline" size={14} color={colors.muted} />
-              <Text style={styles.metaText}>
-                {String(r.reminder.hour).padStart(2, '0')}:{String(r.reminder.minute).padStart(2, '0')}
-              </Text>
-            </>
-          ) : null}
-        </View>
-      </View>
-    </Glass>
-  );
-}
-
-const makeStyles = ({ colors, fonts, type, dark }: Theme) => {
-  const tag = colors.material.tag;
-  const orb = colors.material.orb;
+const makeStyles = ({ colors, fonts }: Theme) => {
+  const outline = colors.material.outlineChips;
   return StyleSheet.create({
     flex: { flex: 1 },
     trough: { padding: 4 },
@@ -445,9 +283,9 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) => {
     filter: { gap: 6 },
     chipScroll: { marginHorizontal: -16 },
     chips: { flexDirection: 'row', gap: 8, paddingLeft: 16, paddingRight: 24 },
-    chip: tag
+    chip: outline
       ? {
-          // Pine: outlined chips on the night floor, a mint edge on a dark fill, as on the training hub
+          // Pine: the same chip in its own colours, a mint edge on a dark fill
           minHeight: 44,
           paddingHorizontal: 14,
           justifyContent: 'center',
@@ -469,83 +307,5 @@ const makeStyles = ({ colors, fonts, type, dark }: Theme) => {
     chipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     chosen: { backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})` },
     chipText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
-    hubHead: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 28, marginBottom: 12 },
-    hubIcon: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-    hubPebble: {
-      width: 32,
-      height: 32,
-      borderRadius: 11,
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.material.inset.border,
-      borderTopColor: colors.material.inset.borderTop,
-    },
-    tickDone: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
-    count: {
-      minWidth: 28,
-      height: 28,
-      borderRadius: 14,
-      paddingHorizontal: 8,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.material.inset.border,
-    },
-    countText: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
-    card: { padding: 14, minHeight: 182 },
-    orb: orb
-      ? {
-          position: 'absolute',
-          top: -34,
-          right: -34,
-          width: 124,
-          height: 124,
-          borderRadius: 62,
-          backgroundColor: orb.fill,
-          borderWidth: 1,
-          borderColor: orb.rim,
-        }
-      : {},
-    watermark: { position: 'absolute', right: -22, bottom: -26, opacity: dark ? 0.06 : 0.05, transform: [{ rotate: '-12deg' }] },
-    cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 },
-    tickSpot: { marginTop: -8, marginRight: -6 },
-    tick: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      borderWidth: 2,
-      borderColor: colors.controlBorder,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    tickCount: { fontFamily: fonts.monoMedium, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
-    cardTitle: {
-      fontFamily: fonts.bodyBold,
-      fontSize: tag ? 18 : 17,
-      lineHeight: tag ? 23 : 22,
-      color: colors.text,
-      letterSpacing: tag ? -0.3 : -0.2,
-    },
-    cardTitleDone: { color: colors.faint, textDecorationLine: 'line-through' },
-    cardSub: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 4, flexGrow: 1 },
-    cardBottom: { marginTop: 10 },
-    level: {
-      alignSelf: 'flex-start',
-      borderRadius: 999,
-      paddingHorizontal: 9,
-      minHeight: 22,
-      justifyContent: 'center',
-      backgroundColor: colors.material.inset.fill,
-      ...(tag ? { borderWidth: 1, borderColor: alphaOf(colors.accent, 0.5) } : null),
-    },
-    levelHot: {
-      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
-      ...(tag ? { borderColor: colors.primaryGradient[0] } : null),
-    },
-    levelText: { ...type.badge, color: colors.text },
-    levelTextHot: { color: colors.onPrimary },
-    meta: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 19 },
-    metaText: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
   });
 };

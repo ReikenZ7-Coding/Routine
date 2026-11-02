@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { type ReactNode, useState } from 'react';
-import type { SharedValue } from 'react-native-reanimated';
 import { Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../components/Button';
 import { ActionChip } from '../components/Chip';
@@ -19,7 +18,7 @@ import { Enter, Press } from '../components/Motion';
 const NO_AISLE = 'Other';
 
 type IconName = keyof typeof Ionicons.glyphMap;
-/** An aisle's glyph on Lavender's aisle panes; anything unknown gets a basket. */
+/** An aisle's glyph on its pane; anything unknown gets a basket. */
 const AISLE_ICONS: [RegExp, IconName][] = [
   [/dairy|milk|cheese|egg/i, 'egg-outline'],
   [/meat|fish|butcher|deli/i, 'restaurant-outline'],
@@ -51,22 +50,13 @@ export default function GroceriesScreen({
   query = '',
   header,
   onClearQuery,
-  scrollY,
 }: {
   query?: string;
   header?: ReactNode;
   onClearQuery?: () => void;
-  /** Receives the list's scroll offset (Library fades rows into the world under its fixed header). */
-  scrollY?: SharedValue<number>;
 }) {
-  const { colors, kinds, name, type } = useTheme();
+  const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
-  // Lavender gives every aisle its own pane, so the list reads as a stack of small glass cards.
-  // Paper does the same, with each aisle's mark in ink on a glass pebble; Pine with its mark in birch, the aisle
-  // named in capitals like the tags on its cards, and a quiet "All bought" pane when the list is done.
-  const panes = name === 'lavender' || name === 'paper' || name === 'pine';
-  const paper = name === 'paper';
-  const pine = name === 'pine';
   const [copied, setCopied] = useState(false);
   const contentBottom = useContentBottom(true);
   const fab = useFabScroll();
@@ -111,7 +101,6 @@ export default function GroceriesScreen({
         contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}
         keyboardShouldPersistTaps="handled"
         onScroll={fab.onScroll}
-        offsetOut={scrollY}
       >
         {header}
         {all.length === 0 ? (
@@ -128,7 +117,8 @@ export default function GroceriesScreen({
           <NoMatch query={query} onClear={onClearQuery} />
         ) : (
           <>
-            {panes && toBuy.length > 0 ? (
+            {/* The same list in every look: one glass pane per aisle under a "To buy" heading, then one hint. */}
+            {toBuy.length > 0 ? (
               <Enter index={0}>
                 <View style={styles.paneHead}>
                   <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
@@ -145,10 +135,10 @@ export default function GroceriesScreen({
                   {byAisle(toBuy).map(([aisle, items]) => (
                     <Glass key={aisle}>
                       <View style={styles.aisleHead}>
-                        <View style={[styles.aisleTile, paper && styles.aislePebble]}>
-                          <Ionicons name={aisleIcon(aisle)} size={18} color={pine ? kinds.groceries.color : colors.text} />
+                        <View style={styles.aisleTile}>
+                          <Ionicons name={aisleIcon(aisle)} size={18} color={kinds.groceries.text} />
                         </View>
-                        <Text style={[styles.aisleName, pine && styles.aisleCaps]} accessibilityRole="header">
+                        <Text style={styles.aisleName} accessibilityRole="header">
                           {aisle}
                         </Text>
                         <Text style={styles.aisleCount}>{items.length}</Text>
@@ -171,60 +161,23 @@ export default function GroceriesScreen({
                   <HintPane>Tap to tick off. Press and hold an item to edit it.</HintPane>
                 </View>
               </Enter>
-            ) : (paper || pine) && toBuy.length === 0 ? (
+            ) : (
               <Enter index={0}>
-                <Text style={[type.sectionTitle, styles.paneHead, styles.paperHead]} accessibilityRole="header">
-                  To buy
-                </Text>
+                <View style={styles.paneHead}>
+                  <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
+                    To buy
+                  </Text>
+                </View>
                 <Glass style={styles.allBought}>
                   <View style={styles.allBoughtPebble}>
-                    <Ionicons name="basket-outline" size={26} color={pine ? colors.accent : colors.text} />
+                    <Ionicons name="basket-outline" size={26} color={kinds.groceries.text} />
                   </View>
                   <View style={styles.flex}>
                     <Text style={styles.allBoughtTitle}>All bought</Text>
-                    <Text style={type.hint}>Ticked items come back on their next day.</Text>
+                    <Text style={type.hint}>You're all stocked up. Ticked items come back on their next day.</Text>
                   </View>
                 </Glass>
               </Enter>
-            ) : (
-              <Section
-                enter={0}
-                title={`To buy · ${toBuy.length}`}
-                footer={toBuy.length > 0 ? 'Tap to tick off. Hold to edit.' : undefined}
-                right={
-                  toBuy.length > 0 ? (
-                    <ActionChip
-                      icon={copied ? 'checkmark' : 'share-outline'}
-                      label={copied ? 'Copied' : 'Share'}
-                      onPress={share}
-                      accessibilityLabel={copied ? 'List copied to the clipboard' : 'Share shopping list'}
-                    />
-                  ) : undefined
-                }
-              >
-                {toBuy.length === 0 ? (
-                  <Text style={styles.emptyText}>You're all stocked up.</Text>
-                ) : (
-                  byAisle(toBuy).map(([aisle, items]) => (
-                    <View key={aisle}>
-                      <Text style={styles.aisle}>{aisle}</Text>
-                      {items.map((g, i) => (
-                        <View key={g.id}>
-                          {i > 0 && <Divider />}
-                          <CheckRow
-                            tint={kinds.groceries.color}
-                            title={g.name}
-                            subtitle={subtitle(g)}
-                            done={false}
-                            onToggle={() => toggleBought(g.id)}
-                            onLongPress={() => openEdit(g)}
-                          />
-                        </View>
-                      ))}
-                    </View>
-                  ))
-                )}
-              </Section>
             )}
 
             {bought.length > 0 && (
@@ -294,7 +247,7 @@ export default function GroceriesScreen({
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, type, name }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts }: Theme) =>
   StyleSheet.create({
     screen: { flex: 1 },
     content: { padding: 16 },
@@ -302,14 +255,10 @@ const makeStyles = ({ colors, kinds, fonts, type, name }: Theme) =>
     welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
     welcomeText: { fontFamily: fonts.body, fontSize: 16, color: colors.muted, textAlign: 'center', lineHeight: 22, marginTop: 8 },
     welcomeButton: { alignSelf: 'stretch', marginTop: 20, marginBottom: 4 },
-    emptyText: { padding: 16, color: colors.muted, fontFamily: fonts.body, fontSize: 16 },
-    aisle: { ...type.label, color: kinds.groceries.text, paddingHorizontal: 16, paddingTop: 14 },
     flex: { flex: 1 },
-    paneHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 10 },
-    aislePanes: { gap: name === 'paper' ? 12 : 8 },
-    aislePebble: { backgroundColor: colors.material.inset.fill },
     // Lines up with the Section titles below it.
-    paperHead: { paddingHorizontal: 2 },
+    paneHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 10, paddingHorizontal: 2, minHeight: 44 },
+    aislePanes: { gap: 10 },
     allBought: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16 },
     allBoughtPebble: {
       width: 52,
@@ -330,13 +279,12 @@ const makeStyles = ({ colors, kinds, fonts, type, name }: Theme) =>
       borderRadius: 10,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: kinds.groceries.soft,
+      backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
     },
-    aisleName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: name === 'paper' ? 15 : 14, letterSpacing: 0.3, color: colors.text },
-    aisleCaps: { fontSize: 12, letterSpacing: 1.6, textTransform: 'uppercase', color: kinds.groceries.text },
+    aisleName: { flex: 1, fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text },
     aisleCount: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     laterRow: { flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 12, paddingHorizontal: 14, paddingLeft: 54 },
     laterText: { flex: 1 },

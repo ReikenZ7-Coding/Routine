@@ -3,18 +3,15 @@ import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import { clearOf } from './glass/colour';
 import { useStyles, useTheme, type Theme } from '../theme';
 import { Glass } from './Glass';
-import type { BarVariant } from './glass/chrome';
+import { BAR } from './glass/chrome';
 import { EASE_OUT, FADE, FadeSwap, Press, useReduceMotion } from './Motion';
 
 /** Space between the bar's edge and the drop. */
 const PAD = 6;
-/** The capsule behind the current icon in the dock. */
-const CAPSULE = { w: 56, h: 32, top: 6 };
-/** The float bar's corner radius; the drop's corners sit concentric inside it. */
-const FLOAT_RADIUS = 30;
+/** The bar's corner radius; the drop's corners sit concentric inside it. */
+const RADIUS = BAR.radius;
 
 // The drop's leading edge springs ahead and the trailing edge catches up, so it stretches and settles.
 const LEAD = { stiffness: 320, damping: 26, mass: 0.8 };
@@ -25,19 +22,17 @@ const BLINK = { duration: 120, easing: EASE_OUT, ...FADE };
  * The glass tab bar (chrome: a live blur of the screen's world; it never squeezes). A childless glass drop sits
  * under the current tab and flows to the next one on the UI thread; when the trailing edge settles, the drop's
  * rim catches the light once. Under reduced motion the drop fades out and back in at its new place.
- * 'float' (Lavender, Stone) and 'floatInk' (Paper) float above the bottom edge with a slot-wide drop; 'dock'
- * (Pine) spans the bottom edge with a capsule behind the icon.
+ * The same bar in every look: it floats above the bottom edge with a slot-wide drop under the current tab, and
+ * only its colours and glass come from the look.
  */
 export function GlassTabBar({
   state,
   descriptors,
   emitter,
   navigateToTab,
-  variant,
   bottom,
   height,
-}: BottomTabBarProps & { variant: BarVariant; bottom: number; height: number }) {
-  const dock = variant === 'dock';
+}: BottomTabBarProps & { bottom: number; height: number }) {
   const { colors } = useTheme();
   const m = colors.material;
   const styles = useStyles(makeStyles);
@@ -56,8 +51,8 @@ export function GlassTabBar({
 
   useEffect(() => {
     if (!slot) return;
-    const l = dock ? state.index * slot + (slot - CAPSULE.w) / 2 : state.index * slot;
-    const r = dock ? l + CAPSULE.w : (state.index + 1) * slot;
+    const l = state.index * slot;
+    const r = (state.index + 1) * slot;
     if (!placed.current) {
       placed.current = true;
       left.set(l);
@@ -93,27 +88,16 @@ export function GlassTabBar({
       right.set(r);
     }
     lastIndex.current = state.index;
-  }, [state.index, slot, dock, reduced, left, right, shown, flash]);
+  }, [state.index, slot, reduced, left, right, shown, flash]);
 
   const drop = useAnimatedStyle(() => ({ left: left.get(), width: right.get() - left.get(), opacity: shown.get() }));
   const glint = useAnimatedStyle(() => ({ left: left.get(), width: right.get() - left.get(), opacity: flash.get() }));
-  const dropGeometry = dock ? styles.capsule : styles.slotDrop;
+  const dropGeometry = styles.slotDrop;
 
   return (
-    <View style={[dock ? styles.dock : styles.wrap, { bottom, height }]}>
-      <Glass
-        tier="chrome"
-        radius={dock ? 0 : FLOAT_RADIUS}
-        topOnly={dock}
-        tint={colors.material.chromeTint}
-        style={StyleSheet.absoluteFill}
-      >
-        {dock && <View pointerEvents="none" style={[styles.edgeLight, { backgroundImage: edgeLight(m.drop.rim) }]} />}
-        <View
-          style={[styles.track, dock ? styles.dockTrack : styles.floatTrack]}
-          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-          accessibilityRole="tablist"
-        >
+    <View style={[styles.wrap, { bottom, height }]}>
+      <Glass tier="chrome" radius={RADIUS} tint={colors.material.chromeTint} style={StyleSheet.absoluteFill}>
+        <View style={styles.track} onLayout={(e) => setWidth(e.nativeEvent.layout.width)} accessibilityRole="tablist">
           {slot > 0 && (
             <>
               <Animated.View pointerEvents="none" style={[dropGeometry, styles.drop, drop]} />
@@ -146,7 +130,7 @@ export function GlassTabBar({
               <Press
                 key={route.key}
                 outerStyle={styles.flex}
-                style={[styles.tab, dock && styles.dockTab]}
+                style={styles.tab}
                 onPress={onPress}
                 onLongPress={() => emitter.emit({ type: 'tabLongPress', target: route.key })}
                 accessibilityRole="tab"
@@ -163,21 +147,13 @@ export function GlassTabBar({
   );
 }
 
-/** A 1px line of edge light along the dock's top, brightest in the middle. */
-const edgeLight = (c: string) => `linear-gradient(90deg, ${clearOf(c)}, ${c}, ${clearOf(c)})`;
-
-const makeStyles = ({ colors, fonts, name }: Theme) => {
+const makeStyles = ({ colors, fonts }: Theme) => {
   const d = colors.material.drop;
   return StyleSheet.create({
     flex: { flex: 1 },
-    wrap: { position: 'absolute', left: 16, right: 16 },
-    dock: { position: 'absolute', left: 0, right: 0 },
-    edgeLight: { position: 'absolute', top: 0, left: 24, right: 24, height: 1 },
-    track: { flexDirection: 'row', marginHorizontal: PAD },
-    floatTrack: { flex: 1, marginVertical: PAD },
-    dockTrack: { height: 64 },
-    slotDrop: { position: 'absolute', top: 0, bottom: 0, borderRadius: FLOAT_RADIUS - PAD },
-    capsule: { position: 'absolute', top: CAPSULE.top, height: CAPSULE.h, borderRadius: CAPSULE.h / 2 },
+    wrap: { position: 'absolute', left: BAR.inset, right: BAR.inset },
+    track: { flex: 1, flexDirection: 'row', marginHorizontal: PAD, marginVertical: PAD },
+    slotDrop: { position: 'absolute', top: 0, bottom: 0, borderRadius: RADIUS - PAD },
     drop: {
       backgroundImage: `linear-gradient(180deg, ${d.fill[0]}, ${d.fill[1]})`,
       borderWidth: 1,
@@ -187,16 +163,14 @@ const makeStyles = ({ colors, fonts, name }: Theme) => {
     },
     glint: { borderWidth: 1, borderColor: colors.material.pressRim },
     tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-    dockTab: { justifyContent: 'flex-start', paddingTop: 10 },
     // As wide as the cell, with a little air each side (the current tab's bolder label included): a label too long
     // for a narrow phone or a large font size shortens with an ellipsis instead of running into its neighbour.
     item: { alignSelf: 'stretch', alignItems: 'center', gap: 3, paddingHorizontal: 2 },
     itemNarrow: { paddingHorizontal: 0 },
     cell: { alignSelf: 'stretch' },
-    // Lavender's labels are 13, the caption floor; the other looks keep their tighter 12.
-    label: { fontFamily: fonts.bodyMedium, fontSize: name === 'lavender' ? 13 : 12 },
-    // Paper's current tab is set in bold ink, the reference's solid-icon-and-bold-label tab.
-    labelOn: name === 'paper' ? { fontFamily: fonts.bodyBold } : {},
+    // 13, the caption floor; the current tab's label is set in the look's bold (Stone's bold is DM Sans 500).
+    label: { fontFamily: fonts.bodyMedium, fontSize: 13 },
+    labelOn: { fontFamily: fonts.bodyBold },
     labelNarrow: { fontSize: 12, letterSpacing: -0.2 },
   });
 };

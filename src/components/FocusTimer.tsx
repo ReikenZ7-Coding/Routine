@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass } from './Glass';
-import { Segmented } from './Hub';
+import { Segmented } from './Segmented';
 import { Button } from './Button';
 import { Bar, Press } from './Motion';
 
@@ -108,41 +108,22 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
   );
 }
 
-const makeStyles = ({ colors, fonts, type, name }: Theme) =>
+const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     card: { padding: 16, marginTop: 12, gap: 12 },
     title: { ...type.sectionTitle, flexShrink: 1 },
     lengths: { width: 164 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-    // Lavender's and Stone's clock is a light display numeral, never a typewriter face.
-    clock:
-      name === 'lavender' || name === 'stone'
-        ? {
-            fontFamily: 'DMSans_300Light',
-            fontSize: name === 'stone' ? 52 : 56,
-            lineHeight: name === 'stone' ? 56 : 60,
-            color: colors.text,
-            letterSpacing: name === 'stone' ? -1 : -1.5,
-            fontVariant: ['tabular-nums'],
-          }
-        : name === 'paper'
-          ? // Paper: a firm DM Sans numeral with steady (tabular) figures, in ink.
-            {
-              fontFamily: fonts.bodyMedium,
-              fontSize: 46,
-              lineHeight: 52,
-              color: colors.text,
-              letterSpacing: -1.4,
-              fontVariant: ['tabular-nums'],
-            }
-          : {
-              fontFamily: fonts.monoMedium,
-              fontSize: 40,
-              lineHeight: 48,
-              color: colors.text,
-              letterSpacing: -1,
-              fontVariant: ['tabular-nums'],
-            },
+    // One clock in every look: a big numeral in the look's numeral face (a sans with steady tabular figures, never
+    // mono), in one size and one box.
+    clock: {
+      fontFamily: fonts.numeral,
+      fontSize: 52,
+      lineHeight: 56,
+      color: colors.text,
+      letterSpacing: -1.2,
+      fontVariant: ['tabular-nums'],
+    },
     btn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 18, minHeight: 48 },
     stop: {
       backgroundColor: colors.material.inset.fill,

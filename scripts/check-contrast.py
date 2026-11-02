@@ -337,18 +337,6 @@ def gate_look(look, theme, g):
     ac, aa = col(colors['accent'])
     g.check(look, 'track', 'accent fill', ratio(lum(over(region, ac, aa)), lum(track)), NONTEXT, (0, y0))
 
-    if mat.get('orb'):
-        # Pine's card orb: a disc of moonlight in the top-right corner that a card's title and meta can run under
-        oc2, oa2 = col(mat['orb']['fill'])
-        orbbed = over(pane[y0:], oc2, oa2)
-        for tname in every:
-            g.text(look, 'pane under orb', tname, text_tokens[tname], orbbed, (0, y0))
-    if mat.get('tag'):
-        # Pine's card tags: white capitals on a near-black pill, on any glass
-        tc2, ta2 = col(mat['tag']['fill'])
-        for sname, bg in (('pane', pane), ('hero', surfaces.get('hero', (pane,))[0]), ('receded', receded)):
-            g.check(look, f'tag on {sname}', 'tag.ink', text_on(over(bg[y0:], tc2, ta2), mat['tag']['ink']), TEXT, (0, y0))
-
     # Ink on fills.
     for k, v in kinds.items():
         fill = np.broadcast_to(col(v['color'])[0], (1, 1, 3)).astype(float)
@@ -423,12 +411,11 @@ def gate_look(look, theme, g):
     g.check(look, 'node fill', 'onNode', text_on(node_fill, colors['onNode']), TEXT)
 
     # The player's shuffle and repeat when on: the glyph and a dot under it in the accent, over the lit inset disc.
-    # The disc sits in its own glass circle on looks with controlsInGlass, on Paper's player sheet, and on the bare
-    # world (the middle of the screen, where the transport row sits) elsewhere. 3:1 there, as a state indicator.
+    # The player is the same full-screen page in every look: the disc sits on its own glass circle on looks with
+    # controlsInGlass, and on the bare world (the middle of the screen, where the transport row sits) elsewhere.
+    # 3:1 there, as a state indicator.
     if mat.get('controlsInGlass'):
         under = control[y0:]
-    elif look == 'paper':
-        under = sheet[y0:]
     else:
         under = sharp[int(0.40 * FH):int(0.85 * FH), int(0.04 * FW):int(0.96 * FW)]
     disc = over(under, ic, ia)

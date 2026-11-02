@@ -28,7 +28,6 @@ import { Glass, GlassScroll } from '../components/Glass';
 import { ActionChip } from '../components/Chip';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Bar, EASE_OUT, Enter, FadeSwap, Press, SelectFade } from '../components/Motion';
-import { alphaOf } from '../components/glass/colour';
 import { useContentBottom, useFabBottom } from '../components/NowPlaying';
 import { Skeleton } from '../components/Skeleton';
 import { plural } from '../lib/plural';
@@ -45,7 +44,7 @@ const PLAN_DAY = 52;
 const PLAN_NAME_INSET = PLAN_PAD + PLAN_DAY;
 
 export default function GymScreen() {
-  const { colors, kinds, type, name } = useTheme();
+  const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, gym, updateGym } = useStore();
   const fabBottom = useFabBottom();
@@ -112,14 +111,7 @@ export default function GymScreen() {
       <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}>
         <PageTitle title="Gym" subtitle="Pick a plan to start with, or build your own" />
         <Glass style={styles.welcome}>
-          {name === 'stone' ? (
-            // Stone: the barbell in champagne on its own small glass tile.
-            <View style={styles.welcomeTile}>
-              <Ionicons name="barbell-outline" size={28} color={colors.accent} />
-            </View>
-          ) : (
-            <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
-          )}
+          <Ionicons name="barbell-outline" size={40} color={kinds.gym.color} />
           <Text style={styles.welcomeTitle}>Your training plan</Text>
           <Text style={styles.welcomeText}>
             Pick a starter plan and adjust it, or build your own. Each day you'll see exactly what to train, and what you lifted last time.
@@ -148,7 +140,6 @@ export default function GymScreen() {
   }
 
   const progress = session ? sessionProgress(gym, today, session) : undefined;
-  const tagged = !!colors.material.tag;
 
   return (
     <View style={styles.flex}>
@@ -158,44 +149,20 @@ export default function GymScreen() {
           <>
             <Enter index={0}>
               <Glass tier="hero" bloom style={styles.todayCard}>
-                {name === 'paper' && <View pointerEvents="none" style={styles.kindWash} />}
                 <View style={styles.sessionHead}>
                   <View style={styles.flex}>
                     <Text style={styles.sessionName} accessibilityRole="header">
                       {session.name}
                     </Text>
-                    {tagged ? (
-                      // Pine: a black tag for the day, then the count, under the session's name
-                      <View style={styles.tagRow}>
-                        <View style={styles.tag}>
-                          <Text style={styles.tagText}>{progress.done === progress.total ? 'Complete' : 'Today'}</Text>
-                        </View>
-                        <Text style={styles.progressText}>
-                          {progress.done === progress.total ? 'Nice work!' : `${progress.done} of ${plural(progress.total, 'set')}`}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.progressText}>
-                        {progress.done === progress.total
-                          ? 'Workout complete. Nice work!'
-                          : `Today · ${progress.done} of ${plural(progress.total, 'set')}`}
-                      </Text>
-                    )}
+                    <Text style={styles.progressText}>
+                      {progress.done === progress.total
+                        ? 'Workout complete. Nice work!'
+                        : `Today · ${progress.done} of ${plural(progress.total, 'set')}`}
+                    </Text>
                   </View>
-                  {name === 'lavender' && (
-                    // Lavender marks the session with the gym's own pastel tile and glyph, like the rows on Today.
-                    <View style={styles.sessionTile}>
-                      <Ionicons name="barbell" size={28} color={colors.onKind} />
-                    </View>
-                  )}
                 </View>
                 <View style={styles.track}>
-                  <Bar
-                    progress={progress.done / Math.max(1, progress.total)}
-                    color={kinds.gym.color}
-                    track={name === 'paper' ? kinds.gym.soft : colors.track}
-                    height={name === 'stone' ? 4 : 8}
-                  />
+                  <Bar progress={progress.done / Math.max(1, progress.total)} color={kinds.gym.color} track={colors.track} height={8} />
                 </View>
                 <Text style={[type.hint, styles.cardHint]}>Tap a set when you finish it. A rest timer starts on its own.</Text>
               </Glass>
@@ -213,7 +180,7 @@ export default function GymScreen() {
                           <Text style={styles.exName}>{e.name}</Text>
                           {isRecord(gym.logs, e.name, today) && (
                             <View style={styles.prBadge}>
-                              <Ionicons name={name === 'stone' ? 'trophy-outline' : 'trophy'} size={13} color={styles.prText.color} />
+                              <Ionicons name="trophy" size={13} color={kinds.gym.text} />
                               <Text style={styles.prText}>New best</Text>
                             </View>
                           )}
@@ -308,7 +275,6 @@ export default function GymScreen() {
                   }
                 >
                   <Text style={styles.planDay}>{WEEKDAY_SHORT[d]}</Text>
-                  {!s && tagged && <Ionicons name="moon-outline" size={15} color={colors.muted} style={styles.restIcon} />}
                   <Text style={[styles.planName, !s && styles.rest]}>{s ? s.name : 'Rest'}</Text>
                   {s && <Text style={styles.planCount}>{plural(s.exercises.length, 'exercise')}</Text>}
                 </Press>
@@ -378,65 +344,26 @@ export default function GymScreen() {
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme) => {
-  // Lavender's best-ever badge is a solid pastel pill with deep-indigo ink; the other looks keep a soft wash.
-  const solidBadge = name === 'lavender';
-  // Stone: a thin editorial session name, a capsule stepper and larger tabular numerals.
-  const stone = name === 'stone';
-  // Paper: a Bricolage session name, bold exercise names, and a warm wash of the gym's colour in the hero.
-  const paper = name === 'paper';
-  // Pine: black tags with white capitals ("Today", "New best"), and the rest days under a moon.
-  const tag = colors.material.tag;
+const makeStyles = ({ colors, kinds, fonts, radius, radii }: Theme) => {
   return StyleSheet.create({
-    tagRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-    tag: { backgroundColor: tag?.fill, borderRadius: 999, paddingHorizontal: 9, minHeight: 22, justifyContent: 'center' },
-    tagText: { fontFamily: fonts.bodyBold, fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: tag?.ink ?? colors.text },
-    restIcon: { marginRight: 8 },
-    kindWash: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundImage: `radial-gradient(70% 90% at 100% 0%, ${alphaOf(kinds.gym.color, 0.1)}, ${alphaOf(kinds.gym.color, 0)} 100%)`,
-    },
     exTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
     prBadge: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: tag ? tag.fill : solidBadge ? kinds.gym.color : kinds.gym.soft,
+      backgroundColor: kinds.gym.soft,
       borderRadius: 999,
-      paddingHorizontal: solidBadge || tag ? 10 : 8,
-      paddingVertical: solidBadge ? 3 : tag ? 4 : 2,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
     },
-    prText: tag
-      ? { fontFamily: fonts.bodyBold, fontSize: 10.5, letterSpacing: 1.4, textTransform: 'uppercase', color: kinds.gym.text }
-      : { fontFamily: fonts.bodyMedium, fontSize: 13, color: solidBadge ? colors.onKind : kinds.gym.text },
+    prText: { fontFamily: fonts.bodyMedium, fontSize: 13, color: kinds.gym.text },
     historyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16 },
     historyPr: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     historyPrText: { fontFamily: fonts.monoMedium, fontSize: 14, color: kinds.gym.text, fontVariant: ['tabular-nums'] },
     flex: { flex: 1 },
     content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },
-    welcomeTitle: {
-      fontFamily: fonts.display,
-      fontSize: stone ? 24 : 20,
-      lineHeight: stone ? 30 : undefined,
-      color: colors.text,
-      marginTop: 12,
-    },
-    welcomeTile: {
-      width: 64,
-      height: 64,
-      borderRadius: 18,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.material.inset.border,
-      borderTopColor: colors.material.inset.borderTop,
-    },
+    welcomeTitle: { fontFamily: fonts.display, fontSize: 20, color: colors.text, marginTop: 12 },
     welcomeText: {
       fontFamily: fonts.body,
       fontSize: 15,
@@ -462,28 +389,13 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
     planSummary: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, marginTop: 2 },
     todayCard: { padding: 16 },
     sessionHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-    sessionTile: {
-      width: 56,
-      height: 56,
-      borderRadius: radii.inset,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: kinds.gym.color,
-      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.material.control.shadow}`,
-    },
-    sessionName: {
-      fontFamily: fonts.display,
-      fontSize: stone || paper || tag ? 30 : 26,
-      lineHeight: stone || paper || tag ? 36 : 31,
-      letterSpacing: paper ? -0.6 : tag ? -0.8 : undefined,
-      color: colors.text,
-    },
+    sessionName: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, letterSpacing: -0.6, color: colors.text },
     cardHint: { marginTop: 12 },
     progressText: { fontFamily: fonts.body, fontSize: 15, color: colors.muted, marginTop: 4 },
     track: { marginTop: 12 },
-    exercise: { padding: 14, marginTop: paper ? 12 : 10 },
+    exercise: { padding: 14, marginTop: 10 },
     exHeader: { flexDirection: 'row', alignItems: 'center' },
-    exName: { fontFamily: paper || tag ? fonts.bodyBold : fonts.bodyMedium, fontSize: 17, color: colors.text },
+    exName: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
     exPlan: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 2 },
     exControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 },
     stepper: {
@@ -493,14 +405,14 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
       borderColor: colors.material.inset.border,
       borderTopColor: colors.material.inset.borderTop,
       backgroundColor: colors.material.inset.fill,
-      borderRadius: stone ? 22 : 14,
+      borderRadius: radii.inset + 2,
     },
-    stepBtn: { width: 44, height: 44, borderRadius: stone ? 21 : 13, alignItems: 'center', justifyContent: 'center' },
+    stepBtn: { width: 44, height: 44, borderRadius: radii.inset + 1, alignItems: 'center', justifyContent: 'center' },
     weight: {
       minWidth: 84,
       textAlign: 'center',
       fontFamily: fonts.monoMedium,
-      fontSize: stone ? 16 : 15,
+      fontSize: 15,
       color: colors.text,
       fontVariant: ['tabular-nums'],
     },
@@ -515,12 +427,12 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii, glass, name }: Theme)
       alignItems: 'center',
       justifyContent: 'center',
     },
-    setText: { fontFamily: fonts.monoMedium, fontSize: stone ? 15 : 14, color: colors.muted, fontVariant: ['tabular-nums'] },
+    setText: { fontFamily: fonts.monoMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
     setTextDone: { color: colors.onKind },
-    planRow: { flexDirection: 'row', alignItems: 'center', minHeight: paper ? 52 : 48, paddingVertical: 12, paddingHorizontal: PLAN_PAD },
+    planRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingVertical: 12, paddingHorizontal: PLAN_PAD },
     planDay: { width: PLAN_DAY, fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted },
     planName: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },
-    rest: { color: colors.muted, ...(tag ? { fontStyle: 'italic' as const } : null) },
+    rest: { color: colors.muted },
     planCount: { fontFamily: fonts.body, fontSize: 14, color: colors.muted },
     timerSpot: { position: 'absolute', left: 16, right: 16 },
     timer: {

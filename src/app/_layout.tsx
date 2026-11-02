@@ -126,7 +126,7 @@ function Shell() {
         <StatusBar style={colors.statusBar} />
         <ReminderSync />
         <Tabs
-          tabBar={(props) => <GlassTabBar {...props} variant={bar.variant} bottom={bar.bottom} height={bar.height} />}
+          tabBar={(props) => <GlassTabBar {...props} bottom={bar.bottom} height={bar.height} />}
           // Each screen paints its own world, so screens kept alive in the background never show through.
           screenLayout={({ children }) => <ScreenFrame onTarget={onTarget}>{children}</ScreenFrame>}
           screenOptions={{

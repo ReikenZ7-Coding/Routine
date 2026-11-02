@@ -33,7 +33,7 @@ import { friendlyDate } from '../lib/schedule';
 import { newId, useStore } from '../lib/store';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass, GlassScroll } from '../components/Glass';
-import { FilterRow, Segmented } from '../components/Hub';
+import { FilterRow, Segmented } from '../components/Segmented';
 import { Bar, Enter, Press } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
@@ -49,8 +49,7 @@ function cardSize(word: string): number {
 }
 
 export default function LanguageScreen() {
-  const { colors, kinds, name } = useTheme();
-  const lavender = name === 'lavender';
+  const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
   const { ready, today, language: state, updateLanguage, damaged } = useStore();
   const contentBottom = useContentBottom();
@@ -77,7 +76,7 @@ export default function LanguageScreen() {
       <GlassScroll key="choose" contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}>
         <PageTitle title="Language" subtitle="A little practice every day" />
         <Enter index={0}>
-          <Glass tier={lavender ? 'hero' : 'pane'} style={styles.chooser}>
+          <Glass style={styles.chooser}>
             <View style={styles.chooserHead}>
               <Text style={styles.chooserTitle} accessibilityRole="header">
                 Which language are you learning?
@@ -197,7 +196,7 @@ export default function LanguageScreen() {
         </View>
       )}
       <Enter index={0}>
-        <Glass tier={lavender ? 'hero' : 'pane'} bloom={lavender} style={styles.todayCard}>
+        <Glass style={styles.todayCard}>
           <View style={styles.row}>
             <Text style={styles.cardTitle} accessibilityRole="header">
               Today's practice
@@ -213,12 +212,7 @@ export default function LanguageScreen() {
             {log.minutes} <Text style={styles.minutesOf}>/ {state.target} min</Text>
           </Text>
           <View style={styles.track}>
-            <Bar
-              progress={pct}
-              color={kinds.chinese.color}
-              track={name === 'paper' ? kinds.chinese.soft : colors.track}
-              height={name === 'stone' ? 4 : 8}
-            />
+            <Bar progress={pct} color={kinds.chinese.color} track={colors.track} height={8} />
           </View>
           <Text style={styles.small}>
             {several ? 'Log the time you practised, in any of your languages' : 'Log the time you practised'}
@@ -260,12 +254,6 @@ export default function LanguageScreen() {
 
       <Enter index={2}>
         <Glass style={styles.reviewCard}>
-          {lavender && (
-            // The word deck's own tile, like the art on a playlist row: the language's character on the kind's pastel.
-            <View style={styles.deckTile} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-              <Text style={[styles.deckGlyph, info.glyph.length > 1 && styles.deckGlyphPair]}>{info.glyph}</Text>
-            </View>
-          )}
           <View style={styles.flex}>
             <Text style={styles.reviewTitle}>
               {words.length === 0 ? 'Flashcards' : due.length ? `${plural(due.length, 'word')} to review` : 'All caught up'}
@@ -491,17 +479,6 @@ function GradeButton({
 
 const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
   StyleSheet.create({
-    deckTile: {
-      width: 56,
-      height: 56,
-      borderRadius: radii.inset,
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: kinds.chinese.color,
-      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}`,
-    },
-    deckGlyph: { fontFamily: fonts.body, fontSize: 28, lineHeight: 34, color: colors.onKind },
-    deckGlyphPair: { fontSize: 22 },
     flex: { flex: 1 },
     content: { padding: 16 },
     row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
@@ -519,9 +496,9 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
     streak: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     minutes: {
       fontFamily: fonts.display,
-      fontSize: name === 'stone' ? 34 : 40,
-      lineHeight: name === 'stone' ? 40 : 46,
-      letterSpacing: name === 'paper' ? -0.8 : undefined,
+      fontSize: 40,
+      lineHeight: 46,
+      letterSpacing: -0.8,
       color: colors.text,
       marginTop: 8,
       fontVariant: ['tabular-nums'],
@@ -543,11 +520,11 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
     },
     undoOff: { opacity: 0.45 },
     reviewCard: { padding: 16, marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12 },
-    reviewTitle: { fontFamily: name === 'paper' ? fonts.bodyBold : fonts.bodyMedium, fontSize: 17, color: colors.text },
+    reviewTitle: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
     starter: { marginTop: 16, gap: 8 },
     wordRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60, paddingVertical: 10, paddingHorizontal: 14 },
     // Generous line height, so scripts with tall marks (Thai, Hindi, Vietnamese) never clip.
-    word: { fontFamily: fonts.body, fontSize: name === 'paper' ? 21 : 20, lineHeight: 30, color: colors.text },
+    word: { fontFamily: fonts.body, fontSize: 20, lineHeight: 30, color: colors.text },
     rtl: { writingDirection: 'rtl', textAlign: 'right' },
     rtlCentre: { writingDirection: 'rtl' },
     wordReading: { fontFamily: fonts.body, fontSize: 14, color: kinds.chinese.text },
@@ -579,6 +556,7 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
       gap: 10,
     },
     cardWord: {
+      // Typeface only: Stone sets the word in its light face.
       fontFamily: name === 'stone' ? 'DMSans_300Light' : fonts.body,
       color: colors.text,
       textAlign: 'center',

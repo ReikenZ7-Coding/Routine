@@ -58,7 +58,7 @@ export interface GlassMaterial {
   /** Press light: the body lift and the brightened rim while touched (and while focused). */
   pressFill: string;
   pressRim: string;
-  /** Header buttons, search pills, FABs and category circles: a brighter frost. */
+  /** Header buttons, search pills and segmented troughs: a brighter frost. */
   control: { body: [string, string]; shadow: string };
   /** Anything nested in glass: no lens, no shadow. */
   inset: { fill: string; border: string; borderTop: string };
@@ -76,9 +76,10 @@ export interface GlassMaterial {
   bloom?: string;
   /** Sheets: an extra radial light in the body (Pine's moon orb in the top right corner). */
   sheetOrb?: string;
-  /** Pine: the lit teal slab that carries each screen's header. Its gradient top to bottom, the 1px rim along its
-   *  rounded foot, its offset shadow, the opacity of its art, the moon glow behind its top-right buttons, and the
-   *  trough that glass laid on the slab becomes (darker than the slab, lit along its lower lip). */
+  /** Pine: the lit teal slab drawn behind each screen's header as header art (the header is the same as every
+   *  look's, in the same place). Its gradient top to bottom, the 1px rim along its rounded foot, its offset shadow,
+   *  the opacity of its art, the moon glow behind its top-right buttons, and the trough that glass laid on the slab
+   *  becomes (darker than the slab, lit along its lower lip). */
   canopy?: {
     gradient: [string, string, string];
     rim: string;
@@ -91,11 +92,10 @@ export interface GlassMaterial {
     badge: string;
     inset: { fill: string; border: string; borderTop: string };
   };
-  /** Pine: the near-black pill with white bold capitals that tags cards (time of day, "New best"). */
-  tag?: { fill: string; ink: string };
-  /** Pine: the moon orb, a soft disc of light bleeding in from a card's top-right corner (fill and its rim). */
-  orb?: { fill: string; rim: string };
-  /** Stone: the player's transport controls and its header buttons each sit in their own glass circle. */
+  /** Pine: filter chips are a dark fill with a mint edge (colour only; the chip and its place are shared). */
+  outlineChips?: boolean;
+  /** Stone: the player's transport controls and its header buttons sit on their own glass circles. A surface
+   *  only: the glyphs, their sizes and their places are the same in every look. */
   controlsInGlass?: boolean;
   /** Pine: a selected row inside glass (the playing sound or song) is outlined in this lit rim. */
   selectRim?: string;
@@ -563,9 +563,8 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         },
         light: { period: 16000, layers: ['pine-light-moon'], catch: 0.6 },
         bloom: 'radial-gradient(60% 60% at 70% 100%, rgba(124,227,188,0.1), transparent 70%)',
-        tag: { fill: 'rgba(4,14,12,0.80)', ink: '#FFFFFF' },
-        orb: { fill: 'rgba(124,227,188,0.07)', rim: 'rgba(168,240,212,0.12)' },
         sheetOrb: 'radial-gradient(60% 50% at 100% 0%, rgba(124,227,188,0.10), rgba(124,227,188,0) 70%)',
+        outlineChips: true,
         canopy: {
           gradient: ['#1F6352', '#164D41', '#113D34'],
           rim: 'rgba(168,240,212,0.18)',
@@ -608,16 +607,18 @@ const FONTS = {
 // Per-look faces. Lavender drops mono entirely (numbers use DM Sans with tabular figures); Stone has no bold
 // and no mono (its "bold" is DM Sans 500); Paper is Bricolage display over DM Sans, with no mono (numbers use
 // DM Sans tabular figures, big numerals Bricolage); Pine keeps mono for numbers only.
-const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; displayMedium: string }> = {
+const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; displayMedium: string; numeral: string }> = {
   lavender: {
     display: 'DMSans_700Bold',
     displayMedium: 'DMSans_700Bold',
+    numeral: 'DMSans_300Light',
     mono: 'DMSans_500Medium',
     monoMedium: 'DMSans_700Bold',
   },
   stone: {
     display: 'DMSans_300Light',
     displayMedium: 'DMSans_400Regular',
+    numeral: 'DMSans_300Light',
     bodyBold: 'DMSans_500Medium',
     mono: 'DMSans_400Regular',
     monoMedium: 'DMSans_500Medium',
@@ -625,13 +626,15 @@ const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; d
   paper: {
     display: 'BricolageGrotesque_700Bold',
     displayMedium: 'BricolageGrotesque_500Medium',
+    numeral: 'DMSans_500Medium',
     mono: 'DMSans_500Medium',
     monoMedium: 'DMSans_700Bold',
   },
-  pine: { display: 'DMSans_700Bold', displayMedium: 'DMSans_500Medium' },
+  pine: { display: 'DMSans_700Bold', displayMedium: 'DMSans_500Medium', numeral: 'DMSans_500Medium' },
 };
 
-export type Fonts = typeof FONTS & { display: string; displayMedium: string };
+/** `numeral` is the face of a big clock or count (the focus timer): a sans with tabular figures, never mono. */
+export type Fonts = typeof FONTS & { display: string; displayMedium: string; numeral: string };
 
 const TABULAR: TextStyle['fontVariant'] = ['tabular-nums'];
 
@@ -650,37 +653,46 @@ function makeType(name: ThemeName, colors: Palette, fonts: Fonts) {
     link: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.link, textDecorationLine: 'underline' },
   } satisfies Record<string, TextStyle>;
 
+  // Sizes and faces vary by look; line heights do not, so every header, section and sheet lays out to the same
+  // heights in every look.
   const perLook = {
     lavender: {
-      title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, color: colors.text, letterSpacing: -0.6 },
-      sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 23, color: colors.text },
-      sheetTitle: { fontFamily: fonts.display, fontSize: 26, lineHeight: 30, color: colors.text, letterSpacing: -0.4 },
-      label: { fontFamily: fonts.bodyMedium, fontSize: 13, letterSpacing: 0.4, textTransform: 'none', color: colors.label },
+      title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.6 },
+      sectionTitle: { fontFamily: fonts.bodyBold, fontSize: 18, lineHeight: 26, color: colors.text },
+      sheetTitle: { fontFamily: fonts.display, fontSize: 26, lineHeight: 34, color: colors.text, letterSpacing: -0.4 },
+      label: { fontFamily: fonts.bodyMedium, fontSize: 13, lineHeight: 18, letterSpacing: 0.4, textTransform: 'none', color: colors.label },
       badge: { fontFamily: fonts.bodyMedium, fontSize: 13, letterSpacing: 0.4, textTransform: 'none', color: colors.label },
       num: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.text, fontVariant: TABULAR },
     },
     stone: {
       title: { fontFamily: 'DMSans_300Light', fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.2 },
-      sectionTitle: { fontFamily: 'DMSans_400Regular', fontSize: 18, lineHeight: 24, color: colors.text, letterSpacing: 0.1 },
+      sectionTitle: { fontFamily: 'DMSans_400Regular', fontSize: 18, lineHeight: 26, color: colors.text, letterSpacing: 0.1 },
       sheetTitle: { fontFamily: 'DMSans_300Light', fontSize: 28, lineHeight: 34, color: colors.text },
-      label: { fontFamily: 'DMSans_500Medium', fontSize: 13, letterSpacing: 0.4, textTransform: 'none', color: colors.label },
+      label: {
+        fontFamily: 'DMSans_500Medium',
+        fontSize: 13,
+        lineHeight: 18,
+        letterSpacing: 0.4,
+        textTransform: 'none',
+        color: colors.label,
+      },
       badge: { fontFamily: 'DMSans_500Medium', fontSize: 13, letterSpacing: 0.4, textTransform: 'none', color: colors.label },
       num: { fontFamily: 'DMSans_500Medium', fontSize: 16, color: colors.text, fontVariant: TABULAR },
     },
     paper: {
-      title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 34, color: colors.text, letterSpacing: -0.6 },
-      sectionTitle: { fontFamily: fonts.display, fontSize: 20, lineHeight: 24, color: colors.text, letterSpacing: -0.3 },
-      sheetTitle: { fontFamily: 'BricolageGrotesque_700Bold', fontSize: 24, lineHeight: 28, color: colors.text, letterSpacing: -0.3 },
-      label: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 19, textTransform: 'none', color: colors.label },
+      title: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.6 },
+      sectionTitle: { fontFamily: fonts.display, fontSize: 20, lineHeight: 26, color: colors.text, letterSpacing: -0.3 },
+      sheetTitle: { fontFamily: 'BricolageGrotesque_700Bold', fontSize: 24, lineHeight: 34, color: colors.text, letterSpacing: -0.3 },
+      label: { fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 18, textTransform: 'none', color: colors.label },
       badge: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.2, textTransform: 'none', color: colors.label },
       num: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.text, fontVariant: TABULAR },
     },
     pine: {
-      title: { fontFamily: 'DMSans_700Bold', fontSize: 28, lineHeight: 32, color: colors.text, letterSpacing: -0.8 },
+      title: { fontFamily: 'DMSans_700Bold', fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.8 },
       sectionTitle: { fontFamily: 'DMSans_700Bold', fontSize: 21, lineHeight: 26, color: colors.text, letterSpacing: -0.4 },
-      sheetTitle: { fontFamily: 'DMSans_700Bold', fontSize: 24, lineHeight: 28, color: colors.text, letterSpacing: -0.4 },
-      label: { fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.label },
-      badge: { fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 1.6, textTransform: 'uppercase', color: colors.text },
+      sheetTitle: { fontFamily: 'DMSans_700Bold', fontSize: 24, lineHeight: 34, color: colors.text, letterSpacing: -0.4 },
+      label: { fontFamily: 'DMSans_700Bold', fontSize: 13, lineHeight: 18, letterSpacing: 0.2, textTransform: 'none', color: colors.label },
+      badge: { fontFamily: 'DMSans_700Bold', fontSize: 13, letterSpacing: 0.2, textTransform: 'none', color: colors.text },
       num: { fontFamily: fonts.mono, fontSize: 15, color: colors.text, fontVariant: TABULAR },
     },
   } satisfies Record<ThemeName, Record<string, TextStyle>>;
@@ -697,8 +709,6 @@ export interface Theme {
   radii: Radii;
   /** The pane radius (kept for older call sites; prefer radii). */
   radius: number;
-  /** Read only by the screens not yet on one shared layout (the Library and the player); new code never reads it. */
-  glass: boolean;
   /** Light type on a dark page. */
   dark: boolean;
 }
@@ -707,7 +717,6 @@ export function buildTheme(name: ThemeName): Theme {
   const look = PALETTES[name] ? name : 'lavender';
   const { colors, kinds, radii } = PALETTES[look];
   const fonts: Fonts = { ...FONTS, ...LOOK_FONTS[look] };
-  const glass = look === 'lavender' || look === 'stone';
   return {
     name: look,
     colors,
@@ -716,7 +725,6 @@ export function buildTheme(name: ThemeName): Theme {
     type: makeType(look, colors, fonts),
     radii,
     radius: radii.pane,
-    glass,
     dark: look !== 'paper',
   };
 }

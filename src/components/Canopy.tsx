@@ -1,4 +1,6 @@
-// Pine's canopy slab: the lit teal plane that carries each screen's header, like the header of a training hub.
+// Pine's canopy slab: the lit teal plane drawn behind each screen's header, as header art. The header inside it is
+// the same as every look's and sits in the same place: callers set the slab's padding to the margins they use
+// elsewhere (TrailHome, PageTitle).
 // It runs flush under the status bar, bleeds to both edges and ends in a rounded foot with a thin mint rim, over
 // an offset shadow on the night floor. Inside: faceted pines and far ridges anchored bottom right (the slab's own
 // art), and a moon glow behind the top-right buttons that drifts on the look's light clock. It scrolls with the

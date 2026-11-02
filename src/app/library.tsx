@@ -2,12 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { useSharedValue } from 'react-native-reanimated';
 import { Glass } from '../components/Glass';
-import { WorldFade } from '../components/glass/WorldFade';
 import { Press } from '../components/Motion';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FilterRow, Segmented } from '../components/Hub';
+import { FilterRow, Segmented } from '../components/Segmented';
 import { PageTitle } from '../components/PageTitle';
 import { useStore } from '../lib/store';
 import GroceriesScreen from '../screens/GroceriesScreen';
@@ -16,19 +13,17 @@ import { type Theme, useStyles, useTheme } from '../theme';
 
 type Shelf = 'routines' | 'groceries';
 
-/** Everything you keep: routines and the grocery list, with search. The page looks add filters, hub style. */
+/** Everything you keep: routines and the grocery list, with search and (for routines) filters. One layout in every
+ *  look. */
 export default function LibraryScreen() {
-  const { colors, type, glass, radii } = useTheme();
+  const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
-  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ shelf?: string }>();
   const { routines, groceries } = useStore();
   const [shelf, setShelf] = useState<Shelf>('routines');
   const [query, setQuery] = useState('');
   const [when, setWhen] = useState<WhenFilter>('all');
   const [repeat, setRepeat] = useState<RepeatFilter>('all');
-  const [listTop, setListTop] = useState(0);
-  const listScroll = useSharedValue(0);
 
   useEffect(() => {
     if (params.shelf === 'routines' || params.shelf === 'groceries') setShelf(params.shelf);
@@ -69,36 +64,12 @@ export default function LibraryScreen() {
   );
   const clear = () => setQuery('');
 
-  if (glass) {
-    return (
-      <View style={styles.flex}>
-        <View style={[styles.top, { paddingTop: insets.top + 16 }]} onLayout={(e) => setListTop(e.nativeEvent.layout.height)}>
-          <Text style={type.title}>My Library</Text>
-          {search}
-          <Segmented
-            accessibilityLabel="Shelf"
-            options={shelves.map(([key, label, count]) => ({ key, label, count }))}
-            value={shelf}
-            onChange={setShelf}
-          />
-        </View>
-        <View style={styles.flex}>
-          {shelf === 'routines' ? (
-            <RoutinesScreen query={query} onClearQuery={clear} scrollY={listScroll} />
-          ) : (
-            <GroceriesScreen query={query} onClearQuery={clear} scrollY={listScroll} />
-          )}
-          {/* Rows scrolling up under the fixed search and switch fade into the world instead of being cut. */}
-          <WorldFade top={listTop} scroll={listScroll} />
-        </View>
-      </View>
-    );
-  }
-
+  // The same header in every look, scrolling with the list: the title, the shelf switch, the search, and on the
+  // routines shelf (once there is something to filter) the When and Repeat filters.
   const header = (
-    <View style={styles.hub}>
+    <View>
       {/* No count badge: the switch below already counts both shelves. */}
-      <PageTitle title="Library" subtitle="Your routines and the shopping list" bleed={20}>
+      <PageTitle title="Library" subtitle="Your routines and the shopping list">
         <Segmented
           accessibilityLabel="Shelf"
           options={shelves.map(([key, label, count]) => ({ key, label, count, icon: key === 'routines' ? 'repeat' : 'basket-outline' }))}
@@ -106,34 +77,36 @@ export default function LibraryScreen() {
           onChange={setShelf}
         />
       </PageTitle>
-      {search}
-      {shelf === 'routines' && (
-        <>
-          <FilterRow
-            caption="When"
-            value={when}
-            onChange={setWhen}
-            options={[
-              { key: 'all', label: 'All', icon: 'apps-outline' },
-              { key: 'morning', label: 'Morning', icon: 'sunny-outline' },
-              { key: 'afternoon', label: 'Afternoon', icon: 'partly-sunny-outline' },
-              { key: 'evening', label: 'Evening', icon: 'moon-outline' },
-              { key: 'anytime', label: 'Anytime', icon: 'time-outline' },
-            ]}
-          />
-          <FilterRow
-            caption="Repeat"
-            value={repeat}
-            onChange={setRepeat}
-            options={[
-              { key: 'all', label: 'Any' },
-              { key: 'daily', label: 'Every day', icon: 'repeat-outline' },
-              { key: 'some', label: 'Some days', icon: 'calendar-outline' },
-              { key: 'once', label: 'One-off', icon: 'flag-outline' },
-            ]}
-          />
-        </>
-      )}
+      <View style={styles.tools}>
+        {search}
+        {shelf === 'routines' && routines.length > 0 && (
+          <>
+            <FilterRow
+              caption="When"
+              value={when}
+              onChange={setWhen}
+              options={[
+                { key: 'all', label: 'All', icon: 'apps-outline' },
+                { key: 'morning', label: 'Morning', icon: 'sunny-outline' },
+                { key: 'afternoon', label: 'Afternoon', icon: 'partly-sunny-outline' },
+                { key: 'evening', label: 'Evening', icon: 'moon-outline' },
+                { key: 'anytime', label: 'Anytime', icon: 'time-outline' },
+              ]}
+            />
+            <FilterRow
+              caption="Repeat"
+              value={repeat}
+              onChange={setRepeat}
+              options={[
+                { key: 'all', label: 'Any' },
+                { key: 'daily', label: 'Every day', icon: 'repeat-outline' },
+                { key: 'some', label: 'Some days', icon: 'calendar-outline' },
+                { key: 'once', label: 'One-off', icon: 'flag-outline' },
+              ]}
+            />
+          </>
+        )}
+      </View>
     </View>
   );
 
@@ -151,8 +124,7 @@ export default function LibraryScreen() {
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    top: { paddingHorizontal: 16, gap: 14 },
-    hub: { gap: 14, paddingTop: 4 },
+    tools: { gap: 14 },
     label: { ...type.label, marginBottom: 8 },
     search: { flexDirection: 'row', minHeight: 50, alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 3 },
     // Positioned, so on the web it paints above the glass's absolute layers (a static input sits under them).
