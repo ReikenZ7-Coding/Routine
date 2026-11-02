@@ -16,7 +16,7 @@ if (remindersSupported) {
 export async function allowReminders(): Promise<boolean> {
   if (!remindersSupported) return false;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
-    name: 'Routine reminders',
+    name: 'Allin reminders',
     importance: Notifications.AndroidImportance.DEFAULT,
   });
   const current = await Notifications.getPermissionsAsync();
@@ -32,7 +32,7 @@ export async function syncReminders(routines: Routine[]): Promise<void> {
   if (wanted.length === 0) return;
   if (!(await Notifications.getPermissionsAsync()).granted) return;
   await Notifications.setNotificationChannelAsync(CHANNEL, {
-    name: 'Routine reminders',
+    name: 'Allin reminders',
     importance: Notifications.AndroidImportance.DEFAULT,
   });
   for (const { r, t } of wanted) {

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Routine",
+    "name": "Allin",
     "slug": "routine",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -35,7 +35,7 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "Routine shows your calendar events next to your routines so you can plan your day."
+          "calendarPermission": "Allin shows your calendar events next to your routines so you can plan your day."
         }
       ],
       [

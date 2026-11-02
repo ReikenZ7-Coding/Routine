@@ -8,6 +8,7 @@ export type BackupKey = (typeof BACKUP_KEYS)[number];
 export type BackupData = Record<BackupKey, unknown>;
 
 export function makeBackup(data: BackupData, now = new Date()): string {
+  // 'routine' is the backup format's id from before the rename to Allin; keep it so old backups still restore.
   return JSON.stringify({ app: 'routine', version: 1, exportedAt: now.toISOString(), ...data });
 }
 
@@ -17,9 +18,9 @@ export function parseBackup(text: string): BackupData {
   try {
     raw = JSON.parse(text.trim());
   } catch {
-    throw new Error("That doesn't look like a Routine backup. Paste the whole text you exported.");
+    throw new Error("That doesn't look like an Allin backup. Paste the whole text you exported.");
   }
-  if (!raw || raw.app !== 'routine') throw new Error("That doesn't look like a Routine backup.");
+  if (!raw || raw.app !== 'routine') throw new Error("That doesn't look like an Allin backup.");
   const ok =
     Array.isArray(raw.groceries) &&
     Array.isArray(raw.routines) &&

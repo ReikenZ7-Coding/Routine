@@ -209,7 +209,7 @@ function Playlists({ onForm }: { onForm: (f: MusicForm) => void }) {
           )}
           {!empty ? (
             <View style={styles.footer}>
-              <Text style={type.hint}>Opening a playlist pauses Routine's sound and hands over to its app.</Text>
+              <Text style={type.hint}>Opening a playlist pauses Allin's sound and hands over to its app.</Text>
             </View>
           ) : null}
         </Animated.View>
@@ -338,8 +338,8 @@ function TrackSheet({ visible, track, onClose }: { visible: boolean; track?: Tra
           label="Remove song"
           question={
             isSessionOnly(track)
-              ? `Remove “${track.title}” from Routine?`
-              : `Remove “${track.title}”? Routine's copy is deleted. The original file on your phone stays where it is.`
+              ? `Remove “${track.title}” from Allin?`
+              : `Remove “${track.title}”? Allin's copy is deleted. The original file on your phone stays where it is.`
           }
           confirmLabel="Remove"
           onConfirm={() => {
