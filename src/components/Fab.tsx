@@ -5,6 +5,7 @@ import Animated, { ReduceMotion, useAnimatedScrollHandler, useAnimatedStyle, use
 import { scheduleOnRN } from 'react-native-worklets';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { alphaOf, clearOf } from './glass/colour';
+import { useDesktop } from './desktop/context';
 import { EASE_OUT, Press, useReduceMotion } from './Motion';
 import { useFabBottom } from './NowPlaying';
 
@@ -55,6 +56,7 @@ export function Fab({
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const bottom = useFabBottom();
+  const desktop = useDesktop();
   const reduced = useReduceMotion();
   const away = useSharedValue(hidden ? 1 : 0);
   useEffect(() => {
@@ -64,6 +66,8 @@ export function Fab({
     opacity: 1 - away.get(),
     transform: [{ translateY: reduced ? 0 : away.get() * 24 }],
   }));
+  // The desktop shell has no floating button: "New" in the top bar adds.
+  if (desktop.on) return null;
   return (
     <Animated.View
       pointerEvents={hidden ? 'none' : 'box-none'}

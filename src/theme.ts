@@ -58,6 +58,9 @@ export interface GlassMaterial {
   /** Press light: the body lift and the brightened rim while touched (and while focused). */
   pressFill: string;
   pressRim: string;
+  /** The desktop hover light (and keyboard focus) under a row, an item or a button: quieter than the press
+   *  light. Fades in over 120 ms and out over 160 ms. */
+  hover: { fill: string; rim: string };
   /** Header buttons, search pills and segmented troughs: a brighter frost. */
   control: { body: [string, string]; shadow: string };
   /** Anything nested in glass: no lens, no shadow. */
@@ -67,8 +70,9 @@ export interface GlassMaterial {
   /** Bottom sheets: thick glass, with an optional top light band [colour, height in px]. */
   sheet: { body: [string, string]; rimTop: string; band?: [string, number]; grip: string };
   /** The tab bar's drop (the glass under the current tab): its fill top to bottom, its top rim and side rims,
-   *  an optional offset shadow, and the ink of the current tab's icon and label. */
-  drop: { fill: [string, string]; rim: string; rimSide: string; shadow?: string; ink: string };
+   *  an optional offset shadow, and the ink of the current tab's icon and label. `side` is the fill the desktop
+   *  sidebar's current page wears instead, where the drop sits on the lighter chrome under a full label. */
+  drop: { fill: [string, string]; side?: [string, string]; rim: string; rimSide: string; shadow?: string; ink: string };
   /** The moving light: one clock period, the layers it moves (named in assets/art/looks.json), and how
    *  strongly glass catches it as it passes behind. */
   light: { period: number; layers: string[]; catch: number };
@@ -255,6 +259,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         shadowHero: `${LAVENDER_FLOAT}, 0px 22px 50px -6px rgba(255,120,210,0.34)`,
         pressFill: 'rgba(255,255,255,0.12)',
         pressRim: 'rgba(255,255,255,0.95)',
+        hover: { fill: 'rgba(255,255,255,0.05)', rim: 'rgba(255,255,255,0.30)' },
         control: { body: ['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.06)'], shadow: '0px 8px 18px -6px rgba(22,24,112,0.50)' },
         inset: { fill: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.16)', borderTop: 'rgba(255,255,255,0.34)' },
         receded: { body: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'], shadow: '0px 4px 12px -4px rgba(26,28,124,0.24)' },
@@ -266,6 +271,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         },
         drop: {
           fill: ['rgba(255,255,255,0.30)', 'rgba(255,255,255,0.14)'],
+          side: ['rgba(255,255,255,0.13)', 'rgba(255,255,255,0.07)'],
           rim: 'rgba(255,255,255,0.70)',
           rimSide: 'rgba(255,255,255,0.22)',
           shadow: '0px 4px 12px -2px rgba(26,28,124,0.40)',
@@ -354,6 +360,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         shadowHero: STONE_FLOAT,
         pressFill: 'rgba(255,236,196,0.06)',
         pressRim: 'rgba(255,246,224,0.55)',
+        hover: { fill: 'rgba(255,236,196,0.04)', rim: 'rgba(255,246,224,0.20)' },
         control: { body: ['rgba(255,246,226,0.06)', 'rgba(30,29,22,0.50)'], shadow: STONE_PANE },
         inset: { fill: 'rgba(255,246,226,0.04)', border: 'rgba(255,247,228,0.10)', borderTop: 'rgba(255,247,228,0.22)' },
         receded: { body: ['rgba(40,38,29,0.30)', 'rgba(18,18,13,0.40)'], shadow: '0px 1px 2px rgba(14,13,8,0.14)' },
@@ -442,6 +449,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         shadowHero: PAPER_FLOAT,
         pressFill: 'rgba(20,22,18,0.04)',
         pressRim: '#FFFFFF',
+        hover: { fill: 'rgba(20,22,18,0.035)', rim: 'rgba(20,22,18,0.07)' },
         control: { body: ['rgba(255,255,255,0.80)', 'rgba(255,255,255,0.60)'], shadow: '0px 6px 16px -4px rgba(46,52,40,0.18)' },
         inset: { fill: 'rgba(255,255,255,0.65)', border: 'rgba(20,22,18,0.06)', borderTop: '#FFFFFF' },
         receded: { body: ['rgba(255,255,255,0.46)', 'rgba(255,255,255,0.34)'], shadow: '0px 0px 0px 0.5px rgba(30,34,28,0.07)' },
@@ -540,6 +548,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         shadowHero: PINE_FLOAT,
         pressFill: 'rgba(124,227,188,0.06)',
         pressRim: 'rgba(124,227,188,0.55)',
+        hover: { fill: 'rgba(124,227,188,0.05)', rim: 'rgba(124,227,188,0.24)' },
         control: { body: ['rgba(30,88,74,0.44)', 'rgba(8,32,26,0.70)'], shadow: PINE_PANE },
         inset: { fill: 'rgba(214,240,228,0.05)', border: 'rgba(214,240,228,0.10)', borderTop: 'rgba(214,240,228,0.18)' },
         receded: { body: ['rgba(26,80,66,0.30)', 'rgba(6,26,22,0.46)'], shadow: 'none' },

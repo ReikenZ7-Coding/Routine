@@ -114,7 +114,7 @@ export function SettingsSheet({ visible, onClose, onBackup }: { visible: boolean
  * A look as it really is: a crop of its own world under its scrim, a small card of its glass (base, body, rims
  * and top line) and its primary button.
  */
-function Swatch({ look }: { look: ThemeName }) {
+export function Swatch({ look }: { look: ThemeName }) {
   const styles = useStyles(makeStyles);
   const t = themeFor(look);
   const m = t.colors.material;

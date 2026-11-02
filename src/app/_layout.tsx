@@ -18,6 +18,10 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Easing, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ambience } from '../components/Art';
+import { DesktopContext, useDesktopSwitch } from '../components/desktop/context';
+import { DESKTOP_PAGES } from '../components/desktop/nav';
+import { DesktopScreen } from '../components/desktop/Screen';
+import { DesktopShell } from '../components/desktop/Shell';
 import { ActiveBlurTargetContext, LightRoot, WorldFrame } from '../components/Glass';
 import { useBar } from '../components/glass/chrome';
 import type { BlurTarget } from '../components/glass/targets';
@@ -61,12 +65,20 @@ const TABS: { name: string; title: string; icon: IconName; iconActive: IconName 
   { name: 'library', title: 'Library', icon: 'library-outline', iconActive: 'library' },
 ];
 
-// Keyboard focus on web: a white ring with a dark halo reads on every look's background.
+/** Routes only the desktop shell lists in its sidebar. On the phone each lands on its phone equivalent. */
+const DESKTOP_ROUTES = ['overview', 'calendar', 'groceries', 'music'];
+
+// Keyboard focus on web: a white ring with a dark halo reads on every look's background. The desktop shell's
+// menus, the palette's field and switches carry their own roles, and get the same ring.
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   const focus = document.createElement('style');
+  const roles = ['button', 'checkbox', 'tab', 'link', 'menuitem', 'menuitemradio', 'option', 'switch', 'radio', 'combobox'];
   focus.textContent =
-    '[role="button"]:focus-visible,[role="checkbox"]:focus-visible,[role="tab"]:focus-visible,[role="link"]:focus-visible,input:focus-visible,textarea:focus-visible' +
-    '{outline:2px solid #FFFFFF !important;outline-offset:2px;box-shadow:0 0 0 5px rgba(20,22,48,0.85) !important}';
+    [...roles.map((r) => `[role="${r}"]:focus-visible`), 'input:focus-visible', 'textarea:focus-visible'].join(',') +
+    '{outline:2px solid #FFFFFF !important;outline-offset:2px;box-shadow:0 0 0 5px rgba(20,22,48,0.85) !important}' +
+    // A field that frames its own input (the palette's) wears the ring on its rounded frame instead.
+    '[data-ring="field"]:has(input:focus-visible){outline:2px solid #FFFFFF;outline-offset:2px;box-shadow:0 0 0 5px rgba(20,22,48,0.85)}' +
+    '[data-ring="field"] input:focus-visible{outline:none !important;box-shadow:none !important}';
   document.head.appendChild(focus);
 }
 
@@ -100,12 +112,50 @@ export default function RootLayout() {
 function ThemedApp() {
   const { settings } = useStore();
   const theme = themeFor(settings.theme);
+  // One switch for the whole app: the phone layout below 1024 dp, the desktop shell from there (web only).
+  const desktop = useDesktopSwitch();
   return (
     <ThemeContext.Provider value={theme}>
-      <LightRoot>
-        <Shell />
-      </LightRoot>
+      <DesktopContext.Provider value={desktop}>
+        <LightRoot>{desktop.on ? <Desktop /> : <Shell />}</LightRoot>
+      </DesktopContext.Provider>
     </ThemeContext.Provider>
+  );
+}
+
+/**
+ * The desktop shell around the same routes. No tab bar: the sidebar navigates. Pages with a desktop layout of
+ * their own fill the content area; the rest show their phone layout in a centred column for now.
+ */
+function Desktop() {
+  const { colors } = useTheme();
+  const { language } = useStore();
+  return (
+    <View style={styles.root}>
+      <StatusBar style={colors.statusBar} />
+      <ReminderSync />
+      <DesktopShell
+        after={
+          <>
+            <NowPlaying />
+            <ThemeFade />
+          </>
+        }
+      >
+        <Tabs
+          tabBar={() => null}
+          screenLayout={({ children, route }) => <DesktopScreen wide={DESKTOP_PAGES.has(route.name)}>{children}</DesktopScreen>}
+          screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: 'transparent' }, ...TAB_FADE }}
+        >
+          {TABS.map((t) => (
+            <Tabs.Screen key={t.name} name={t.name} options={{ title: t.name === 'language' ? tabTitle(language.languages) : t.title }} />
+          ))}
+          {DESKTOP_ROUTES.map((name) => (
+            <Tabs.Screen key={name} name={name} options={{ title: name[0].toUpperCase() + name.slice(1) }} />
+          ))}
+        </Tabs>
+      </DesktopShell>
+    </View>
   );
 }
 
@@ -155,6 +205,10 @@ function Shell() {
                 ),
               }}
             />
+          ))}
+          {/* The desktop's own pages: never in the phone's tab bar; each sends the phone to its equivalent. */}
+          {DESKTOP_ROUTES.map((name) => (
+            <Tabs.Screen key={name} name={name} options={{ href: null, headerShown: false }} />
           ))}
         </Tabs>
         <MiniPlayer bottom={bar.bottom + bar.height + 10} />

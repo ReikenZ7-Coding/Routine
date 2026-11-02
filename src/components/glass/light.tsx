@@ -7,7 +7,18 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useM
 import { AppState, useWindowDimensions } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle, useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { type ThemeName, useTheme } from '../../theme';
-import { HEADER_MISTS, HEADER_RATIOS, type Light, type LightMotion, LIGHTS, lightBox } from '../Art';
+import {
+  HEADER_MISTS,
+  HEADER_RATIOS,
+  type Light,
+  type LightMotion,
+  LIGHTS,
+  lightBox,
+  useWide,
+  WIDE_LIGHTS,
+  wideLightBox,
+  worldBox,
+} from '../Art';
 import { useReduceMotion } from '../Motion';
 
 /** Bloom breathing period (ms); it rides the same clock as the light. */
@@ -15,7 +26,7 @@ export const BLOOM_PERIOD = 6000;
 
 const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
 /** The clock wraps at a common multiple of every period, so no layer ever jumps at the wrap. */
-const CYCLE = Object.values(LIGHTS)
+const CYCLE = [...Object.values(LIGHTS), ...Object.values(WIDE_LIGHTS)]
   .flat()
   .map((l) => l.motion.period)
   .concat(BLOOM_PERIOD)
@@ -144,25 +155,34 @@ export function pose(m: LightMotion, p: number, frameW: number): LightPose {
   return { tx: m.x0 - m.ax * s, ty: 0, rot: 0, sc: 1 };
 }
 
+/** A layer's resting box in the frame and the length its orbit is measured in: the frame's width on the phone,
+ *  the world's height on a wide window. */
+function placeLight(light: Light, look: ThemeName, frame: Frame, wide: boolean) {
+  if (!wide) return { box: lightBox(light, frame.w, frame.h), unit: frame.w };
+  const world = worldBox(look, frame.w, frame.h);
+  return { box: wideLightBox(light, world), unit: world.height };
+}
+
 /** The look's light, drawn over the world. */
 export function LightField() {
   const { name } = useTheme();
   const frame = useFrame();
+  const wide = useWide();
   return (
     <>
-      {LIGHTS[name].map((light) => (
-        <FieldLayer key={`${name}-${light.name}`} light={light} frame={frame} />
+      {(wide ? WIDE_LIGHTS : LIGHTS)[name].map((light) => (
+        <FieldLayer key={`${name}-${light.name}`} light={light} frame={frame} look={name} wide={wide} />
       ))}
     </>
   );
 }
 
-function FieldLayer({ light, frame }: { light: Light; frame: Frame }) {
-  const box = lightBox(light, frame.w, frame.h);
+function FieldLayer({ light, frame, look, wide }: { light: Light; frame: Frame; look: ThemeName; wide: boolean }) {
+  const { box, unit } = placeLight(light, look, frame, wide);
   const { motion } = light;
-  const { w, t, still } = frame;
+  const { t, still } = frame;
   const style = useAnimatedStyle(() => {
-    const k = pose(motion, phase(t.get(), still.get(), motion.period), w);
+    const k = pose(motion, phase(t.get(), still.get(), motion.period), unit);
     return { transform: [{ translateX: k.tx }, { translateY: k.ty }, { rotate: `${k.rot}deg` }, { scale: k.sc }] };
   });
   return (
@@ -198,24 +218,47 @@ export const RIM = 1;
  */
 export function LightCatch({ placement, look, strength }: { placement: Placement; look: ThemeName; strength: number }) {
   const frame = useFrame();
+  const wide = useWide();
   return (
     <>
-      {LIGHTS[look]
+      {(wide ? WIDE_LIGHTS : LIGHTS)[look]
         .filter((l) => l.anchor !== 'top')
         .map((light) => (
-          <CatchLayer key={light.name} light={light} frame={frame} placement={placement} strength={strength * (light.opacity ?? 1)} />
+          <CatchLayer
+            key={light.name}
+            light={light}
+            frame={frame}
+            placement={placement}
+            strength={strength * (light.opacity ?? 1)}
+            look={look}
+            wide={wide}
+          />
         ))}
     </>
   );
 }
 
-function CatchLayer({ light, frame, placement, strength }: { light: Light; frame: Frame; placement: Placement; strength: number }) {
-  const box = lightBox(light, frame.w, frame.h);
+function CatchLayer({
+  light,
+  frame,
+  placement,
+  strength,
+  look,
+  wide,
+}: {
+  light: Light;
+  frame: Frame;
+  placement: Placement;
+  strength: number;
+  look: ThemeName;
+  wide: boolean;
+}) {
+  const { box, unit } = placeLight(light, look, frame, wide);
   const { motion, bounds } = light;
-  const { w: frameW, t, still, x: fx, y: fy } = frame;
+  const { t, still, x: fx, y: fy } = frame;
   const { baseX, baseY, w, h, scrollX, scrollY } = placement;
   const style = useAnimatedStyle(() => {
-    const k = pose(motion, phase(t.get(), still.get(), motion.period), frameW);
+    const k = pose(motion, phase(t.get(), still.get(), motion.period), unit);
     // The surface's rect in frame coordinates.
     const cx = baseX.get() - scrollX.get() - fx.get();
     const cy = baseY.get() - scrollY.get() - fy.get();

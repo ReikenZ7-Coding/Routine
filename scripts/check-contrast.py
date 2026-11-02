@@ -17,6 +17,13 @@ Glass (pane, control, receded, inset, sheet; each with the tokens it can carry),
 Bare backdrop (titles, section headings, hints): the sharp backdrop with scrim and veil, plus the LightField
   at full strength (every moment of its motion path), averaged over about a glyph (sigma 3 dp) so a
   single star speck doesn't count, in the zones where that text sits.
+Desktop frame (gate_desktop): the wide world (<look>-bg-wide.jpg and its lens) at 1440x900 dp, with the 1280x800
+  and 1024x768 windows cropped from it as the app crops them (looks.json wide.anchor). Every glass tier over every
+  pixel of the wide lens and its light; the sidebar as chrome (the world live-blurred, then its glass and
+  chromeTint, and over a pane passing under it); the hover light on pane and chrome; sheet glass over the dim
+  (palette, side panels, popovers); the kbd hint (inset in control glass); breadcrumbs, page titles, subtitles and
+  page notes on the bare world right of the sidebar; marks at 3:1 (the now line, chart bars, the day line's nodes,
+  the rail's dots) and the focus ring against the world and the glass.
 Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
   onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
   against their track 3:1, and the accent on the player's lit toggle disc 3:1. Today's trail (node, walked path, waypoint
@@ -234,22 +241,23 @@ class Gate:
     def __init__(self):
         self.rows = []
 
-    def text(self, look, surface, token_name, token, bg, origin=(0, 0)):
+    def text(self, look, surface, token_name, token, bg, origin=(0, 0), dims=None):
         """A text check that can also propose the nearest passing colour (python3 scripts/check-contrast.py --suggest)."""
         values = text_on(bg, token)
-        self.check(look, surface, token_name, values, TEXT, origin)
+        self.check(look, surface, token_name, values, TEXT, origin, dims)
         if not self.rows[-1][5]:
             worst_bg = lum(bg).reshape(-1)[int(np.argmin(values))]
             self.rows[-1] = self.rows[-1][:7] + (suggest(token, worst_bg, TEXT),)
 
-    def check(self, look, surface, token_name, values, need, origin=(0, 0)):
+    def check(self, look, surface, token_name, values, need, origin=(0, 0), dims=None):
         """origin: the region's top-left in frame pixels, so the worst pixel can be reported in frame units."""
         values = np.asarray(values)
         v = float(np.min(values))
         where = ''
+        fw, fh = dims or (FW, FH)
         if values.ndim == 2 and values.size > 1:
             y, x = np.unravel_index(int(np.argmin(values)), values.shape)
-            where = f'x {(x + origin[0]) / FW:.2f} y {(y + origin[1]) / FH:.2f}'
+            where = f'x {(x + origin[0]) / fw:.2f} y {(y + origin[1]) / fh:.2f}'
         self.rows.append((look, surface, token_name, v, need, v >= need, where, None))
 
 
@@ -461,6 +469,196 @@ def check_canopy(look, colors, canopy, g):
         g.check(look, f'canopy {hdp} badge', 'accent', text_on(pill, colors['accent']).ravel(), TEXT)
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# The desktop frame: the wide world behind the desktop shell.
+
+DESK_W_DP, DESK_H_DP = 1440, 900
+GW, GH = 960, 600  # gate grid for the wide world: 0.67 px per dp (the lens is soft; text zones average a glyph)
+GDP = GW / DESK_W_DP
+DESK = (GW, GH)
+# Windows: (width, height, sidebar inset, content's left edge, page padding). Comfortable windows dock the 264 dp
+# sidebar; a compact one keeps the 72 dp rail (its labelled sidebar opens over the content, checked as chrome).
+WINDOWS = [(1440, 900, 16, 16 + 264 + 32, 32), (1280, 800, 16, 16 + 264 + 32, 32), (1024, 768, 12, 12 + 72 + 24, 24)]
+FOCUS_HALO = 'rgba(20,22,48,0.85)'
+
+
+def place_wide(light, p, alpha_img):
+    """Where a wide light layer's alpha lands on the wide world at clock value p (looks.json wide)."""
+    box, m = light['box'], light['motion']
+    if box in ('world', 'frame'):
+        w, h, cx, cy = GW, GH, GW / 2, GH / 2
+    else:
+        w, h = int(round(box['w'] * GH)), int(round(box['h'] * GH))
+        ax, ay = light.get('at', [0.5, 0.5])
+        cx, cy = ax * GW, ay * GH
+    src = Image.fromarray((alpha_img * 255).astype(np.uint8), 'L').resize((w, h), Image.BILINEAR)
+    tx = ty = rot = 0.0
+    scale = 1.0
+    s = np.sin(2 * np.pi * p)
+    if m['type'] == 'orbit':
+        th = np.radians(m['phase'] + m['dir'] * 360 * p)
+        tx, ty = m['radius'] * GH * np.cos(th), m['radius'] * GH * np.sin(th)
+    elif m['type'] == 'sway':
+        tx, rot = m['dx'] * GDP * s, m['rotate'] * s
+    elif m['type'] == 'drift':
+        tx, ty, scale = m['ax'] * GDP * s, -m['ay'] * GDP * np.cos(2 * np.pi * p), 1 + m['s'] * s
+    elif m['type'] == 'slide':
+        tx = (m['x0'] - m['ax'] * s) * GDP
+    r = np.radians(rot)
+    cos, sin = np.cos(r) / scale, np.sin(r) / scale
+    ox, oy = cx + tx, cy + ty
+    a_, b_, d_, e_ = cos, sin, -sin, cos
+    c_ = w / 2 - a_ * ox - b_ * oy
+    f_ = h / 2 - d_ * ox - e_ * oy
+    out = src.transform((GW, GH), Image.AFFINE, (a_, b_, c_, d_, e_, f_), resample=Image.BILINEAR)
+    return np.asarray(out).astype(float) / 255
+
+
+def light_states_wide(look):
+    """light_states for the wide world: every moment of its light, layers on one clock sampled together."""
+    lights = META['looks'][look]['wide']['lights']
+    clock = lights[0]['motion']['period']
+    loaded = []
+    for light in lights:
+        im = np.asarray(Image.open(f"{ART}/{light['name']}.png").convert('RGBA')).astype(float) / 255
+        a = im[..., 3]
+        rgb = im[..., :3][a > 0.01].mean(0) if (a > 0.01).any() else np.ones(3)
+        loaded.append((rgb, a, light))
+    fixed = []
+    for rgb, a, light in loaded:
+        if light['motion']['period'] != clock:
+            peak = np.zeros((GH, GW))
+            for p in np.linspace(0, 1, SAMPLES, endpoint=False):
+                peak = np.maximum(peak, place_wide(light, p, a))
+            fixed.append((rgb, peak * light.get('opacity', 1.0), light))
+    return [[(rgb, place_wide(light, p, a) * light.get('opacity', 1.0), light) for rgb, a, light in loaded
+             if light['motion']['period'] == clock] + fixed for p in np.linspace(0, 1, SAMPLES, endpoint=False)]
+
+
+def window_zone(look, win, x0_dp, x1_dp, y0_dp, y1_dp):
+    """A window-space rectangle (dp) as grid pixels of the wide world, cropped the way worldBox crops it."""
+    wd, hd = win
+    width = max(wd, hd * 1.6)
+    height = width / 1.6
+    ax, ay = META['looks'][look]['wide']['anchor']
+    left, top = (wd - width) * ax, (hd - height) * ay
+    gx = lambda x: int(round((x - left) / width * GW))
+    gy = lambda y: int(round((y - top) / height * GH))
+    return gx(x0_dp), gx(x1_dp), gy(y0_dp), gy(y1_dp)
+
+
+def saturate(img, s):
+    luma = (img * np.array([0.2126, 0.7152, 0.0722])).sum(-1, keepdims=True)
+    return np.clip(luma + (img - luma) * s, 0, 1)
+
+
+def gate_desktop(look, theme, g):
+    colors, kinds = theme['colors'], theme['kinds']
+    mat = colors['material']
+    worse_light = colors['statusBar'] != 'dark'
+    wide = META['looks'][look]['wide']
+    lens = load(f'{look}-bg-wide-blur.jpg', DESK)
+    fields = light_states_wide(look)
+    L = f'{look} desktop'
+
+    text_tokens = {k: colors[k] for k in ('text', 'muted', 'faint', 'label', 'link', 'danger')}
+    text_tokens.update({f'kind.{k}.text': v['text'] for k, v in kinds.items()})
+    every = list(text_tokens)
+
+    pane = glass(lens, mat, fields, mat['body'], worse_light)
+    control = glass(lens, mat, fields, mat['control']['body'], worse_light)
+    receded = glass(lens, mat, fields, mat['receded']['body'], worse_light)
+    ic, ia = col(mat['inset']['fill'])
+    inset = over(pane, ic, ia)
+    hc, ha = col(mat['hover']['fill'])
+    bk, bka = col(colors['backdrop'])
+    sheets = []
+    for stop in mat['sheet']['body']:
+        c, a = col(stop)
+        sheets.append(over(over(lens, bk, bka), c, a))
+    if mat['sheet'].get('band'):
+        c, a = col(mat['sheet']['band'][0])
+        sheets.append(over(sheets[0], c, a * max(0.0, 1 - TEXT_TOP / mat['sheet']['band'][1])))
+    sheet = pick_worse(sheets, worse_light)
+
+    # The sidebar is chrome: the browser blurs the world (and its light) live behind it, then its glass and tint.
+    sharp = ra.ambience(load(f'{look}-bg-wide.jpg', DESK), look, wide)
+    sharp_lit = lit(sharp, fields, 1.0, worse_light)
+    live = mat['live']
+    seen = saturate(ra.gblur(sharp_lit, live['webBlur'] * GDP), live['webSaturate'])
+    tc, ta = col(mat['chromeTint'])
+    chrome = over(glass(seen, mat, [[]], mat['body'], worse_light), tc, ta)
+    # The compact sidebar opens over the content: a pane passing under it, at its worst.
+    chrome_over = over(glass(pane, mat, [[]], mat['body'], worse_light), tc, ta)
+    side = chrome[:, : int((16 + 264) * GDP)]
+    side_over = chrome_over[:, : int((12 + 264) * GDP)]
+
+    surfaces = {
+        'pane': (pane, every),
+        'control': (control, ['text', 'muted']),
+        'receded': (receded, ['text', 'muted', 'faint', 'label']),
+        'inset': (inset, every),
+        'sheet': (sheet, every),
+        'sheet inset': (over(sheet, ic, ia), every),
+        'pane hover': (over(pane, hc, ha), every),
+        # The search field's shortcut: text ink (the New menu's letters sit on the sheet, as 'sheet inset').
+        'control kbd': (over(control, ic, ia), ['text']),
+        'sidebar': (side, ['text', 'muted', 'label']),
+        'sidebar hover': (over(side, hc, ha), ['text', 'muted']),
+        'sidebar count': (over(side, ic, ia), ['text', 'muted']),
+        'sidebar over pane': (side_over, ['text', 'muted', 'label']),
+    }
+    if mat.get('bloom'):
+        bm = re.search(r'radial-gradient\(\s*([\d.]+% [\d.]+%) at ([\d.]+% [\d.]+%)\s*,\s*(rgba?\([^)]*\))', mat['bloom'])
+        bc, ba = col(bm.group(3))
+        surfaces['hero'] = (over(pane, bc, ba * radial_alpha_at_text(bm.group(2), bm.group(1))), ['text', 'muted', 'faint', 'label', 'link'])
+    for sname, (bg, names) in surfaces.items():
+        for tname in names:
+            g.text(L, sname, tname, text_tokens[tname], bg, dims=DESK)
+
+    # The current page's drop in the sidebar (its sidebar fill where the look has one): its ink on both stops,
+    # over the chrome.
+    drop = mat['drop']
+    for i, stop in enumerate(drop.get('side') or drop['fill']):
+        c, a = col(stop)
+        g.text(L, f'sidebar drop {i}', 'drop.ink', drop['ink'], over(side, c, a), dims=DESK)
+
+    # Bare world: breadcrumbs, titles, subtitles and page notes, right of the sidebar, in each window.
+    sharp_seen = ra.gblur(sharp_lit, GLYPH * GDP)
+    for wd, hd, inset_dp, left_dp, pad in WINDOWS:
+        x0, x1, y0, y1 = window_zone(look, (wd, hd), left_dp, wd - pad, 16, 200)
+        zone = sharp_seen[max(0, y0):y1, max(0, x0):x1]
+        for tname in ('text', 'muted', 'onSlabMuted', 'link'):
+            g.text(L, f'title zone {wd}x{hd}', tname, colors[tname], zone, (x0, y0), DESK)
+        x0, x1, y0, y1 = window_zone(look, (wd, hd), left_dp, wd - pad, 200, hd - 16)
+        zone = sharp_seen[max(0, y0):y1, max(0, x0):x1]
+        g.text(L, f'page notes {wd}x{hd}', 'onSlabMuted', colors['onSlabMuted'], zone, (x0, y0), DESK)
+
+    # Marks at 3:1: the now line on pane (the calendar draws it under its blocks, so it never lies on inset), chart
+    # bars on their track, the day line's nodes and now marker (text ink) on the hero, the rail's dots on chrome.
+    ac, aa = col(colors['accent'])
+    g.check(L, 'pane', 'now line (accent)', ratio(lum(over(pane, ac, aa)), lum(pane)), NONTEXT, dims=DESK)
+    trc, tra = col(colors['track'])
+    track = over(pane, trc, tra)
+    for k in ('routines', 'gym', 'chinese'):
+        fc, fa = col(kinds[k]['color'])
+        g.check(L, 'chart track', f'kind.{k} bar', ratio(lum(over(pane, fc, fa)), lum(track)), NONTEXT, dims=DESK)
+    hero = surfaces.get('hero', (pane,))[0]
+    for tname in ('node', 'nodeAhead'):
+        c, a = col(colors[tname])
+        g.check(L, 'hero', f'day line {tname}', ratio(lum(over(hero, c, a)), lum(hero)), NONTEXT, dims=DESK)
+    tc2, ta2 = col(colors['text'])
+    g.check(L, 'hero', 'day line now (text)', ratio(lum(over(hero, tc2, ta2)), lum(hero)), NONTEXT, dims=DESK)
+    g.check(L, 'sidebar', 'rail dot (accent)', ratio(lum(over(side, ac, aa)), lum(side)), NONTEXT, dims=DESK)
+
+    # The focus ring: a white ring with a dark halo. On Paper's light world the halo carries it; on the darker
+    # worlds the ring does.
+    ring = FOCUS_HALO if look == 'paper' else '#FFFFFF'
+    for sname, bg in (('world', sharp_seen), ('pane', pane), ('sidebar', side)):
+        c, a = col(ring)
+        g.check(L, sname, 'focus ring', ratio(lum(over(bg, c, a)), lum(bg)), NONTEXT, dims=DESK)
+
+
 def suggest(token, worst, need):
     """The nearest colour of the same hue that passes: mixed toward white (light text) or ink (dark text)."""
     c, _ = col(token)
@@ -479,10 +677,14 @@ def main():
     g = Gate()
     for look in looks:
         gate_look(look, themes[look], g)
+        if '--phone' not in flags:
+            gate_desktop(look, themes[look], g)
     failed = [r for r in g.rows if not r[5]]
     width = max(len(f'{r[1]} / {r[2]}') for r in g.rows)
-    for look in looks:
+    for look in [n for look in looks for n in (look, f'{look} desktop')]:
         rows = [r for r in g.rows if r[0] == look]
+        if not rows:
+            continue
         print(f'\n{look}: {sum(r[5] for r in rows)}/{len(rows)} pass')
         # one line per check, worst first within each surface
         for r in sorted(rows, key=lambda r: (r[1], r[3])):

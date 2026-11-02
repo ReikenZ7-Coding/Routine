@@ -1,5 +1,5 @@
 {
-  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width. bounds: the part of a light's box where its alpha is visible at all (alpha > 0.004), as [x0, y0, x1, y1] fractions of the box; glass skips drawing a light whose bounds miss it. canopy (Pine): the art inside the canopy slab that carries each screen's header; ratio is its height over its width, and it is drawn at the slab's height, anchored to the slab's bottom right.",
+  "about": "Shared by scripts/render-art.py (bakes the lens and the lights), src/components/Art.tsx (draws Ambience and the light layers) and scripts/check-contrast.py (gates the text). Amplitudes are in dp. A light's box is 'frame' (fills the screen frame) or {w,h} in units of the frame width, centred on the frame unless anchor is 'top'. Motion, for a linear clock p in 0..1 per period: orbit: the box centre sits on a circle of radius*frameWidth around the frame centre at angle phase + dir*360*p degrees; sway: translateX = dx*sin(2*pi*p), rotate = rotate*sin(2*pi*p) degrees; drift: translateX = ax*sin(2*pi*p), translateY = -ay*cos(2*pi*p), scale = 1 + s*sin(2*pi*p); slide: translateX = x0 - ax*sin(2*pi*p). header: the mountain art at the top of the Today trail; ratio is its height over its width. bounds: the part of a light's box where its alpha is visible at all (alpha > 0.004), as [x0, y0, x1, y1] fractions of the box; glass skips drawing a light whose bounds miss it. canopy (Pine): the art inside the canopy slab that carries each screen's header; ratio is its height over its width, and it is drawn at the slab's height, anchored to the slab's bottom right. wide: the same world drawn again for the desktop shell's 16:10 window (frame 1440x900 dp; the master <look>-bg-wide.jpg is 2880x1800 and its lens <look>-bg-wide-blur.jpg 1920x1200 at sigma 24). Other window shapes cover-crop the master, placed by anchor [x, y] (0 left or top, 1 right or bottom). Its lights are boxed in the world as drawn: 'world' fills it, or {w,h} in units of the world's height, centred at at [x, y] fractions of the world; an orbit's radius is in world heights too. Its scrim and veil are baked into the wide lens the same way, the veil measured down the world.",
   "frame": {
     "widthDp": 400,
     "heightDp": 860
@@ -41,7 +41,52 @@
           },
           "bounds": [0.11, 0.12, 0.89, 0.89]
         }
-      ]
+      ],
+      "wide": {
+        "frame": {
+          "widthDp": 1440,
+          "heightDp": 900
+        },
+        "anchor": [0.5, 0.5],
+        "scrim": "rgba(36,46,150,0.10)",
+        "topVeil": ["rgba(50,62,172,0.60)", "rgba(50,62,172,0)"],
+        "veilEnd": 0.24,
+        "lensSaturation": 1.0,
+        "lights": [
+          {
+            "name": "lavender-orb-pink",
+            "box": {
+              "w": 0.62,
+              "h": 0.62
+            },
+            "at": [0.62, 0.46],
+            "motion": {
+              "type": "orbit",
+              "period": 90000,
+              "radius": 0.16,
+              "dir": 1,
+              "phase": 0
+            },
+            "bounds": [0.11, 0.11, 0.9, 0.89]
+          },
+          {
+            "name": "lavender-orb-blue",
+            "box": {
+              "w": 0.62,
+              "h": 0.62
+            },
+            "at": [0.36, 0.56],
+            "motion": {
+              "type": "orbit",
+              "period": 90000,
+              "radius": 0.18,
+              "dir": -1,
+              "phase": 180
+            },
+            "bounds": [0.11, 0.12, 0.89, 0.89]
+          }
+        ]
+      }
     },
     "stone": {
       "scrim": "rgba(0,0,0,0)",
@@ -60,7 +105,31 @@
           },
           "bounds": [0.05, 0.0, 1.0, 0.69]
         }
-      ]
+      ],
+      "wide": {
+        "frame": {
+          "widthDp": 1440,
+          "heightDp": 900
+        },
+        "anchor": [0, 0],
+        "scrim": "rgba(0,0,0,0)",
+        "topVeil": ["rgba(24,24,16,0.26)", "rgba(24,24,16,0)"],
+        "veilEnd": 0.18,
+        "lensSaturation": 1.0,
+        "lights": [
+          {
+            "name": "stone-light-beam-wide",
+            "box": "world",
+            "motion": {
+              "type": "sway",
+              "period": 22000,
+              "dx": 18,
+              "rotate": 0.6
+            },
+            "bounds": [0.145, 0.0, 0.867, 0.827]
+          }
+        ]
+      }
     },
     "paper": {
       "scrim": "rgba(0,0,0,0)",
@@ -110,6 +179,31 @@
             "ax": 14
           }
         }
+      },
+      "wide": {
+        "frame": {
+          "widthDp": 1440,
+          "heightDp": 900
+        },
+        "anchor": [1, 0],
+        "scrim": "rgba(0,0,0,0)",
+        "topVeil": ["rgba(248,247,243,0.60)", "rgba(248,247,243,0)"],
+        "veilEnd": 0.22,
+        "lensSaturation": 1.1,
+        "lights": [
+          {
+            "name": "paper-light-sun-wide",
+            "box": "world",
+            "motion": {
+              "type": "drift",
+              "period": 30000,
+              "ax": 24,
+              "ay": 12,
+              "s": 0.04
+            },
+            "bounds": [0.585, 0.0, 1.0, 0.462]
+          }
+        ]
       }
     },
     "pine": {
@@ -134,6 +228,31 @@
       "canopy": {
         "file": "pine-header",
         "ratio": 0.5
+      },
+      "wide": {
+        "frame": {
+          "widthDp": 1440,
+          "heightDp": 900
+        },
+        "anchor": [1, 0],
+        "scrim": "rgba(0,0,0,0)",
+        "topVeil": ["rgba(11,42,36,0)", "rgba(11,42,36,0)"],
+        "veilEnd": 0.2,
+        "lensSaturation": 1.15,
+        "lights": [
+          {
+            "name": "pine-light-moon-wide",
+            "box": "world",
+            "motion": {
+              "type": "drift",
+              "period": 16000,
+              "ax": 18,
+              "ay": 12,
+              "s": 0.06
+            },
+            "bounds": [0.674, 0.069, 0.888, 0.412]
+          }
+        ]
       }
     }
   }

@@ -6,7 +6,7 @@
 import { createContext, useContext } from 'react';
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import type { ThemeName } from '../../theme';
-import { BLURRED, HEADER_BLURS, HEADER_RATIOS } from '../Art';
+import { BLURRED, HEADER_BLURS, HEADER_RATIOS, useWide, WIDE_BLURRED, worldBox } from '../Art';
 import { type Placement, RIM, useFrame } from './light';
 
 /** Set by a screen that draws the header art in its scroll content: where the header's top sits in the frame
@@ -20,8 +20,9 @@ export const LensHeaderContext = createContext<LensHeader | null>(null);
 
 export function GlassLens({ placement, look }: { placement: Placement; look: ThemeName }) {
   const frame = useFrame();
+  const wide = useWide();
   const header = useContext(LensHeaderContext);
-  const headerBlur = header ? HEADER_BLURS[look] : undefined;
+  const headerBlur = header && !wide ? HEADER_BLURS[look] : undefined;
   const { baseX, baseY, scrollX, scrollY } = placement;
   const { x: fx, y: fy } = frame;
   const lens = useAnimatedStyle(() => ({
@@ -42,15 +43,17 @@ export function GlassLens({ placement, look }: { placement: Placement; look: The
       ],
     };
   });
+  // On a wide window the lens is the wide world's, placed exactly where Ambience puts the world.
+  const box = wide ? worldBox(look, frame.w, frame.h) : { left: 0, top: 0, width: frame.w, height: frame.h };
   return (
     <>
       <Animated.Image
-        source={BLURRED[look]}
-        resizeMode="cover"
+        source={wide ? WIDE_BLURRED[look] : BLURRED[look]}
+        resizeMode={wide ? 'stretch' : 'cover'}
         fadeDuration={0}
         pointerEvents="none"
         accessibilityIgnoresInvertColors
-        style={[{ position: 'absolute', left: 0, top: 0, width: frame.w, height: frame.h }, lens]}
+        style={[{ position: 'absolute', ...box }, lens]}
       />
       {headerBlur ? (
         <Animated.Image

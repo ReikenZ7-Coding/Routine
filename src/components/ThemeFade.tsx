@@ -1,11 +1,11 @@
 // A change of look never cuts: for 240ms the old look's blurred world lies over everything and fades away, so the
 // new look comes up through the old one's frosted glass. It is a fade, so it stays under reduced motion.
 import { useEffect, useState } from 'react';
-import { Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { type ThemeName, useTheme } from '../theme';
-import { BLURRED } from './Art';
+import { BLURRED, useWide, WIDE_BLURRED, worldBox } from './Art';
 import { EASE_OUT } from './Motion';
 
 const OUT = { duration: 240, easing: EASE_OUT, reduceMotion: ReduceMotion.Never };
@@ -22,6 +22,8 @@ export function ThemeFade() {
 
 function Cover({ from, onDone }: { from: ThemeName; onDone: () => void }) {
   const o = useSharedValue(1);
+  const wide = useWide();
+  const window = useWindowDimensions();
   useEffect(() => {
     o.set(
       withTiming(0, OUT, (finished) => {
@@ -34,7 +36,18 @@ function Cover({ from, onDone }: { from: ThemeName; onDone: () => void }) {
   const fade = useAnimatedStyle(() => ({ opacity: o.get() }));
   return (
     <Animated.View pointerEvents="none" testID="theme-fade" style={[StyleSheet.absoluteFill, fade]}>
-      <Image source={BLURRED[from]} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
+      {wide ? (
+        <Image
+          source={WIDE_BLURRED[from]}
+          style={[styles.abs, worldBox(from, window.width, window.height)]}
+          resizeMode="stretch"
+          accessibilityIgnoresInvertColors
+        />
+      ) : (
+        <Image source={BLURRED[from]} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
+      )}
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({ abs: { position: 'absolute' } });

@@ -18,6 +18,9 @@ const LEAD = { stiffness: 320, damping: 26, mass: 0.8 };
 const TRAIL = { stiffness: 150, damping: 20, mass: 1 };
 const BLINK = { duration: 120, easing: EASE_OUT, ...FADE };
 
+/** The phone's five tabs. Routes drawn only on a wide window (Overview, Calendar...) never get a slot here. */
+export const PHONE_TABS = ['index', 'inbox', 'gym', 'language', 'library'];
+
 /**
  * The glass tab bar (chrome: a live blur of the screen's world; it never squeezes). A childless glass drop sits
  * under the current tab and flows to the next one on the UI thread; when the trailing edge settles, the drop's
@@ -43,16 +46,21 @@ export function GlassTabBar({
   const shown = useSharedValue(1);
   const flash = useSharedValue(0);
   const placed = useRef(false);
-  const lastIndex = useRef(state.index);
-  const slot = width ? width / state.routes.length : 0;
+  const routes = state.routes.filter((r) => PHONE_TABS.includes(r.name));
+  const found = routes.findIndex((r) => r.key === state.routes[state.index]?.key);
+  const lastIndex = useRef(Math.max(0, found));
+  // A route without a slot (a desktop page reached on a phone, on its way to its phone equivalent) leaves the drop
+  // where it was.
+  const index = found < 0 ? lastIndex.current : found;
+  const slot = width ? width / routes.length : 0;
   // A narrower phone (360dp and under) leaves each tab under 66dp: the labels tighten to 12px and lose their side
   // air, so "Language" still fits whole beside "Library".
   const narrow = slot > 0 && slot < 66;
 
   useEffect(() => {
     if (!slot) return;
-    const l = state.index * slot;
-    const r = (state.index + 1) * slot;
+    const l = index * slot;
+    const r = (index + 1) * slot;
     if (!placed.current) {
       placed.current = true;
       left.set(l);
@@ -67,8 +75,8 @@ export function GlassTabBar({
           shown.set(withTiming(1, BLINK));
         }),
       );
-    } else if (state.index !== lastIndex.current) {
-      const forward = state.index > lastIndex.current;
+    } else if (index !== lastIndex.current) {
+      const forward = index > lastIndex.current;
       const settle = (done?: boolean) => {
         'worklet';
         if (done) {
@@ -87,8 +95,8 @@ export function GlassTabBar({
       left.set(l);
       right.set(r);
     }
-    lastIndex.current = state.index;
-  }, [state.index, slot, reduced, left, right, shown, flash]);
+    lastIndex.current = index;
+  }, [index, slot, reduced, left, right, shown, flash]);
 
   const drop = useAnimatedStyle(() => ({ left: left.get(), width: right.get() - left.get(), opacity: shown.get() }));
   const glint = useAnimatedStyle(() => ({ left: left.get(), width: right.get() - left.get(), opacity: flash.get() }));
@@ -104,9 +112,9 @@ export function GlassTabBar({
               <Animated.View pointerEvents="none" style={[dropGeometry, styles.glint, glint]} />
             </>
           )}
-          {state.routes.map((route, i) => {
+          {routes.map((route, i) => {
             const { options } = descriptors[route.key];
-            const focused = state.index === i;
+            const focused = found === i;
             const label = typeof options.title === 'string' ? options.title : route.name;
             const onPress = () => {
               const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });

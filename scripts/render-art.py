@@ -9,8 +9,9 @@ plus the look's own pieces (Paper's header, mist and header lens; Pine's canopy)
 SceneArt and Now Playing: lavender-* light studies (Lavender), stones-* (Stone), paper-* (Paper), pine-* (Pine).
 
 Usage: python3 scripts/render-art.py [target ...]   (needs numpy and Pillow)
-Targets: lavender stone paper pine (export_look), grain, scenes-lavender, scenes-stone, scenes-paper,
-scenes-pine, or any function name. No target renders everything.
+Targets: lavender stone paper pine (export_look), wide-lavender wide-stone wide-paper wide-pine (export_wide:
+<look>-bg-wide.jpg, 2880x1800, and its lens <look>-bg-wide-blur.jpg, 1920x1200, for the desktop shell), grain,
+scenes-lavender, scenes-stone, scenes-paper, scenes-pine, or any function name. No target renders everything.
 """
 import json
 import sys
@@ -145,10 +146,11 @@ def save_png(rgba_img, name, dither_rgb=True):
     Image.fromarray(out, 'RGBA').save(f'{OUT}/{name}.png', optimize=True)
 
 
-def ambience(img, look):
+def ambience(img, look, spec=None):
     """Composite the scrim and the top veil exactly as Art.tsx Ambience draws them: an even scrim,
-    then a vertical gradient from topVeil[0] at the top to topVeil[1] at veilEnd of the height."""
-    spec = LOOKS[look]
+    then a vertical gradient from topVeil[0] at the top to topVeil[1] at veilEnd of the height. `spec` is the
+    look's wide block for a wide master."""
+    spec = spec or LOOKS[look]
     h = img.shape[0]
     c, a = rgba(spec['scrim'])
     img = img * (1 - a) + c * a
@@ -212,7 +214,7 @@ def to_srgb(lin):
     return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * lin ** (1 / 2.4) - 0.055)
 
 
-def luminance_budget(img, cap, cap_top, top_end, seen_sigma=24, floor=None):
+def luminance_budget(img, cap, cap_top, top_end, seen_sigma=24, floor=None, lens_w=LENS_W):
     """Keep the world's light inside the budget white type needs: wherever the world, blurred the way the lens
     sees it, is brighter than `cap` (relative luminance), scale that region's light down in linear light. Hue
     and chroma survive, so a pool of light stays a pool of colour. Above `top_end` of the height the cap eases
@@ -221,12 +223,12 @@ def luminance_budget(img, cap, cap_top, top_end, seen_sigma=24, floor=None):
     lin = to_linear(img)
     h, w = img.shape[:2]
     lum = (lin * np.array([0.2126, 0.7152, 0.0722])).sum(-1)
-    seen = gblur(lum, seen_sigma * w / LENS_W)
+    seen = gblur(lum, seen_sigma * w / lens_w)
     t = np.clip(np.linspace(0, 1, h) / top_end, 0, 1)[:, None]
     limit = cap_top + (cap - cap_top) * (t * t * (3 - 2 * t))
     hi = 1.0 if floor is None else 1.8
     target = limit if floor is None else np.maximum(np.minimum(seen, limit), cap * floor)
-    gain = gblur(np.clip(target / np.maximum(seen, 1e-6), 0, hi), 12 * w / LENS_W)
+    gain = gblur(np.clip(target / np.maximum(seen, 1e-6), 0, hi), 12 * w / lens_w)
     return to_srgb(lin * gain[..., None])
 
 
@@ -988,11 +990,144 @@ def scenes_pine():
               ('#7CC9AE', 0.35), pine_color='#04170F', light=(0.5, 0.55, 0.6, '#C8F5E2', 0.5), grain_amt=0.008, faceted='#1D5A4B')
 
 
+# ---------------------------------------------------------------------------------------------
+# Wide worlds, for the desktop shell: each world drawn again for a 16:10 window rather than cropped from the
+# portrait one. The master is 2880x1800 (2 px per dp of a 1440x900 window); the lens is 1920x1200 at sigma 24,
+# 1.33 px per dp, the same blur in dp as the phone's lens. Other window shapes cover-crop the master with the
+# look's anchor (looks.json wide.anchor). Light layers are boxes in the world's own units (looks.json wide).
+
+WW, WH = 2880, 1800
+WLENS_W, WLENS_H = 1920, 1200
+WLIGHT_W, WLIGHT_H = 1440, 900  # light layers: 1 px per dp, they are pure falloff
+
+
+def wide_spec(look):
+    return LOOKS[look]['wide']
+
+
+def wide_lens(img, look):
+    spec = wide_spec(look)
+    small = resize(ambience(img, look, spec), WLENS_W, WLENS_H)
+    out = saturate(gblur(small, 24), spec['lensSaturation'])
+    save(out, f'{look}-bg-wide-blur', quality=86)
+
+
+def lavender_wide():
+    """Lavender for a wide window: the periwinkle wash from the top left, azure on the left, the rose pool right
+    of centre, lilac in the top right corner and blue pools low down, with soft bokeh. The same budget as the
+    phone's world keeps white type on its glass."""
+    reseed('lavender-bg-wide')
+    k, w, h = LAV, WW, WH
+    img = gradient([(0, hexc(k['g0'])), (0.10, hexc(k['g1'])), (0.34, hexc(k['g2'])), (0.66, hexc(k['g3'])), (1, hexc(k['g4']))], w, h, tilt=0.34)
+    glow(img, w * 0.0, h * -0.08, 1500, hexc(k['top_c']), k['top'])
+    glow(img, w * 1.02, h * 0.06, 1100, hexc(k['lilac_c']), k['lilac'])
+    glow(img, w * 0.64, h * 0.46, 1150, hexc(k['pink_c']), k['pink'])
+    glow(img, w * 0.06, h * 0.58, 1150, hexc(k['blue_c']), k['blue'])
+    glow(img, w * 0.34, h * 1.08, 1050, hexc(k['violet_c']), k['violet'])
+    glow(img, w * 0.98, h * 1.0, 950, hexc(k['blue2_c']), k['blue2'])
+    img = bokeh(img, 26, 22, 66, (214, 220, 255), k['bokeh'], 8, gutter=16 / 1440)
+    # One budget from top to bottom: on a wide window the top bar's glass sits where the phone's status bar does,
+    # and a lifted band across the whole width would read as a seam.
+    img = luminance_budget(img, k['cap'], k['cap'], k['top_end'], floor=k['floor'], lens_w=WLENS_W)
+    return grain(img, 0.014)
+
+
+def stone_wide():
+    """Stone for a wide window: the window high on the left, its shafts crossing the room to the lower right,
+    the shadow side on the right and the floor's warm bounce along the bottom."""
+    reseed('stone-bg-wide')
+    k, w, h = STONE, WW, WH
+    img = gradient([(0, hexc(k['top'])), (0.45, hexc(k['mid'])), (1, hexc(k['low']))], w, h, tilt=0.40)
+    glow(img, w * 1.08, h * 0.40, 1700, hexc('#2C2E27'), k['shade'])
+    glow(img, -w * 0.04, -h * 0.12, 1500, hexc('#F6E9C8'), k['sun'])
+    glow(img, w * 0.45, h * 1.10, 1700, hexc('#8C8467'), k['bounce'])
+    light = window_light([(-420, 1000, 0.30), (760, 420, 0.24), (1360, 180, 0.16)], 52, 16, 0.96, w, h,
+                         gaps=(40, 60), panes=(200, 320))
+    glow(img, w * 0.30, h * 1.02, 1200, hexc('#6E6956'), k['floor'])
+    lin = to_linear(img) + light * k['beams'] * to_linear(hexc('#FFF0CC'))
+    img = to_srgb(lin)
+    img = luminance_budget(img, k['cap'], k['cap_top'], 0.16, seen_sigma=3, lens_w=WLENS_W)
+    return grain(img, 0.018)
+
+
+def paper_wide():
+    """Paper for a wide window: the dawn glow in the top right, the sage bounce low on the left, and the far
+    ranges drowned in a band of mist across the upper third."""
+    reseed('paper-bg-wide')
+    w, h = WW, WH
+    img = gradient([(0, hexc('#F8F7F3')), (0.45, hexc('#EEEFEA')), (1, hexc('#E4E7E1'))], w, h, tilt=0.2)
+    glow(img, w * 0.86, h * 0.02, 1700, hexc('#FFF3DC'), 0.55)
+    glow(img, w * 0.08, h * 0.86, 1400, hexc('#DCE6DC'), 0.30)
+    glow(img, w * 0.62, h * 0.98, 1100, hexc('#F1E6D6'), 0.22)
+    for y0, amp, color, strength, seed in ((0.25, 0.06, '#C2BEB5', 0.16, 145), (0.31, 0.07, '#B3AFA6', 0.22, 141)):
+        line = ridge(w, h * y0, h * amp, [(1.8, 1), (4.6, 0.4), (10.4, 0.15), (24, 0.05), (59, 0.015)], seed)
+        ridge_img = fill_below(img.copy(), line, hexc(color), soft=3)
+        mist = noise(w, h, 220, 4, seed + 2)[..., None]
+        fade = np.clip(1 - (np.arange(h)[:, None, None] - h * y0) / (h * 0.36), 0, 1)
+        m = strength * fade * (1 - 0.6 * mist)
+        img = img * (1 - m) + ridge_img * m
+    return grain(img, 0.012)
+
+
+def pine_wide():
+    """Pine for a wide window: the moon's mint glow in the top right, the aurora band low across the room and
+    mint mist. No pines stand on the floor here, so none sit behind a panel."""
+    reseed('pine-bg-wide')
+    w, h = WW, WH
+    img = gradient([(0, hexc('#0B2A24')), (0.45, hexc('#071D19')), (1, hexc('#03110E'))], w, h, tilt=0.2)
+    glow(img, w * 0.86, h * 0.0, 1500, hexc('#2E8F74'), 0.22)
+    glow(img, w * 0.04, h * 0.52, 1300, hexc('#114A3C'), 0.45)
+    yy, xx = np.mgrid[:h, :w].astype(float)
+    centre = h * 0.80 + (h * 0.62 - h * 0.80) * xx / w
+    band = gblur(np.exp(-((yy - centre) / (h * 0.06)) ** 2), 60)
+    img = img * (1 - band[..., None] * 0.12) + hexc('#1F6E5A') * band[..., None] * 0.12
+    for yc in (0.40, 0.88):
+        mist = np.exp(-((yy - h * yc) / (h * 0.07)) ** 2) * noise(w, h, 320, 3, int(yc * 100) + 7)
+        img = img * (1 - mist[..., None] * 0.12) + hexc('#2C7A66') * mist[..., None] * 0.12
+    m = noise(w, h, 400, 3, 131)[..., None]
+    img = img * (1 - m * 0.03) + hexc('#2C7A66') * m * 0.03
+    return grain(img, 0.006)
+
+
+def wide_lights(look):
+    """The wide light layers that need their own art (Lavender's orbs are squares and are shared)."""
+    w, h = WLIGHT_W, WLIGHT_H
+    y, x = np.mgrid[:h, :w].astype(float)
+    if look == 'stone':
+        layer = Image.new('L', (w, h), 0)
+        d = ImageDraw.Draw(layer)
+        dx = np.tan(np.radians(52)) * h
+        x0, bw = w * 0.16, w * 0.07
+        d.polygon([(x0, 0), (x0 + bw, 0), (x0 + bw + dx, h), (x0 + dx, h)], fill=255)
+        a = np.asarray(layer.filter(ImageFilter.GaussianBlur(16))).astype(float) / 255
+        t = np.clip(np.linspace(0, 1, h) / 0.94, 0, 1)[:, None]
+        light_png('stone-light-beam-wide', w, h, '#FFF0CD', a * (1 - t * t * (3 - 2 * t)) * STONE_BEAM)
+    elif look == 'paper':
+        d = np.hypot(x - 0.86 * w, y - 0.02 * h)
+        light_png('paper-light-sun-wide', w, h, '#FFF1D6', falloff(d, 420) * 0.35)
+    elif look == 'pine':
+        d = np.hypot(x - 0.78 * w, y - 0.24 * h)
+        light_png('pine-light-moon-wide', w, h, '#7CE3BC', falloff(d, 170) * 0.12)
+
+
+WIDE = {'lavender': lavender_wide, 'stone': stone_wide, 'paper': paper_wide, 'pine': pine_wide}
+
+
+def export_wide(name):
+    """The wide master, its lens and its own light layers. Never touches the phone's art."""
+    img = WIDE[name]()
+    save(img, f'{name}-bg-wide', quality=86)
+    wide_lens(img, name)
+    wide_lights(name)
+
+
 TARGETS = {
     'lavender': lambda: export_look('lavender'), 'stone': lambda: export_look('stone'),
     'paper': lambda: export_look('paper'), 'pine': lambda: export_look('pine'),
     'grain': glass_grain, 'scenes-lavender': scenes_lavender, 'scenes-stone': scenes_stone,
     'scenes-paper': scenes_paper, 'scenes-pine': scenes_pine,
+    'wide-lavender': lambda: export_wide('lavender'), 'wide-stone': lambda: export_wide('stone'),
+    'wide-paper': lambda: export_wide('paper'), 'wide-pine': lambda: export_wide('pine'),
 }
 
 

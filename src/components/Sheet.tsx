@@ -32,8 +32,11 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { Button } from './Button';
+import { useDesktop } from './desktop/context';
+import { Hover } from './desktop/Hover';
 import { Glass, GlassScrollContext } from './Glass';
 import { useKeyboardHeight } from './glass/keyboard';
 import { EASE_OUT, FADE, useReduceMotion } from './Motion';
@@ -145,11 +148,144 @@ export function Sheet({ visible, title, onClose, children }: SheetProps) {
     host.release(id.current);
   }, []);
 
+  const desktop = useDesktop();
   if (!shown) return null;
+  // On a wide window every sheet opens as a floating panel on the right instead (the same content and hand-over).
+  const Panel = desktop.on ? SidePanel : SheetPanel;
   return (
-    <SheetPanel title={title} onClose={onClose} handoff={shown.handoff} closing={closing} onExited={onExited}>
+    <Panel title={title} onClose={onClose} handoff={shown.handoff} closing={closing} onExited={onExited}>
       {children}
-    </SheetPanel>
+    </Panel>
+  );
+}
+
+const SIDE_WIDTH = 440;
+const SIDE_GAP = 16;
+/** How far the panel travels in from the right. */
+const SIDE_TRAVEL = 24;
+
+/**
+ * The desktop's form panel: sheet glass with every corner rounded, floating 16 from the top, right and bottom of
+ * the window over the dimmed world. It slides 24 in from the right and fades over 320 ms (fades only under
+ * reduced motion) and leaves in 220 ms. Esc closes it (the Modal answers Esc with onRequestClose) and focus is held
+ * inside while it is open.
+ */
+function SidePanel({
+  title,
+  onClose,
+  handoff,
+  closing,
+  onExited,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  handoff: boolean;
+  closing: { handoff: boolean } | null;
+  onExited: () => void;
+  children: ReactNode;
+}) {
+  const { colors, type, radii } = useTheme();
+  const styles = useStyles(makeStyles);
+  const { width: windowW } = useWindowDimensions();
+  const reduced = useReduceMotion();
+  const width = Math.min(SIDE_WIDTH, windowW - SIDE_GAP * 2);
+  const dim = useSharedValue(handoff ? 1 : 0);
+  const travel = useSharedValue(reduced ? 0 : SIDE_TRAVEL);
+  const fade = useSharedValue(0);
+  const zero = useSharedValue(0);
+  const restX = useSharedValue(windowW - SIDE_GAP - width);
+  const restY = useSharedValue(SIDE_GAP);
+  // The panel moving right by `travel` is, to the glass inside, a scroll of -travel.
+  const lensScroll = useDerivedValue(() => -travel.get());
+  const scroll = useMemo(() => ({ scrollX: lensScroll, scrollY: zero }), [lensScroll, zero]);
+  const anchor = useMemo(() => ({ x: restX, y: restY }), [restX, restY]);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const contentRef = useRef<ComponentRef<typeof View>>(null);
+  const controls = useMemo<SheetControls>(
+    () => ({
+      reveal: (node) => {
+        const content = contentRef.current;
+        if (!node || !content) return;
+        node.measureLayout(
+          content,
+          (_x: number, y: number) => scrollRef.current?.scrollTo({ y: Math.max(0, y - REVEAL_MARGIN), animated: !reduced }),
+          () => {},
+        );
+      },
+      revealEnd: () => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: !reduced }), 60),
+    }),
+    [reduced],
+  );
+
+  useEffect(() => {
+    if (closing) {
+      const done = (finished?: boolean) => {
+        'worklet';
+        if (finished) scheduleOnRN(onExited);
+      };
+      dim.set(withTiming(closing.handoff ? 1 : 0, DIM));
+      if (!reduced) travel.set(withTiming(SIDE_TRAVEL, SHEET_OUT));
+      fade.set(withTiming(0, reduced ? DIM : { ...SHEET_OUT, ...FADE }, done));
+      return;
+    }
+    dim.set(withTiming(1, DIM));
+    fade.set(withTiming(1, reduced ? DIM : { ...SHEET_IN, ...FADE }));
+    if (!reduced) travel.set(withTiming(0, SHEET_IN));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [closing]);
+
+  const dimStyle = useAnimatedStyle(() => ({ opacity: dim.get() }));
+  const panelStyle = useAnimatedStyle(() => ({ opacity: fade.get(), transform: [{ translateX: travel.get() }] }));
+
+  return (
+    <Modal visible transparent animationType="none" onRequestClose={onClose}>
+      <View style={styles.sideRoot}>
+        <Animated.View style={[StyleSheet.absoluteFill, styles.dim, dimStyle]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={StyleSheet.absoluteFill}
+            onPress={onClose}
+            focusable={false}
+          />
+        </Animated.View>
+        <Animated.View
+          role="dialog"
+          aria-modal
+          aria-label={title}
+          onLayout={(e) => {
+            restX.set(e.nativeEvent.layout.x);
+            restY.set(e.nativeEvent.layout.y);
+          }}
+          style={[styles.side, { width }, panelStyle]}
+        >
+          <GlassScrollContext.Provider value={scroll}>
+            <Glass tier="sheet" topOnly={false} radius={radii.hero} anchor={anchor} style={styles.sideGlass}>
+              <View style={styles.sideHead}>
+                <Text style={[type.sheetTitle, styles.flex]} accessibilityRole="header" numberOfLines={1}>
+                  {title}
+                </Text>
+                <Hover onPress={onClose} squeeze style={styles.sideClose} accessibilityLabel={`Close ${title}`}>
+                  <Ionicons name="close" size={20} color={colors.text} />
+                </Hover>
+              </View>
+              <ScrollView
+                ref={scrollRef}
+                style={styles.flex}
+                contentContainerStyle={styles.sideContent}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View ref={contentRef}>
+                  <SheetContext.Provider value={controls}>{children}</SheetContext.Provider>
+                </View>
+              </ScrollView>
+            </Glass>
+          </GlassScrollContext.Provider>
+        </Animated.View>
+        <ThemeFade />
+      </View>
+    </Modal>
   );
 }
 
@@ -407,4 +543,11 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     question: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.text },
     answers: { flexDirection: 'row', gap: 10 },
     answer: { flex: 1 },
+    flex: { flex: 1 },
+    sideRoot: { flex: 1 },
+    side: { position: 'absolute', top: SIDE_GAP, right: SIDE_GAP, bottom: SIDE_GAP },
+    sideGlass: { flex: 1 },
+    sideHead: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingLeft: 24, paddingRight: 12, paddingTop: 8 },
+    sideClose: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+    sideContent: { paddingHorizontal: 24, paddingBottom: 24 },
   });

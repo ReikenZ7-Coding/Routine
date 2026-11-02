@@ -17,17 +17,18 @@ import { StatsSheet } from '../components/StatsSheet';
 import { type TrailItem, TrailHome } from '../components/TrailHome';
 import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
-import { currentLanguage, dueWords, newWord, practiceTitle, shortTitle, todaysLog } from '../lib/language';
+import { currentLanguage, dueWords, newWord, practiceTitle, shortTitle } from '../lib/language';
 import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/deviceCalendar';
-import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
-import { itemsFor, toggleItem } from '../lib/inbox';
+import { dayPlan } from '../lib/day';
+import { nextSession } from '../lib/gym';
+import { toggleItem } from '../lib/inbox';
 import { moodOf } from '../lib/journal';
-import { type Routine, countOn, iconFor, isDoneOn, isScheduled, isSkipped, sortByTime, tapRoutine, toggleSkip } from '../lib/routines';
-import { boughtOn, friendlyDate, isOnList, parseKey } from '../lib/schedule';
+import { type Routine, countOn, iconFor, isDoneOn, isScheduled, isSkipped, tapRoutine, toggleSkip } from '../lib/routines';
+import { boughtOn, friendlyDate, parseKey } from '../lib/schedule';
 import { useSounds } from '../lib/sounds';
 import { dayStreak } from '../lib/stats';
 import { newId, useStore } from '../lib/store';
-import { type TimedEntry, clock, timedRoutines, upNext } from '../lib/timeline';
+import { type TimedEntry, clock, upNext } from '../lib/timeline';
 import { Fab, useFabScroll } from '../components/Fab';
 import { Chevron, Press } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
@@ -130,8 +131,10 @@ export default function TodayScreen() {
   const isFuture = selected > today;
   const date = parseKey(selected);
 
-  const dayRoutines = sortByTime(routines.filter((r) => isScheduled(r, selected)));
-  const { timed, anytime } = timedRoutines(dayRoutines);
+  // The day's things and its sums, shared with the desktop Overview and the sidebar's counts (lib/day).
+  const plan = dayPlan({ routines, inbox, groceries, gym, language }, selected, today);
+  const dayRoutines = plan.routines;
+  const { timed } = plan;
   const dayEvents = events[selected] ?? [];
   const eventEntries: TimedEntry[] = dayEvents
     .filter((e) => !e.allDay)
@@ -146,10 +149,10 @@ export default function TodayScreen() {
   const timeline = [...timed, ...eventEntries].sort((a, b) => a.start - b.start);
   const next = isToday ? upNext(timed, today, now) : undefined;
 
-  const dayTodos = itemsFor(inbox, selected);
-  const session = sessionFor(gym, selected);
-  const gymProgress = session ? sessionProgress(gym, selected, session) : undefined;
-  const gymDone = !!gymProgress && gymProgress.total > 0 && gymProgress.done === gymProgress.total;
+  const dayTodos = plan.todos;
+  const session = plan.session;
+  const gymProgress = plan.gym;
+  const gymDone = plan.gymDone;
   const upcoming = session ? undefined : nextSession(gym, selected);
   // Language practice is one habit across every language. It joins the day once a language is chosen, and a
   // past day keeps it if minutes were logged.
@@ -157,23 +160,15 @@ export default function TodayScreen() {
   const studying = currentLanguage(language);
   // The balance ring has room for the language's name (up to ten letters).
   const ringLabel = shortTitle(learning);
-  const practice = todaysLog(language, selected);
-  const practiceDone = practice.minutes >= language.target;
-  const showPractice = (learning.length > 0 && !isPast) || practice.minutes > 0;
+  const practice = plan.practice;
+  const practiceDone = plan.practiceDone;
+  const showPractice = plan.showPractice;
   const toReview = dueWords(language, today).length;
-  const dayGroceries = (isPast ? groceries.filter((g) => g.lastBought === selected) : groceries.filter((g) => isOnList(g, selected))).sort(
-    (a, b) => Number(boughtOn(a, selected)) - Number(boughtOn(b, selected)) || a.name.localeCompare(b.name),
-  );
+  const dayGroceries = plan.groceries;
 
   // Progress: every routine, to-do and grocery item counts once, the workout and practice once each.
-  const planned = dayRoutines.filter((r) => !isSkipped(r, selected));
-  const done =
-    planned.filter((r) => isDoneOn(r, selected)).length +
-    dayTodos.filter((t) => t.doneOn).length +
-    dayGroceries.filter((g) => boughtOn(g, selected)).length +
-    (gymDone ? 1 : 0) +
-    (showPractice && practiceDone ? 1 : 0);
-  const total = planned.length + dayTodos.length + dayGroceries.length + (session ? 1 : 0) + (showPractice ? 1 : 0);
+  const planned = plan.planned;
+  const { done, total } = plan;
 
   const replace = (r: Routine) => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? r : x)));
   const tap = (r: Routine) => replace(tapRoutine(r, selected));

@@ -12,6 +12,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } fr
 import Svg, { Path } from 'react-native-svg';
 import { type Theme, useStyles, useTheme } from '../theme';
 import { HEADER_RATIOS, HeaderScene } from './Art';
+import { useDesktop } from './desktop/context';
 import { Button } from './Button';
 import { CANOPY_GAP, Canopy } from './Canopy';
 import { Glass, HeaderMist, LensHeaderContext, useGlassScroll } from './Glass';
@@ -92,12 +93,14 @@ export function TrailHome(p: Props) {
   const { colors, type, name } = theme;
   const styles = useStyles(makeStyles);
   const { width } = useWindowDimensions();
+  const desktop = useDesktop();
   const reduced = useReduceMotion();
   const [balanceOpen, setBalanceOpen] = useState(true);
   const [rows, setRows] = useState<Record<string, number>>({});
   // Header art drawn behind the header (Paper's mountains). Pine's slab comes from Canopy; the other looks show
   // the world itself. Neither changes where anything in the header sits.
-  const art = HEADER_RATIOS[name] !== undefined;
+  // The desktop shows Today in a column on the wide world, without the phone's portrait header art.
+  const art = HEADER_RATIOS[name] !== undefined && !desktop.on;
   const slab = !!colors.material.canopy;
 
   const heights = p.items.map((it) => rows[it.key] ?? 0);

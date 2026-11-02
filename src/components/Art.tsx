@@ -3,7 +3,8 @@
 // made by scripts/render-art.py; assets/art/looks.json holds the values the renderer, this file and the
 // contrast gate (scripts/check-contrast.py) share, so the lens can never drift from Ambience.
 import { LinearGradient as Veil } from 'expo-linear-gradient';
-import { Image, type ImageSourcePropType, StyleSheet, View } from 'react-native';
+import { createContext, useContext } from 'react';
+import { Image, type ImageSourcePropType, StyleSheet, useWindowDimensions, View } from 'react-native';
 import LOOKS_JSON from '../../assets/art/looks.json';
 import { type ThemeName, useTheme } from '../theme';
 
@@ -16,9 +17,12 @@ export type LightMotion =
 
 interface LightSpec {
   name: string;
-  /** 'frame' fills the screen frame; otherwise a box in units of the frame width. */
-  box: 'frame' | { w: number; h: number };
+  /** 'frame' fills the screen frame; otherwise a box in units of the frame width. On a wide world, 'world'
+   *  fills the world as drawn, and a box is in units of the world's height, centred at `at`. */
+  box: 'frame' | 'world' | { w: number; h: number };
   anchor?: 'top';
+  /** Wide worlds: the box's centre, as fractions of the world's width and height. */
+  at?: [number, number];
   opacity?: number;
   /** Where the light is visible at all, as [x0, y0, x1, y1] fractions of its box (glass culls by it). */
   bounds: [number, number, number, number];
@@ -35,6 +39,18 @@ interface LookArt {
   header?: { file: string; ratio: number; blur?: string; mist?: { file: string; motion: LightMotion } };
   /** Pine: the art inside the canopy slab, drawn at the slab's height and anchored to its bottom right. */
   canopy?: { file: string; ratio: number };
+  /** The world drawn again for the desktop shell's wide window. */
+  wide: WideArt;
+}
+
+interface WideArt {
+  /** Where the 16:10 master sits when the window's shape crops it: 0 left or top, 1 right or bottom. */
+  anchor: [number, number];
+  scrim: string;
+  topVeil: [string, string];
+  veilEnd: number;
+  lensSaturation: number;
+  lights: LightSpec[];
 }
 
 const LOOKS = LOOKS_JSON.looks as unknown as Record<ThemeName, LookArt>;
@@ -66,10 +82,64 @@ const LIGHT_SOURCES: Record<string, ImageSourcePropType> = {
   'paper-light-sun': require('../../assets/art/paper-light-sun.png'),
   'paper-mist': require('../../assets/art/paper-mist.png'),
   'pine-light-moon': require('../../assets/art/pine-light-moon.png'),
+  'stone-light-beam-wide': require('../../assets/art/stone-light-beam-wide.png'),
+  'paper-light-sun-wide': require('../../assets/art/paper-light-sun-wide.png'),
+  'pine-light-moon-wide': require('../../assets/art/pine-light-moon-wide.png'),
 };
 
 export interface Light extends LightSpec {
   source: ImageSourcePropType;
+}
+
+/** True inside the desktop shell: Ambience, the lens, the light and the look's crossfade use the wide world. */
+export const WideContext = createContext(false);
+export const useWide = () => useContext(WideContext);
+
+/** The wide masters (2880x1800) and their lenses (1920x1200, sigma 24). */
+export const WIDE_BACKDROPS: Record<ThemeName, ImageSourcePropType> = {
+  lavender: require('../../assets/art/lavender-bg-wide.jpg'),
+  stone: require('../../assets/art/stone-bg-wide.jpg'),
+  paper: require('../../assets/art/paper-bg-wide.jpg'),
+  pine: require('../../assets/art/pine-bg-wide.jpg'),
+};
+export const WIDE_BLURRED: Record<ThemeName, ImageSourcePropType> = {
+  lavender: require('../../assets/art/lavender-bg-wide-blur.jpg'),
+  stone: require('../../assets/art/stone-bg-wide-blur.jpg'),
+  paper: require('../../assets/art/paper-bg-wide-blur.jpg'),
+  pine: require('../../assets/art/pine-bg-wide-blur.jpg'),
+};
+
+/** Scrim, top veil and veil end of each wide world, as baked into its lens. */
+export const WIDE_AMBIENCE: Record<ThemeName, WideArt> = Object.fromEntries(
+  (Object.keys(LOOKS) as ThemeName[]).map((look) => [look, LOOKS[look].wide]),
+) as Record<ThemeName, WideArt>;
+
+/** The wide master is 16:10. */
+const WIDE_RATIO = 1.6;
+
+/** Where the wide world lies in a frame of this size: the master, cover-cropped from the look's anchor. */
+export function worldBox(look: ThemeName, frameW: number, frameH: number) {
+  const width = Math.max(frameW, frameH * WIDE_RATIO);
+  const height = width / WIDE_RATIO;
+  const [ax, ay] = LOOKS[look].wide.anchor;
+  return { left: (frameW - width) * ax, top: (frameH - height) * ay, width, height };
+}
+
+/** The moving light of each wide world. */
+export const WIDE_LIGHTS: Record<ThemeName, Light[]> = Object.fromEntries(
+  (Object.keys(LOOKS) as ThemeName[]).map((look) => [
+    look,
+    LOOKS[look].wide.lights.map((spec) => ({ ...spec, source: LIGHT_SOURCES[spec.name] })),
+  ]),
+) as Record<ThemeName, Light[]>;
+
+/** A wide light layer's resting box in the frame, given where the world lies (worldBox). */
+export function wideLightBox(light: LightSpec, world: { left: number; top: number; width: number; height: number }) {
+  if (light.box === 'world' || light.box === 'frame') return world;
+  const width = light.box.w * world.height;
+  const height = light.box.h * world.height;
+  const [cx, cy] = light.at ?? [0.5, 0.5];
+  return { left: world.left + cx * world.width - width / 2, top: world.top + cy * world.height - height / 2, width, height };
 }
 
 /** The moving light of each look (drawn by LightField over the world, and caught by glass). */
@@ -82,7 +152,7 @@ export const LIGHTS: Record<ThemeName, Light[]> = Object.fromEntries(
 
 /** A light layer's resting box inside a frame of the given size (before its motion is applied). */
 export function lightBox(light: LightSpec, frameW: number, frameH: number) {
-  if (light.box === 'frame') return { left: 0, top: 0, width: frameW, height: frameH };
+  if (light.box === 'frame' || light.box === 'world') return { left: 0, top: 0, width: frameW, height: frameH };
   const width = light.box.w * frameW;
   const height = light.box.h * frameW;
   const top = light.anchor === 'top' ? 0 : (frameH - height) / 2;
@@ -193,7 +263,9 @@ export function HeaderScene({ width }: { width: number }) {
 /** The world behind a whole screen: the backdrop, the scrim and the top veil (also baked into the lens). */
 export function Ambience() {
   const { name } = useTheme();
+  const wide = useWide();
   const art = LOOKS[name];
+  if (wide) return <WideAmbience />;
   return (
     <>
       <Image source={BACKDROPS[name]} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
@@ -202,6 +274,23 @@ export function Ambience() {
     </>
   );
 }
+
+/** The wide world: the master placed by worldBox, and its scrim and veil over it, exactly as baked into its lens. */
+function WideAmbience() {
+  const { name } = useTheme();
+  const { width, height } = useWindowDimensions();
+  const art = LOOKS[name].wide;
+  const box = worldBox(name, width, height);
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Image source={WIDE_BACKDROPS[name]} style={[styles.abs, box]} resizeMode="stretch" accessibilityIgnoresInvertColors />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: art.scrim }]} />
+      <Veil colors={art.topVeil} start={{ x: 0, y: 0 }} end={{ x: 0, y: art.veilEnd }} style={[styles.abs, box]} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({ abs: { position: 'absolute' } });
 
 /** Artwork for the active look. */
 export function SceneArt({ width, height, variant }: { width: number; height: number; variant?: string }) {
