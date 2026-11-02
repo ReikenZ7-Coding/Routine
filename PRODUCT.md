@@ -18,7 +18,7 @@ Success means a person who used to forget things opens the app, knows within a g
 
 ## Positioning
 
-Decided by the builder (Matthew delegated it, 2026-11-01): one calm daily companion for every kind of routine. Habits, gym sessions, language practice and the shopping list live on a single timeline for the day, with reminders, instead of being spread across four separate apps. The person chooses the look that suits them, and each look is a complete world of its own, not a colour swap.
+Decided by the builder (Matthew delegated it, 2026-11-01): one calm daily companion for every kind of routine. Habits, gym sessions, language practice and the shopping list live on a single timeline for the day, with reminders, instead of being spread across four separate apps. The person chooses the look that suits them, and each look is a complete world of its own (its colours, glass, backdrop, header art and type), not a colour swap. Underneath, every look is the same app: every screen has one layout, with the same components in the same places doing the same things.
 
 ## Operating Context
 
@@ -46,6 +46,7 @@ Decided by the builder (Matthew delegated it, 2026-11-01): one calm daily compan
 - Name: Routine.
 - Voice: warm, friendly, plain words; encouraging, never scolding.
 - Four looks, chosen in Settings: Lavender, Stone, Paper and Pine. Each one is modelled on a reference Matthew supplied (in `routine-looks` project memory).
+- The four looks are skins of one app (Matthew, 2026-11-02): on every screen and sheet each look shows the same components, in the same order and places, with the same controls and behaviour. A look may differ only in colours, glass material, backdrop and header art, typeface and weight, and small tokenised radius and rim details.
 - Must not look like generic AI-made design. Quality means it works extremely well and the design is impeccable.
 
 ## Evidence on Hand
