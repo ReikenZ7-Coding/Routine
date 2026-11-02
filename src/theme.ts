@@ -3,8 +3,9 @@
 // - Stone: matte smoked glass in quiet window light, thin editorial type, champagne for what matters.
 // - Paper: milk glass on morning mist, ink type, colour only where it carries meaning.
 // - Pine: smoked green glass under a night canopy, mint edge light, sporty bold type.
-// Lavender and Stone use the floating-glass layouts (GlassHome); Paper and Pine use the trail and hub
-// layouts (TrailHome, Hub). Every look draws its surfaces from one glass material (`colors.material`).
+// The four looks are skins of one app: every screen has one layout, and a look differs only in its colours, its
+// glass material (`colors.material`), its backdrop and header art, its typeface and weights, and the small radius
+// and rim details carried here.
 // Screens read the active look with useTheme() / useStyles(makeStyles).
 import type { BlurTint } from 'expo-blur';
 import { createContext, useContext, useMemo } from 'react';
@@ -90,7 +91,7 @@ export interface GlassMaterial {
     badge: string;
     inset: { fill: string; border: string; borderTop: string };
   };
-  /** Pine: the near-black pill with white bold capitals that tags cards (time of day, "New best", "Up next"). */
+  /** Pine: the near-black pill with white bold capitals that tags cards (time of day, "New best"). */
   tag?: { fill: string; ink: string };
   /** Pine: the moon orb, a soft disc of light bleeding in from a card's top-right corner (fill and its rim). */
   orb?: { fill: string; rim: string };
@@ -139,12 +140,20 @@ export interface Palette {
   accent: string;
   /** The streak flame. */
   streak: string;
-  /** Page looks: the light square behind a row's icon. */
+  /** A light square of the look's colour, for small tiles. */
   tile: string;
-  /** The filled trail node and the count badge. */
+  /** The filled trail node (done, and the ring and dot of the lit one) and the count badge, and their ink. */
   node: string;
   onNode: string;
-  /** A done or active category tile, and its glyph (Stone's champagne; the others' equivalent). */
+  /** Today's trail, the same object in every look: the walked part of the dotted path and the way ahead (each
+   *  with its own alpha), a waypoint ahead (its ring and its fill, which hides the path behind it), and the fill
+   *  inside the lit node's ring. */
+  trailWalked: string;
+  trailAhead: string;
+  nodeAhead: string;
+  nodeAheadFill: string;
+  nodeCurrentFill: string;
+  /** The warm wash behind a lit streak flame, and ink for a glyph drawn on it. */
   warmTile: string;
   onWarmTile: string;
   /** Secondary text on Pine's canopy slab (equals muted elsewhere). */
@@ -213,6 +222,11 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       tile: 'rgba(255,255,255,0.18)',
       node: '#FFFFFF',
       onNode: '#4A35C8',
+      trailWalked: 'rgba(255,255,255,0.90)',
+      trailAhead: 'rgba(255,255,255,0.50)',
+      nodeAhead: 'rgba(255,255,255,0.80)',
+      nodeAheadFill: 'rgba(58,66,166,0.92)',
+      nodeCurrentFill: 'rgba(74,53,200,0.92)',
       warmTile: 'rgba(255,179,230,0.30)',
       onWarmTile: '#FFFFFF',
       onSlabMuted: '#FBFAFF',
@@ -305,6 +319,11 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       tile: 'rgba(255,250,235,0.1)',
       node: '#E6D6B3',
       onNode: '#2E2D24',
+      trailWalked: 'rgba(230,214,179,0.85)',
+      trailAhead: 'rgba(239,233,220,0.50)',
+      nodeAhead: 'rgba(255,247,228,0.70)',
+      nodeAheadFill: 'rgba(58,57,47,0.92)',
+      nodeCurrentFill: 'rgba(46,45,36,0.92)',
       warmTile: 'rgba(230,214,179,0.30)',
       onWarmTile: '#F4E6BF',
       onSlabMuted: '#F1ECE0',
@@ -396,6 +415,11 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       tile: '#F1F1ED',
       node: '#2F3A33',
       onNode: '#FFFFFF',
+      trailWalked: 'rgba(47,58,51,0.85)',
+      trailAhead: 'rgba(92,98,93,0.55)',
+      nodeAhead: 'rgba(30,34,28,0.56)',
+      nodeAheadFill: 'rgba(255,255,255,0.65)',
+      nodeCurrentFill: 'rgba(255,255,255,0.80)',
       warmTile: '#FFE2C8',
       onWarmTile: '#131512',
       onSlabMuted: '#4F5550',
@@ -487,6 +511,11 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       tile: 'rgba(124,227,188,0.1)',
       node: '#7CE3BC',
       onNode: '#06201A',
+      trailWalked: 'rgba(124,227,188,0.85)',
+      trailAhead: 'rgba(192,216,206,0.60)',
+      nodeAhead: 'rgba(214,240,228,0.58)',
+      nodeAheadFill: '#071D19',
+      nodeCurrentFill: '#071D19',
       warmTile: 'rgba(124,227,188,0.16)',
       onWarmTile: '#7CE3BC',
       onSlabMuted: '#D8EBE3',
@@ -668,7 +697,7 @@ export interface Theme {
   radii: Radii;
   /** The pane radius (kept for older call sites; prefer radii). */
   radius: number;
-  /** Layout family only: floating-glass layouts (Lavender, Stone) versus trail and hub layouts (Paper, Pine). */
+  /** Read only by the screens not yet on one shared layout (the Library and the player); new code never reads it. */
   glass: boolean;
   /** Light type on a dark page. */
   dark: boolean;

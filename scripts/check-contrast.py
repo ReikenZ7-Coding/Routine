@@ -19,7 +19,9 @@ Bare backdrop (titles, section headings, hints): the sharp backdrop with scrim a
   single star speck doesn't count, in the zones where that text sits.
 Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
   onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
-  against their track 3:1, and the accent on the player's lit toggle disc 3:1. Pine also checks its canopy slab (check_canopy).
+  against their track 3:1, and the accent on the player's lit toggle disc 3:1. Today's trail (node, walked path, waypoint
+  rings, the lit node's ring) 3:1 on the world in the rail, and onNode on node 4.5:1. Pine also checks its canopy slab
+  (check_canopy).
 """
 import importlib.util
 import json
@@ -396,6 +398,29 @@ def gate_look(look, theme, g):
         bg = sharp[oy:int(zb * FH), ox:int(x1 * FW)]
         for tname in (only[0] if only else ('text', 'muted', 'link')):
             g.text(look, zname, tname, colors[tname], bg, (ox, oy))
+
+    # Today's trail, the same object in every look, drawn straight on the world in the rail at the left of the
+    # content (12 to 68 dp across, below the header). 3:1 as marks: the walked dots, the filled node and the lit
+    # node's ring against the world; a waypoint's ring against the world and against its own fill; the lit ring
+    # against the fill inside it. The way ahead is deliberately faint and carries no state of its own (the
+    # waypoints do), so it is not gated. The done check and the count badge (onNode on node) are 4.5:1.
+    rx0, rx1 = int(12 / FRAME_W_DP * FW), int(68 / FRAME_W_DP * FW)
+    ry0 = int(FH * 0.22)
+    rail = sharp[ry0:int(0.92 * FH), rx0:rx1]
+    rail_l = lum(rail)
+    for tname in ('node', 'trailWalked', 'nodeAhead'):
+        c, a = col(colors[tname])
+        g.check(look, 'trail on world', tname, ratio(lum(over(rail, c, a)), rail_l), NONTEXT, (rx0, ry0))
+    fc, fa = col(colors['nodeAheadFill'])
+    waypoint = over(rail, fc, fa)
+    c, a = col(colors['nodeAhead'])
+    g.check(look, 'trail waypoint fill', 'nodeAhead', ratio(lum(over(waypoint, c, a)), lum(waypoint)), NONTEXT, (rx0, ry0))
+    fc, fa = col(colors['nodeCurrentFill'])
+    lit_fill = over(rail, fc, fa)
+    c, a = col(colors['node'])
+    g.check(look, 'trail lit node fill', 'node', ratio(lum(over(lit_fill, c, a)), lum(lit_fill)), NONTEXT, (rx0, ry0))
+    node_fill = np.broadcast_to(col(colors['node'])[0], (1, 1, 3)).astype(float)
+    g.check(look, 'node fill', 'onNode', text_on(node_fill, colors['onNode']), TEXT)
 
     # The player's shuffle and repeat when on: the glyph and a dot under it in the accent, over the lit inset disc.
     # The disc sits in its own glass circle on looks with controlsInGlass, on Paper's player sheet, and on the bare

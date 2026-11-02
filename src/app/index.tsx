@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { GlassScroll } from '../components/Glass';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GlassHome } from '../components/GlassHome';
 import { BackupSheet } from '../components/BackupSheet';
 import { CalendarStrip } from '../components/CalendarStrip';
 import { Button } from '../components/Button';
@@ -18,7 +17,7 @@ import { StatsSheet } from '../components/StatsSheet';
 import { type TrailItem, TrailHome } from '../components/TrailHome';
 import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
-import { currentLanguage, dueWords, newWord, practiceTitle, shortTitle, tabTitle, todaysLog } from '../lib/language';
+import { currentLanguage, dueWords, newWord, practiceTitle, shortTitle, todaysLog } from '../lib/language';
 import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/deviceCalendar';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { itemsFor, toggleItem } from '../lib/inbox';
@@ -34,7 +33,6 @@ import { Chevron, Press } from '../components/Motion';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { plural } from '../lib/plural';
-import { alphaOf } from '../components/glass/colour';
 import { type Theme, useStyles, useTheme } from '../theme';
 
 type Panel = 'stats' | 'settings' | 'backup' | 'add' | 'routine' | 'todo' | 'grocery' | 'word' | null;
@@ -56,11 +54,10 @@ function minutesNow(): number {
 }
 
 export default function TodayScreen() {
-  const theme = useTheme();
-  const { colors, kinds, type } = theme;
+  const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const store = useStore();
-  const contentBottom = useContentBottom(!theme.glass);
+  const contentBottom = useContentBottom(true);
   const fab = useFabScroll();
   const {
     ready,
@@ -152,8 +149,7 @@ export default function TodayScreen() {
   // past day keeps it if minutes were logged.
   const learning = language.languages;
   const studying = currentLanguage(language);
-  // The shortcut circle is narrow, so it stays generic; the balance ring has room for the language's name.
-  const practiceLabel = tabTitle(learning);
+  // The balance ring has room for the language's name (up to ten letters).
   const ringLabel = shortTitle(learning);
   const practice = todaysLog(language, selected);
   const practiceDone = practice.minutes >= language.target;
@@ -184,7 +180,6 @@ export default function TodayScreen() {
     setPanel(null);
   };
   const live = editing && routines.find((r) => r.id === editing.id);
-  const pinned = routines.filter((r) => r.pinned);
 
   const addTodo = () => {
     const title = todo.trim();
@@ -227,8 +222,8 @@ export default function TodayScreen() {
     </View>
   );
 
-  // One list of the day's things for both layouts: routines, to-dos, then the workout, practice and shopping,
-  // so the rows match the progress count.
+  // The day's things in one list: routines, to-dos, then the workout, practice and shopping, so the trail
+  // matches the progress count.
   const items: TrailItem[] = [
     ...dayRoutines.map((r) => {
       const count = r.target ? countOn(r, selected) : 0;
@@ -238,6 +233,7 @@ export default function TodayScreen() {
         title: r.name,
         icon: iconFor(r),
         color: kinds.routines.color,
+        ink: kinds.routines.text,
         meta: isSkipped(r, selected) ? 'Skipped today' : r.target ? `${when} · ${count}/${r.target}` : when,
         done: isDoneOn(r, selected),
         skipped: isSkipped(r, selected),
@@ -252,6 +248,7 @@ export default function TodayScreen() {
       meta: 'To-do',
       icon: 'checkbox-outline',
       color: kinds.inbox.color,
+      ink: kinds.inbox.text,
       done: !!t.doneOn,
       onPress: () => !isFuture && updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
     })),
@@ -262,6 +259,7 @@ export default function TodayScreen() {
             title: session.name,
             icon: 'barbell',
             color: kinds.gym.color,
+            ink: kinds.gym.text,
             meta: `Workout · ${gymProgress.done}/${gymProgress.total} sets`,
             done: gymDone,
             nav: true,
@@ -277,6 +275,7 @@ export default function TodayScreen() {
             title: practiceTitle(learning),
             icon: 'language',
             color: kinds.chinese.color,
+            ink: kinds.chinese.text,
             meta: `${practice.minutes}/${language.target} min${toReview ? ` · ${plural(toReview, 'word')} to review` : ''}`,
             done: practiceDone,
             nav: true,
@@ -292,6 +291,7 @@ export default function TodayScreen() {
             title: isPast ? 'Groceries bought' : 'Groceries',
             icon: 'basket',
             color: kinds.groceries.color,
+            ink: kinds.groceries.text,
             meta: `${dayGroceries.filter((g) => boughtOn(g, selected)).length} of ${dayGroceries.length} bought · ${dayGroceries
               .slice(0, 3)
               .map((g) => g.name)
@@ -303,173 +303,90 @@ export default function TodayScreen() {
         ]
       : []),
   ];
-  const openLibrary = (shelf: 'routines' | 'groceries') => router.navigate({ pathname: '/library', params: { shelf } });
 
   return (
     <View style={styles.flex}>
       <GlassScroll
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: contentBottom }]}
-        onScroll={theme.glass ? undefined : fab.onScroll}
+        onScroll={fab.onScroll}
       >
-        {theme.glass ? (
-          <GlassHome
-            name={settings.name || 'friend'}
-            greeting={greeting(Math.floor(now / 60))}
-            tagline={theme.name === 'stone' ? 'Breathe in calm. One thing at a time.' : 'Small steps, bright days.'}
-            dateLabel={
-              isToday ? `Today, ${date.getDate()} ${date.toLocaleDateString('en', { month: 'long' })}` : friendlyDate(selected, today)
-            }
-            dayLine={date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
-            calendarOpen={calendarOpen}
-            onToggleCalendar={() => setCalendarOpen((o) => !o)}
-            calendar={calendar}
-            hero={
-              next && isToday
-                ? {
-                    eyebrow: next.state === 'now' ? 'Happening now' : 'Up next',
-                    title: next.entry.routine!.name,
-                    meta:
-                      next.state === 'now'
-                        ? `${formatLeft(next.minutes)} remaining`
-                        : `At ${clock(next.entry.start)} · in ${formatLeft(next.minutes)}`,
-                    action: next.entry.routine!.target ? 'Add one' : 'Mark done',
-                    icon: next.entry.routine!.target ? 'add' : 'checkmark',
-                    next: true,
-                    onAction: () => tap(next.entry.routine!),
-                  }
-                : {
-                    eyebrow: isToday ? "Today's progress" : friendlyDate(selected, today),
-                    title: total === 0 ? 'A clear day' : done === total ? 'All done. Nice work!' : `${done} of ${total} done`,
-                    meta:
-                      total === 0
-                        ? 'Add a routine or a to-do to plan it'
-                        : done === total
-                          ? 'Enjoy the rest of your day'
-                          : 'Keep going, one thing at a time',
-                    action: 'Add a routine',
-                    icon: 'add',
-                    onAction: () => edit(),
-                  }
-            }
-            categories={[
-              pinned[0]
-                ? {
-                    label: pinned[0].name,
-                    kind: 'routines' as const,
-                    icon: iconFor(pinned[0]) as 'repeat',
-                    active: isDoneOn(pinned[0], selected),
-                    onPress: () => tap(pinned[0]),
-                  }
-                : { label: 'Routines', kind: 'routines' as const, icon: 'repeat', onPress: () => openLibrary('routines') },
-              { label: 'Gym', kind: 'gym', icon: 'barbell', active: gymDone, onPress: () => router.navigate('/gym') },
-              {
-                label: practiceLabel,
-                kind: 'chinese',
-                icon: 'language',
-                active: practiceDone,
-                onPress: () => router.navigate('/language'),
-              },
-              { label: 'Groceries', kind: 'groceries', icon: 'basket', onPress: () => openLibrary('groceries') },
-              {
-                label: 'Sounds',
-                kind: 'calendar',
-                icon: sounds.playing ? 'pause' : 'musical-notes',
-                onPress: () => sounds.setSheetOpen(true),
-              },
-            ]}
-            items={items}
-            done={done}
-            total={total}
-            onAdd={() => setPanel('add')}
-            onSettings={() => setPanel('settings')}
-            onStats={() => setPanel('stats')}
-            onSeeAll={() => openLibrary('routines')}
-          />
-        ) : (
-          <TrailHome
-            name={settings.name || 'friend'}
-            greeting={greeting(Math.floor(now / 60))}
-            dateLabel={
-              isToday
-                ? `Today, ${date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })}`
-                : date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })
-            }
-            isToday={isToday}
-            streak={dayStreak(routines, today)}
-            done={done}
-            total={total}
-            items={items}
-            nextKey={next?.entry.routine?.id}
-            nextLabel={
-              next
-                ? next.state === 'now'
-                  ? `Happening now · ${formatLeft(next.minutes)} left`
-                  : `Up next · ${clock(next.entry.start)} · in ${formatLeft(next.minutes)}`
-                : undefined
-            }
-            balance={[
-              {
-                label: 'Routines',
-                value: planned.filter((r) => isDoneOn(r, selected)).length,
-                total: planned.length,
-                unit: planned.length === 1 ? 'routine' : 'routines',
-                color: kinds.routines.color,
-                soft: kinds.routines.soft,
-              },
-              {
-                label: 'Gym',
-                value: gymProgress?.done ?? 0,
-                total: gymProgress?.total ?? 0,
-                unit: 'sets',
-                color: kinds.gym.color,
-                soft: kinds.gym.soft,
-              },
-              {
-                label: ringLabel,
-                value: practice.minutes,
-                total: showPractice ? language.target : 0,
-                unit: 'min',
-                color: kinds.chinese.color,
-                soft: kinds.chinese.soft,
-              },
-            ]}
-            calendarOpen={calendarOpen}
-            onToggleCalendar={() => setCalendarOpen((o) => !o)}
-            calendar={calendar}
-            topInset={insets.top + 16}
-            soundsPlaying={sounds.playing}
-            onSounds={() => sounds.setSheetOpen(true)}
-            onStats={() => setPanel('stats')}
-            onSettings={() => setPanel('settings')}
-            onAdd={() => setPanel('add')}
-          />
-        )}
+        <TrailHome
+          name={settings.name || 'friend'}
+          greeting={greeting(Math.floor(now / 60))}
+          dateLabel={
+            isToday
+              ? `Today, ${date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })}`
+              : date.toLocaleDateString('en', { weekday: 'long', day: 'numeric', month: 'short' })
+          }
+          isToday={isToday}
+          streak={dayStreak(routines, today)}
+          done={done}
+          total={total}
+          items={items}
+          nextKey={next?.entry.routine?.id}
+          nextLabel={
+            next
+              ? next.state === 'now'
+                ? `Happening now · ${formatLeft(next.minutes)} left`
+                : `Up next · ${clock(next.entry.start)} · in ${formatLeft(next.minutes)}`
+              : undefined
+          }
+          balance={[
+            {
+              label: 'Routines',
+              value: planned.filter((r) => isDoneOn(r, selected)).length,
+              total: planned.length,
+              unit: planned.length === 1 ? 'routine' : 'routines',
+              color: kinds.routines.color,
+            },
+            {
+              label: 'Gym',
+              value: gymProgress?.done ?? 0,
+              total: gymProgress?.total ?? 0,
+              unit: 'sets',
+              color: kinds.gym.color,
+            },
+            {
+              label: ringLabel,
+              value: practice.minutes,
+              total: showPractice ? language.target : 0,
+              unit: 'min',
+              color: kinds.chinese.color,
+            },
+          ]}
+          calendarOpen={calendarOpen}
+          onToggleCalendar={() => setCalendarOpen((o) => !o)}
+          calendar={calendar}
+          topInset={insets.top + 16}
+          soundsPlaying={sounds.playing}
+          onSounds={() => sounds.setSheetOpen(true)}
+          onStats={() => setPanel('stats')}
+          onSettings={() => setPanel('settings')}
+          onAdd={() => setPanel('add')}
+        />
 
         {!isFuture && <DayNote date={selected} isToday={isToday} />}
       </GlassScroll>
 
-      {/* The glass looks add from the quick-add bar and the hero card, so they skip the floating button. */}
-      {!theme.glass && (
-        <Fab onPress={() => setPanel('add')} accessibilityLabel="Add a routine, to-do, grocery item or word" hidden={fab.hidden} />
-      )}
+      <Fab onPress={() => setPanel('add')} accessibilityLabel="Add a routine, to-do, grocery item or word" hidden={fab.hidden} />
 
       <Sheet visible={panel === 'add'} title="Add" onClose={close}>
         {(
           [
-            ['routine', 'repeat', 'Routine', 'Something you do regularly, with a time', kinds.routines.color],
+            ['routine', 'repeat', 'Routine', 'Something you do regularly, with a time', kinds.routines.text],
             [
               'todo',
               'checkbox',
               'To-do',
               `A one-off task for ${isToday ? 'today' : friendlyDate(selected, today).toLowerCase()}`,
-              kinds.inbox.color,
+              kinds.inbox.text,
             ],
-            ['grocery', 'basket', 'Grocery item', 'Goes on your shopping list', kinds.groceries.color],
+            ['grocery', 'basket', 'Grocery item', 'Goes on your shopping list', kinds.groceries.text],
             studying
-              ? (['word', 'language', `${studying.name} word`, 'A new flashcard to practise', kinds.chinese.color] as const)
-              : (['word', 'language', 'A language', 'Pick one to learn, with flashcards', kinds.chinese.color] as const),
+              ? (['word', 'language', `${studying.name} word`, 'A new flashcard to practise', kinds.chinese.text] as const)
+              : (['word', 'language', 'A language', 'Pick one to learn, with flashcards', kinds.chinese.text] as const),
           ] as const
-        ).map(([key, icon, title, sub, color]) => (
+        ).map(([key, icon, title, sub, ink]) => (
           <Press
             key={key}
             style={styles.addRow}
@@ -485,21 +402,9 @@ export default function TodayScreen() {
             }}
             accessibilityLabel={`${title}. ${sub}`}
           >
-            {theme.name === 'paper' ? (
-              // Paper: a glass pebble with the kind's colour on the glyph alone.
-              <View style={styles.addPebble}>
-                <Ionicons name={icon} size={20} color={color} />
-              </View>
-            ) : theme.name === 'pine' ? (
-              // Pine: the kind's colour on the glyph, in a soft tile of that colour.
-              <View style={[styles.addPebble, { backgroundColor: alphaOf(color, 0.14) }]}>
-                <Ionicons name={icon} size={20} color={color} />
-              </View>
-            ) : (
-              <View style={[styles.addIcon, { backgroundColor: color }]}>
-                <Ionicons name={icon} size={18} color={colors.onKind} />
-              </View>
-            )}
+            <View style={styles.addPebble}>
+              <Ionicons name={icon} size={20} color={ink} />
+            </View>
             <View style={styles.flex}>
               <Text style={type.bodyMedium}>{title}</Text>
               <Text style={type.small}>{sub}</Text>
@@ -583,7 +488,7 @@ export default function TodayScreen() {
   );
 }
 
-const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
+const makeStyles = ({ colors, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     content: { paddingHorizontal: 16 },
     flex: { flex: 1 },
@@ -591,11 +496,11 @@ const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      marginTop: glass ? 18 : 4,
-      paddingHorizontal: glass ? 0 : 8,
+      marginTop: 4,
+      paddingHorizontal: 8,
     },
     dateTitle: { flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44 },
-    dateText: { fontFamily: fonts.display, fontSize: glass ? 28 : 22, color: colors.text, letterSpacing: -0.5 },
+    dateText: { fontFamily: fonts.display, fontSize: 22, color: colors.text, letterSpacing: -0.5 },
     todayButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -618,7 +523,6 @@ const makeStyles = ({ colors, fonts, type, glass, radii }: Theme) =>
       paddingHorizontal: 8,
       borderRadius: radii.inset,
     },
-    addIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
     addPebble: {
       width: 44,
       height: 44,

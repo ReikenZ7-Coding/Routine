@@ -15,6 +15,8 @@ import { phase, pose, useFrame } from './glass/light';
 import { clearOf } from './glass/colour';
 
 const FOOT = 28;
+/** The space the slab keeps under its foot, before the content that follows it. */
+export const CANOPY_GAP = 20;
 /** The moon glow: a circle this wide, centred this far in from the slab's right edge and down from its top. */
 const MOON = { size: 300, right: 70, top: 20 };
 
@@ -90,7 +92,7 @@ function Moon({ color }: { color: string }) {
 }
 
 const styles = StyleSheet.create({
-  outer: { marginHorizontal: -16, borderBottomLeftRadius: FOOT, borderBottomRightRadius: FOOT, marginBottom: 20 },
+  outer: { marginHorizontal: -16, borderBottomLeftRadius: FOOT, borderBottomRightRadius: FOOT, marginBottom: CANOPY_GAP },
   shell: {
     overflow: 'hidden',
     borderBottomLeftRadius: FOOT,

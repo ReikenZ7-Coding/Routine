@@ -117,9 +117,9 @@ const makeStyles = ({ colors }: Theme) => {
       backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
     },
     ink: {
-      width: 58,
-      height: 58,
-      borderRadius: 29,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: colors.primary,
@@ -131,9 +131,6 @@ const makeStyles = ({ colors }: Theme) => {
     },
     // Lavender: a solid bead, its rim lit at the top, its one glow the rose action light.
     bead: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
       borderColor: alphaOf(lip, 0.3),
       borderTopColor: lip,
       boxShadow: colors.actionGlow,
@@ -144,8 +141,8 @@ const makeStyles = ({ colors }: Theme) => {
       left: 0,
       right: 0,
       height: '45%',
-      borderTopLeftRadius: 29,
-      borderTopRightRadius: 29,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
       backgroundImage: `linear-gradient(180deg, ${alphaOf(lip, 0.18)}, ${clearOf(lip)})`,
     },
   });

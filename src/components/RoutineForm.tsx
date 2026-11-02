@@ -16,7 +16,7 @@ type Errors = Partial<Record<'name' | 'days' | 'start' | 'remind', string>>;
 
 type RepeatChoice = 'daily' | 'weekdays' | 'everyN' | 'once';
 
-export type RoutineFields = Pick<Routine, 'name' | 'repeat' | 'time' | 'target' | 'reminder' | 'start' | 'duration' | 'icon' | 'pinned'>;
+export type RoutineFields = Pick<Routine, 'name' | 'repeat' | 'time' | 'target' | 'reminder' | 'start' | 'duration' | 'icon'>;
 
 const DURATIONS = [5, 10, 15, 30, 45, 60, 90];
 
@@ -62,7 +62,6 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
   const [start, setStart] = useState('');
   const [duration, setDuration] = useState(15);
   const [icon, setIcon] = useState<string | undefined>();
-  const [pinned, setPinned] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   /** Shown once when notifications are off; the next Save goes ahead without the permission. */
   const [notice, setNotice] = useState<string | undefined>();
@@ -90,7 +89,6 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
     setStart(routine?.start ?? '');
     setDuration(routine?.duration ?? 15);
     setIcon(routine?.icon);
-    setPinned(!!routine?.pinned);
   }, [visible, routine]);
 
   async function save() {
@@ -144,7 +142,6 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
       start: startAt,
       duration: startAt ? duration : undefined,
       icon,
-      pinned: pinned || undefined,
     });
   }
 
@@ -281,19 +278,6 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
             </Press>
           );
         })}
-      </View>
-
-      <View style={styles.switchRow}>
-        <View style={styles.flex}>
-          <Text style={styles.switchTitle}>Shortcut on Today</Text>
-          <Text style={styles.switchSub}>A one-tap button at the top of your day</Text>
-        </View>
-        <Switch
-          value={pinned}
-          onValueChange={setPinned}
-          trackColor={{ true: kinds.routines.color }}
-          accessibilityLabel="Shortcut on Today"
-        />
       </View>
 
       <View style={styles.switchRow}>
