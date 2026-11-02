@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { marksFor, monthGrid, weekOf } from '../src/lib/agenda.ts';
-import { EMPTY_CHINESE } from '../src/lib/chinese.ts';
+import { EMPTY_LANGUAGE, makeLanguage } from '../src/lib/language.ts';
 import { EMPTY_GYM } from '../src/lib/gym.ts';
 
 const today = '2026-10-29'; // Thursday
@@ -21,7 +21,7 @@ test('month grid covers every day of the month once', () => {
 test('marks a gym day and a weekly routine on the right dates', () => {
   const state = {
     groceries: [],
-    chinese: EMPTY_CHINESE,
+    language: EMPTY_LANGUAGE,
     gym: { ...EMPTY_GYM, sessions: [{ id: 's', name: 'Push', days: [1], exercises: [] }] },
     routines: [{ id: 'r', name: 'Clean', repeat: { kind: 'weekdays' as const, days: [6] }, time: 'morning' as const, doneDates: [] }],
   };
@@ -33,7 +33,7 @@ test('marks a gym day and a weekly routine on the right dates', () => {
 test('past days only show what was actually done', () => {
   const state = {
     groceries: [],
-    chinese: EMPTY_CHINESE,
+    language: EMPTY_LANGUAGE,
     gym: EMPTY_GYM,
     routines: [
       { id: 'r', name: 'Stretch', repeat: { kind: 'everyNDays' as const, n: 1 }, time: 'evening' as const, doneDates: ['2026-10-27'] },
@@ -42,4 +42,14 @@ test('past days only show what was actually done', () => {
   assert.equal(marksFor(state, '2026-10-27', today).routines, true);
   assert.equal(marksFor(state, '2026-10-28', today).routines, false);
   assert.equal(marksFor(state, '2026-10-30', today).routines, true);
+});
+
+test('practice shows ahead once a language is chosen, and on past days only when minutes were logged', () => {
+  const base = { groceries: [], gym: EMPTY_GYM, routines: [] };
+  const none = { ...base, language: EMPTY_LANGUAGE };
+  assert.equal(marksFor(none, '2026-10-30', today).chinese, false);
+  const learning = { ...base, language: { languages: [makeLanguage('es')], logs: [{ date: '2026-10-27', minutes: 10, reviewed: 0 }] } };
+  assert.equal(marksFor(learning, '2026-10-30', today).chinese, true);
+  assert.equal(marksFor(learning, '2026-10-27', today).chinese, true);
+  assert.equal(marksFor(learning, '2026-10-28', today).chinese, false);
 });

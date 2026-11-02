@@ -1,5 +1,5 @@
 // Numbers for the "Your week" overview.
-import type { ChineseState } from './chinese.ts';
+import type { LanguageState } from './language.ts';
 import type { GymState } from './gym.ts';
 import { type Routine, isDoneOn, isScheduled, isSkipped, streak } from './routines.ts';
 import { addDays } from './schedule.ts';
@@ -12,11 +12,12 @@ export interface WeekStats {
   days: { date: string; share: number | null; done: number; planned: number }[];
   gymDays: number;
   gymVolume: number;
-  chineseMinutes: number;
+  /** Language practice minutes, across every language. */
+  practiceMinutes: number;
   bestStreaks: { name: string; streak: number }[];
 }
 
-export function weekStats(routines: Routine[], gym: GymState, chinese: ChineseState, today: string): WeekStats {
+export function weekStats(routines: Routine[], gym: GymState, language: Pick<LanguageState, 'logs'>, today: string): WeekStats {
   const dates = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
   let routinesDone = 0;
   let routinesPlanned = 0;
@@ -35,7 +36,7 @@ export function weekStats(routines: Routine[], gym: GymState, chinese: ChineseSt
     days,
     gymDays: new Set(weekLogs.map((l) => l.date)).size,
     gymVolume: weekLogs.reduce((v, l) => v + l.weight * l.reps, 0),
-    chineseMinutes: chinese.logs.filter((l) => l.date >= from && l.date <= today).reduce((m, l) => m + l.minutes, 0),
+    practiceMinutes: language.logs.filter((l) => l.date >= from && l.date <= today).reduce((m, l) => m + l.minutes, 0),
     bestStreaks: routines
       .map((r) => ({ name: r.name, streak: streak(r, today) }))
       .filter((s) => s.streak > 1)

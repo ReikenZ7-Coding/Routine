@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
-import { type ChineseState, EMPTY_CHINESE } from './chinese';
+import { EMPTY_LANGUAGE, type LanguageState, upgradeLanguageState } from './language';
 import type { BackupData } from './backup';
 import { EMPTY_GYM, type GymState } from './gym';
 import type { InboxItem } from './inbox';
@@ -12,7 +12,8 @@ import { type GroceryItem, dateKey, markBought, unmarkBought } from './schedule'
 
 const STORAGE_KEY = 'routine.groceries.v1';
 const GYM_KEY = 'routine.gym.v1';
-const CHINESE_KEY = 'routine.chinese.v1';
+/** Language practice. The key keeps its first name, from when the feature was Chinese only. */
+const LANGUAGE_KEY = 'routine.chinese.v1';
 const ROUTINES_KEY = 'routine.routines.v1';
 const SETTINGS_KEY = 'routine.settings.v1';
 const JOURNAL_KEY = 'routine.journal.v1';
@@ -50,8 +51,9 @@ interface Store {
   gym: GymState;
   /** Apply a pure update (see gym.ts) to the gym state. */
   updateGym: (fn: (g: GymState) => GymState) => void;
-  chinese: ChineseState;
-  updateChinese: (fn: (c: ChineseState) => ChineseState) => void;
+  language: LanguageState;
+  /** Apply a pure update (see language.ts) to the language practice state. */
+  updateLanguage: (fn: (l: LanguageState) => LanguageState) => void;
   routines: Routine[];
   updateRoutines: (fn: (r: Routine[]) => Routine[]) => void;
   settings: Settings;
@@ -74,7 +76,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [groceries, setGroceries] = useState<GroceryItem[]>([]);
   const [gym, setGym] = useState<GymState>(EMPTY_GYM);
-  const [chinese, setChinese] = useState<ChineseState>(EMPTY_CHINESE);
+  const [language, setLanguage] = useState<LanguageState>(EMPTY_LANGUAGE);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [journal, setJournal] = useState<Journal>({});
@@ -83,13 +85,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const loaded = useRef(false);
 
   useEffect(() => {
-    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY, CHINESE_KEY, ROUTINES_KEY, SETTINGS_KEY, JOURNAL_KEY, INBOX_KEY])
-      .then(([[, groceriesRaw], [, gymRaw], [, chineseRaw], [, routinesRaw], [, settingsRaw], [, journalRaw], [, inboxRaw]]) => {
+    AsyncStorage.multiGet([STORAGE_KEY, GYM_KEY, LANGUAGE_KEY, ROUTINES_KEY, SETTINGS_KEY, JOURNAL_KEY, INBOX_KEY])
+      .then(([[, groceriesRaw], [, gymRaw], [, languageRaw], [, routinesRaw], [, settingsRaw], [, journalRaw], [, inboxRaw]]) => {
         if (inboxRaw) setInbox(JSON.parse(inboxRaw));
         if (journalRaw) setJournal(JSON.parse(journalRaw));
         if (groceriesRaw) setGroceries(JSON.parse(groceriesRaw));
         if (gymRaw) setGym(JSON.parse(gymRaw));
-        if (chineseRaw) setChinese(JSON.parse(chineseRaw));
+        // Older saves (Chinese only) are upgraded in memory; the next save writes the new fields alongside.
+        if (languageRaw) setLanguage(upgradeLanguageState(JSON.parse(languageRaw)));
         if (routinesRaw) setRoutines(JSON.parse(routinesRaw));
         if (settingsRaw) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(settingsRaw) });
       })
@@ -112,8 +115,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loaded.current) return;
-    AsyncStorage.setItem(CHINESE_KEY, JSON.stringify(chinese)).catch(() => {});
-  }, [chinese]);
+    AsyncStorage.setItem(LANGUAGE_KEY, JSON.stringify(language)).catch(() => {});
+  }, [language]);
 
   useEffect(() => {
     if (!loaded.current) return;
@@ -140,7 +143,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const restore = useCallback((data: BackupData) => {
     setGroceries(data.groceries as GroceryItem[]);
     setGym({ ...EMPTY_GYM, ...(data.gym as GymState) });
-    setChinese({ ...EMPTY_CHINESE, ...(data.chinese as ChineseState) });
+    // The backup format keeps its `chinese` field; any older backup's shape is upgraded here.
+    setLanguage(upgradeLanguageState(data.chinese));
     setRoutines(data.routines as Routine[]);
     setJournal(data.journal as Journal);
     setInbox(data.inbox as InboxItem[]);
@@ -148,7 +152,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const updateSettings = useCallback((changes: Partial<Settings>) => setSettings((s) => ({ ...s, ...changes })), []);
   const updateRoutines = useCallback((fn: (r: Routine[]) => Routine[]) => setRoutines(fn), []);
   const updateGym = useCallback((fn: (g: GymState) => GymState) => setGym(fn), []);
-  const updateChinese = useCallback((fn: (c: ChineseState) => ChineseState) => setChinese(fn), []);
+  const updateLanguage = useCallback((fn: (l: LanguageState) => LanguageState) => setLanguage(fn), []);
 
   // Roll the list over when the app comes back after midnight.
   useEffect(() => {
@@ -197,8 +201,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toggleBought,
       gym,
       updateGym,
-      chinese,
-      updateChinese,
+      language,
+      updateLanguage,
       routines,
       updateRoutines,
       settings,
@@ -220,8 +224,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toggleBought,
       gym,
       updateGym,
-      chinese,
-      updateChinese,
+      language,
+      updateLanguage,
       routines,
       updateRoutines,
       settings,

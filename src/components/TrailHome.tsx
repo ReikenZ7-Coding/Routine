@@ -1,5 +1,5 @@
 // Today on the page looks (Paper, Pine): a greeting under misty mountains, a streak pill, the day's
-// trail of routines winding past a dotted path, and the balance rings for routines, gym and Chinese.
+// trail of routines winding past a dotted path, and the balance rings for routines, gym and language practice.
 // On Paper the trail is a footpath up the mountain: the walked part is inked in, the way ahead is faint, done
 // steps sink back into the fog, the step that's up next is the lit one, and the last node is the summit.
 // On Pine the header sits on the canopy slab; the walked part of the trail glows mint, the step that's up next

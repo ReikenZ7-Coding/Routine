@@ -1,6 +1,6 @@
 // What belongs on a given day, across every part of the app. Pure, so the calendar can
 // ask about any date (past, today or future) without touching storage.
-import { type ChineseState, todaysLog } from './chinese.ts';
+import { type LanguageState, todaysLog } from './language.ts';
 import { type GymState, sessionFor } from './gym.ts';
 import { type Routine, isScheduled } from './routines.ts';
 import { type GroceryItem, isOnList } from './schedule.ts';
@@ -8,7 +8,7 @@ import { type GroceryItem, isOnList } from './schedule.ts';
 export interface DayState {
   groceries: GroceryItem[];
   gym: GymState;
-  chinese: ChineseState;
+  language: Pick<LanguageState, 'languages' | 'logs'>;
   routines: Routine[];
 }
 
@@ -26,7 +26,8 @@ export function marksFor(state: DayState, date: string, today: string): DayMarks
   return {
     routines: past ? state.routines.some((r) => r.doneDates.includes(date)) : state.routines.some((r) => isScheduled(r, date)),
     gym: past ? state.gym.logs.some((l) => l.date === date) : !!sessionFor(state.gym, date),
-    chinese: !past ? state.chinese.words.length > 0 || state.chinese.logs.length > 0 : todaysLog(state.chinese, date).minutes > 0,
+    // Practice is planned on every day ahead once a language is chosen; a past day shows if minutes were logged.
+    chinese: !past ? state.language.languages.length > 0 : todaysLog(state.language, date).minutes > 0,
     groceries: !past ? state.groceries.some((g) => isOnList(g, date)) : state.groceries.some((g) => g.lastBought === date),
   };
 }

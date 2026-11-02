@@ -26,6 +26,7 @@ import { MiniPlayer, NowPlaying } from '../components/NowPlaying';
 import { ThemeFade } from '../components/ThemeFade';
 import { syncReminders } from '../lib/reminders';
 import { SoundProvider } from '../lib/sounds';
+import { tabTitle } from '../lib/language';
 import { StoreProvider, useStore } from '../lib/store';
 import { ThemeContext, themeFor, useTheme } from '../theme';
 
@@ -55,7 +56,8 @@ const TABS: { name: string; title: string; icon: IconName; iconActive: IconName 
   { name: 'index', title: 'Today', icon: 'today-outline', iconActive: 'today' },
   { name: 'inbox', title: 'Inbox', icon: 'file-tray-outline', iconActive: 'file-tray' },
   { name: 'gym', title: 'Gym', icon: 'barbell-outline', iconActive: 'barbell' },
-  { name: 'chinese', title: 'Chinese', icon: 'language-outline', iconActive: 'language' },
+  // Titled by the language being learnt (see tabTitle).
+  { name: 'language', title: 'Language', icon: 'language-outline', iconActive: 'language' },
   { name: 'library', title: 'Library', icon: 'library-outline', iconActive: 'library' },
 ];
 
@@ -109,6 +111,7 @@ function ThemedApp() {
 
 function Shell() {
   const { colors, fonts } = useTheme();
+  const { language } = useStore();
   const bar = useBar();
   // The focused screen hands its blur target up, so chrome drawn over every screen blurs the right world.
   const [target, setTarget] = useState<BlurTarget | null>(null);
@@ -145,7 +148,7 @@ function Shell() {
               key={t.name}
               name={t.name}
               options={{
-                title: t.title,
+                title: t.name === 'language' ? tabTitle(language.languages) : t.title,
                 headerShown: false,
                 tabBarIcon: ({ color, size, focused }) => (
                   <Ionicons name={focused ? t.iconActive : t.icon} color={color as string} size={size - 2} />

@@ -1,4 +1,5 @@
-// Everything in one JSON string, so people can move to a new phone or keep a copy.
+// Everything in one JSON string, so people can move to a new phone or keep a copy. The `chinese` part holds
+// language practice (every language, its words and the minutes log); it keeps that name so old backups restore.
 
 export const BACKUP_KEYS = ['groceries', 'gym', 'chinese', 'routines', 'journal', 'inbox'] as const;
 export type BackupKey = (typeof BACKUP_KEYS)[number];

@@ -18,7 +18,7 @@ const GROW = LinearTransition.duration(240).easing(EASE_OUT);
 export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { type } = useTheme();
   const styles = useStyles(makeStyles);
-  const { groceries, gym, chinese, routines, journal, inbox, restore } = useStore();
+  const { groceries, gym, language, routines, journal, inbox, restore } = useStore();
   const [pasted, setPasted] = useState('');
   const [shown, setShown] = useState<string | null>(null);
   const [error, setError] = useState<string | undefined>();
@@ -32,7 +32,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
   }, [visible]);
 
   const exportAll = async () => {
-    const text = makeBackup({ groceries, gym, chinese, routines, journal, inbox });
+    const text = makeBackup({ groceries, gym, chinese: language, routines, journal, inbox });
     if (Platform.OS === 'web') return setShown(text);
     setExporting(true);
     try {
@@ -93,7 +93,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
         {pending ? (
           <Animated.View key="ask" entering={SHOW} exiting={HIDE} style={styles.ask}>
             <Text style={styles.question} accessibilityLiveRegion="polite">
-              Replace everything? Your routines, gym, Chinese, groceries and notes will be replaced by the backup.
+              Replace everything? Your routines, gym, language practice, groceries and notes will be replaced by the backup.
             </Text>
             <View style={styles.answers}>
               <Button label="Keep mine" variant="secondary" onPress={() => setPending(null)} style={styles.answer} />

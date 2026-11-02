@@ -86,7 +86,7 @@ test('a heavier lift than every earlier day is a record; the very first one is n
   assert.deepEqual(history[1], { date: '2026-10-23', sessionName: 'Legs', sets: 1, volume: 312.5, records: 1 });
 });
 
-test('week stats count routines, gym and Chinese over the last 7 days', () => {
+test('week stats count routines, gym and language practice over the last 7 days', () => {
   const s = weekStats(
     [daily({ doneDates: ['2026-10-29', '2026-10-30'] })],
     { sessions: [], logs: [log('2026-10-28', 50, 10), log('2026-10-20', 50)] },
@@ -97,7 +97,7 @@ test('week stats count routines, gym and Chinese over the last 7 days', () => {
   assert.equal(s.routinesDone, 2);
   assert.equal(s.gymDays, 1);
   assert.equal(s.gymVolume, 500);
-  assert.equal(s.chineseMinutes, 20);
+  assert.equal(s.practiceMinutes, 20);
   assert.deepEqual(s.bestStreaks, [{ name: 'Water', streak: 2 }]);
 });
 

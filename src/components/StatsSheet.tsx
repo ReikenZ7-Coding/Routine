@@ -13,14 +13,15 @@ import { alphaOf } from './glass/colour';
 import { EASE_OUT, useReduceMotion } from './Motion';
 import { Divider, Section } from './Section';
 import { Sheet } from './Sheet';
+import { practiceSubject } from '../lib/language';
 
 /** "Your week": how the last seven days went, plus best streaks and lifts. */
 export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { kinds, type, name } = useTheme();
   const styles = useStyles(makeStyles);
-  const { today, routines, gym, chinese } = useStore();
+  const { today, routines, gym, language } = useStore();
   // Always built (it is cheap), so the sheet keeps its content while it slides away.
-  const s = weekStats(routines, gym, chinese, today);
+  const s = weekStats(routines, gym, language, today);
   const pct = s.routinesPlanned ? Math.round((100 * s.routinesDone) / s.routinesPlanned) : null;
   const prs = personalRecords(gym.logs).slice(0, 5);
 
@@ -40,7 +41,7 @@ export function StatsSheet({ visible, onClose }: { visible: boolean; onClose: ()
         {', '}
         <Text style={styles.strong}>{plural(s.gymDays, 'gym day').replace(' ', '\u00A0')}</Text>
         {' and '}
-        <Text style={styles.strong}>{`${s.chineseMinutes}\u00A0min`}</Text> of Chinese.
+        <Text style={styles.strong}>{`${s.practiceMinutes}\u00A0min`}</Text> of {practiceSubject(language.languages)} practice.
       </Text>
 
       <Glass style={styles.week}>

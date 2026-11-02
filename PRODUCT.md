@@ -32,7 +32,7 @@ Decided by the builder (Matthew delegated it, 2026-11-01): one calm daily compan
 - Routines with time, duration, icon, repeat days, counters, skip-today (keeps the streak), pin, and reminders.
 - Day timeline with a week and month calendar; Inbox for quick captures; Library for routines and groceries with search and filters.
 - Gym: weekly session plans, set logging, working weight, last-time and PR badges, history.
-- Chinese: word review with spaced repetition and a focus timer. It has no relation to Matthew's Street Mandarin app.
+- Language: practice for any language the person is learning (one or several; Chinese was the first and existing Chinese words carry over). A shared daily minutes target and streak, word review with spaced repetition per word, a focus timer, and small beginner sets for eight common languages. It has no relation to Matthew's Street Mandarin app.
 - Groceries list with sharing; daily mood and note; weekly stats; focus sounds; backup export and restore.
 - Settings: name and one of four looks (Lavender, Stone, Paper, Pine).
 - Built with Expo SDK 58 and React Native (new architecture). Android APKs are built by GitHub Actions on every push.

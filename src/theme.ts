@@ -265,7 +265,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     kinds: {
       routines: { color: '#C9A8FF', soft: 'rgba(201,168,255,0.22)', text: '#FFFFFF', label: 'Routines' },
       gym: { color: '#FFC9A8', soft: 'rgba(255,201,168,0.22)', text: '#FFFFFF', label: 'Gym' },
-      chinese: { color: '#FFB3E6', soft: 'rgba(255,179,230,0.22)', text: '#FFFFFF', label: 'Chinese' },
+      chinese: { color: '#FFB3E6', soft: 'rgba(255,179,230,0.22)', text: '#FFFFFF', label: 'Language' },
       groceries: { color: '#9FF0D0', soft: 'rgba(159,240,208,0.20)', text: '#FFFFFF', label: 'Groceries' },
       calendar: { color: '#E9E5FF', soft: 'rgba(255,255,255,0.20)', text: '#FFFFFF', label: 'Calendar' },
       inbox: { color: '#B9C8FF', soft: 'rgba(185,200,255,0.22)', text: '#FFFFFF', label: 'Inbox' },
@@ -355,7 +355,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     kinds: {
       routines: { color: '#E6D6B3', soft: 'rgba(230,214,179,0.16)', text: '#F3E9D3', label: 'Routines' },
       gym: { color: '#CDB083', soft: 'rgba(205,176,131,0.16)', text: '#F2E6CD', label: 'Gym' },
-      chinese: { color: '#D6AF99', soft: 'rgba(214,175,153,0.16)', text: '#F7E8E0', label: 'Chinese' },
+      chinese: { color: '#D6AF99', soft: 'rgba(214,175,153,0.16)', text: '#F7E8E0', label: 'Language' },
       groceries: { color: '#B7BF98', soft: 'rgba(183,191,152,0.16)', text: '#E6EAD5', label: 'Groceries' },
       calendar: { color: '#B8AF9B', soft: 'rgba(184,175,155,0.16)', text: '#ECE8DE', label: 'Calendar' },
       inbox: { color: '#EDE3CC', soft: 'rgba(237,227,204,0.16)', text: '#F3EBD8', label: 'Inbox' },
@@ -444,7 +444,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     kinds: {
       routines: { color: '#2F54EB', soft: '#E5EAFD', text: '#2A4BD6', label: 'Routines' },
       gym: { color: '#C2410C', soft: '#FDE9E0', text: '#AD390D', label: 'Gym' },
-      chinese: { color: '#D7263D', soft: '#FBE4E7', text: '#BE1E34', label: 'Chinese' },
+      chinese: { color: '#D7263D', soft: '#FBE4E7', text: '#BE1E34', label: 'Language' },
       groceries: { color: '#14814F', soft: '#E1F3EA', text: '#126E44', label: 'Groceries' },
       calendar: { color: '#6E7570', soft: '#ECEEEB', text: '#5A615C', label: 'Calendar' },
       inbox: { color: '#7A5AF8', soft: '#EEE9FE', text: '#6440EC', label: 'Inbox' },
@@ -546,7 +546,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
     kinds: {
       routines: { color: '#7CE3BC', soft: 'rgba(124,227,188,0.14)', text: '#84E5C0', label: 'Routines' },
       gym: { color: '#F2B061', soft: 'rgba(242,176,97,0.14)', text: '#F6CB98', label: 'Gym' },
-      chinese: { color: '#F4A08F', soft: 'rgba(244,160,143,0.14)', text: '#F8C7BE', label: 'Chinese' },
+      chinese: { color: '#F4A08F', soft: 'rgba(244,160,143,0.14)', text: '#F8C7BE', label: 'Language' },
       groceries: { color: '#E8DDB5', soft: 'rgba(232,221,181,0.14)', text: '#E8DDB5', label: 'Groceries' },
       calendar: { color: '#B7C9C2', soft: 'rgba(183,201,194,0.14)', text: '#C8D5D0', label: 'Calendar' },
       inbox: { color: '#9CCBF2', soft: 'rgba(156,203,242,0.14)', text: '#B3D7F5', label: 'Inbox' },

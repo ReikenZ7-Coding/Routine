@@ -18,7 +18,7 @@ import { StatsSheet } from '../components/StatsSheet';
 import { type TrailItem, TrailHome } from '../components/TrailHome';
 import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
-import { dueWords, newWord, todaysLog } from '../lib/chinese';
+import { currentLanguage, dueWords, newWord, practiceTitle, tabTitle, todaysLog } from '../lib/language';
 import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/deviceCalendar';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { itemsFor, toggleItem } from '../lib/inbox';
@@ -69,8 +69,8 @@ export default function TodayScreen() {
     toggleBought,
     addGrocery,
     gym,
-    chinese,
-    updateChinese,
+    language,
+    updateLanguage,
     routines,
     updateRoutines,
     settings,
@@ -113,8 +113,8 @@ export default function TodayScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.calendarConnected, rangeKey]);
 
-  const dayState = { groceries, gym, chinese, routines };
-  const marks = useCallback((d: string) => marksFor(dayState, d, today), [groceries, gym, chinese, routines, today]); // eslint-disable-line react-hooks/exhaustive-deps
+  const dayState = { groceries, gym, language, routines };
+  const marks = useCallback((d: string) => marksFor(dayState, d, today), [groceries, gym, language, routines, today]); // eslint-disable-line react-hooks/exhaustive-deps
   const busy = useMemo(() => new Set(Object.keys(events)), [events]);
   const moodFor = useCallback((d: string) => moodOf(journal[d]?.mood), [journal]);
 
@@ -148,10 +148,15 @@ export default function TodayScreen() {
   const gymProgress = session ? sessionProgress(gym, selected, session) : undefined;
   const gymDone = !!gymProgress && gymProgress.total > 0 && gymProgress.done === gymProgress.total;
   const upcoming = session ? undefined : nextSession(gym, selected);
-  const practice = todaysLog(chinese, selected);
-  const chineseDone = practice.minutes >= chinese.target;
-  const showChinese = !isPast || practice.minutes > 0;
-  const toReview = dueWords(chinese, today).length;
+  // Language practice is one habit across every language. It joins the day once a language is chosen, and a
+  // past day keeps it if minutes were logged.
+  const learning = language.languages;
+  const studying = currentLanguage(language);
+  const practiceLabel = tabTitle(learning);
+  const practice = todaysLog(language, selected);
+  const practiceDone = practice.minutes >= language.target;
+  const showPractice = (learning.length > 0 && !isPast) || practice.minutes > 0;
+  const toReview = dueWords(language, today).length;
   const dayGroceries = (isPast ? groceries.filter((g) => g.lastBought === selected) : groceries.filter((g) => isOnList(g, selected))).sort(
     (a, b) => Number(boughtOn(a, selected)) - Number(boughtOn(b, selected)) || a.name.localeCompare(b.name),
   );
@@ -163,8 +168,8 @@ export default function TodayScreen() {
     dayTodos.filter((t) => t.doneOn).length +
     dayGroceries.filter((g) => boughtOn(g, selected)).length +
     (gymDone ? 1 : 0) +
-    (showChinese && chineseDone ? 1 : 0);
-  const total = planned.length + dayTodos.length + dayGroceries.length + (session ? 1 : 0) + (showChinese ? 1 : 0);
+    (showPractice && practiceDone ? 1 : 0);
+  const total = planned.length + dayTodos.length + dayGroceries.length + (session ? 1 : 0) + (showPractice ? 1 : 0);
 
   const replace = (r: Routine) => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? r : x)));
   const tap = (r: Routine) => !isFuture && replace(tapRoutine(r, selected));
@@ -263,18 +268,18 @@ export default function TodayScreen() {
           },
         ]
       : []),
-    ...(showChinese
+    ...(showPractice
       ? [
           {
             key: 'chinese',
-            title: 'Chinese practice',
+            title: practiceTitle(learning),
             icon: 'language',
             color: kinds.chinese.color,
-            meta: `${practice.minutes}/${chinese.target} min${toReview ? ` · ${plural(toReview, 'word')} to review` : ''}`,
-            done: chineseDone,
+            meta: `${practice.minutes}/${language.target} min${toReview ? ` · ${plural(toReview, 'word')} to review` : ''}`,
+            done: practiceDone,
             nav: true,
-            progress: { value: practice.minutes, total: chinese.target },
-            onPress: () => router.navigate('/chinese'),
+            progress: { value: practice.minutes, total: language.target },
+            onPress: () => router.navigate('/language'),
           },
         ]
       : []),
@@ -355,7 +360,13 @@ export default function TodayScreen() {
                   }
                 : { label: 'Routines', kind: 'routines' as const, icon: 'repeat', onPress: () => openLibrary('routines') },
               { label: 'Gym', kind: 'gym', icon: 'barbell', active: gymDone, onPress: () => router.navigate('/gym') },
-              { label: 'Chinese', kind: 'chinese', icon: 'language', active: chineseDone, onPress: () => router.navigate('/chinese') },
+              {
+                label: practiceLabel,
+                kind: 'chinese',
+                icon: 'language',
+                active: practiceDone,
+                onPress: () => router.navigate('/language'),
+              },
               { label: 'Groceries', kind: 'groceries', icon: 'basket', onPress: () => openLibrary('groceries') },
               {
                 label: 'Sounds',
@@ -412,9 +423,9 @@ export default function TodayScreen() {
                 soft: kinds.gym.soft,
               },
               {
-                label: 'Chinese',
+                label: practiceLabel,
                 value: practice.minutes,
-                total: showChinese ? chinese.target : 0,
+                total: showPractice ? language.target : 0,
                 unit: 'min',
                 color: kinds.chinese.color,
                 soft: kinds.chinese.soft,
@@ -452,14 +463,24 @@ export default function TodayScreen() {
               kinds.inbox.color,
             ],
             ['grocery', 'basket', 'Grocery item', 'Goes on your shopping list', kinds.groceries.color],
-            ['word', 'language', 'Chinese word', 'A new flashcard to practise', kinds.chinese.color],
+            studying
+              ? (['word', 'language', `${studying.name} word`, 'A new flashcard to practise', kinds.chinese.color] as const)
+              : (['word', 'language', 'A language', 'Pick one to learn, with flashcards', kinds.chinese.color] as const),
           ] as const
         ).map(([key, icon, title, sub, color]) => (
           <Press
             key={key}
             style={styles.addRow}
             overlay={colors.material.pressFill}
-            onPress={() => (key === 'routine' ? edit() : setPanel(key))}
+            onPress={() => {
+              if (key === 'routine') return edit();
+              // Before a language is chosen, the word row leads to the tab's chooser.
+              if (key === 'word' && !studying) {
+                close();
+                return router.navigate('/language');
+              }
+              setPanel(key);
+            }}
             accessibilityLabel={`${title}. ${sub}`}
           >
             {theme.name === 'paper' ? (
@@ -545,9 +566,11 @@ export default function TodayScreen() {
       />
       <WordForm
         visible={panel === 'word'}
+        language={studying}
         onClose={close}
         onSave={(f) => {
-          updateChinese((c) => ({ ...c, words: [...c.words, newWord(newId(), f.hanzi, f.pinyin, f.meaning, today)] }));
+          if (studying)
+            updateLanguage((l) => ({ ...l, words: [...l.words, newWord(newId(), f.hanzi, f.pinyin, f.meaning, studying.id, today)] }));
           close();
         }}
       />
