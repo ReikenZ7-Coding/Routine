@@ -52,7 +52,7 @@ export default function LanguageScreen() {
   const { colors, kinds, name } = useTheme();
   const lavender = name === 'lavender';
   const styles = useStyles(makeStyles);
-  const { ready, today, language: state, updateLanguage } = useStore();
+  const { ready, today, language: state, updateLanguage, damaged } = useStore();
   const contentBottom = useContentBottom();
   const [queue, setQueue] = useState<string[] | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -85,6 +85,16 @@ export default function LanguageScreen() {
               <Text style={styles.chooserText}>
                 Pick one to start; you can add more any time. The ones at the top come with eight beginner words.
               </Text>
+              {damaged.includes('language') && (
+                // A save that couldn't be read is set aside, never written over, so it isn't lost by choosing again.
+                <View style={styles.damaged} accessibilityRole="alert">
+                  <Ionicons name="alert-circle" size={18} color={colors.danger} />
+                  <Text style={styles.damagedText}>
+                    Your saved practice couldn't be read, so it's been set aside and this page starts fresh. Restoring a backup from
+                    Settings brings your words back.
+                  </Text>
+                </View>
+              )}
             </View>
             <LanguagePicker learning={[]} onPick={pick} />
           </Glass>
@@ -313,14 +323,18 @@ export default function LanguageScreen() {
                   accessibilityLabel={`${w.hanzi}, ${w.pinyin ? `${w.pinyin}, ` : ''}${w.meaning}. Edit word`}
                 >
                   <View style={styles.flex}>
-                    {/* Each line keeps its own direction: an Arabic word sits on the right, its meaning on the left. */}
+                    {/* Each line keeps its own direction: an Arabic word sits on the right across the whole row, and
+                        the due label moves down beside its meaning, so the two never meet in the middle. */}
                     <Text style={[styles.word, rtl && styles.rtl]}>{w.hanzi}</Text>
-                    <Text style={styles.wordMeaning}>
-                      {w.pinyin ? <Text style={styles.wordReading}>{`${w.pinyin}  ·  `}</Text> : null}
-                      {w.meaning}
-                    </Text>
+                    <View style={rtl ? styles.wordLine : undefined}>
+                      <Text style={[styles.wordMeaning, rtl && styles.flex]}>
+                        {w.pinyin ? <Text style={styles.wordReading}>{`${w.pinyin}  ·  `}</Text> : null}
+                        {w.meaning}
+                      </Text>
+                      {rtl && <Text style={styles.wordDue}>{w.due <= today ? 'Due' : friendlyDate(w.due, today)}</Text>}
+                    </View>
                   </View>
-                  <Text style={styles.wordDue}>{w.due <= today ? 'Due' : friendlyDate(w.due, today)}</Text>
+                  {!rtl && <Text style={styles.wordDue}>{w.due <= today ? 'Due' : friendlyDate(w.due, today)}</Text>}
                 </Press>
               </View>
             ))}
@@ -495,6 +509,9 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
     chooserHead: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8, gap: 6 },
     chooserTitle: type.sectionTitle,
     chooserText: type.hint,
+    damaged: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6 },
+    damagedText: { flex: 1, fontFamily: fonts.bodyMedium, fontSize: 14, lineHeight: 20, color: colors.danger },
+    wordLine: { flexDirection: 'row', alignItems: 'baseline', gap: 12 },
     switcher: { marginBottom: 16 },
     todayCard: { padding: 16 },
     cardTitle: { ...type.sectionTitle, flexShrink: 1 },

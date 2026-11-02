@@ -11,6 +11,7 @@ import {
   defaultLinkName,
   detectService,
   isAudioFile,
+  watchLoad,
   mergeRestoredMusic,
   musicToSave,
   otherIndex,
@@ -114,6 +115,28 @@ test('previous restarts a song a few seconds in, and seeking stays inside the so
   assert.equal(clampSeek(42, 0), 42);
 });
 
+test("a song's length is only taken from its own status, never the previous one's", () => {
+  const start = { before: 24, sawUnloaded: false };
+  // The old source's status, still reporting its length: not fresh.
+  assert.deepEqual(watchLoad(start, { isLoaded: true, duration: 24 }), start);
+  // Unloaded, then loaded with the new length.
+  const between = watchLoad(start, { isLoaded: false, duration: 0 });
+  assert.notEqual(between, 'fresh');
+  assert.equal(watchLoad(between as typeof start, { isLoaded: true, duration: 0 }), between); // no length yet
+  assert.equal(watchLoad(between as typeof start, { isLoaded: true, duration: 24 }), 'fresh'); // same length is fine after unloading
+  // A new length straight away also counts.
+  assert.equal(watchLoad(start, { isLoaded: true, duration: 212.4 }), 'fresh');
+  // A failed load never becomes fresh.
+  const failed = watchLoad(start, { isLoaded: false, duration: 24, error: 'Playback error (code 4)' });
+  assert.notEqual(failed, 'fresh');
+  assert.notEqual(watchLoad(failed as typeof start, { isLoaded: true, duration: 24, error: 'Playback error (code 4)' }), 'fresh');
+  // The web player sends nothing more for the old source: its first loaded update is the new one, even at the same length.
+  const web = { before: 24, sawUnloaded: false, firstIsNew: true };
+  assert.equal(watchLoad(web, { isLoaded: true, duration: 24 }), 'fresh');
+  assert.notEqual(watchLoad(web, { isLoaded: true, duration: 0 }), 'fresh');
+  assert.notEqual(watchLoad(web, { isLoaded: false, duration: 0, error: 'Playback error (code 4)' }), 'fresh');
+});
+
 test('a file name becomes a song title, and only music files are accepted', () => {
   assert.equal(titleFromFileName('Morning_walk-02.mp3'), 'Morning walk-02');
   assert.equal(titleFromFileName('  Lo-fi   beats.FLAC'), 'Lo-fi beats');
@@ -125,6 +148,11 @@ test('a file name becomes a song title, and only music files are accepted', () =
   assert.equal(isAudioFile('notes.pdf', 'application/pdf'), false);
   assert.equal(isAudioFile('photo.jpg', 'image/jpeg'), false);
   assert.equal(isAudioFile('mystery', 'application/octet-stream'), false);
+  // Android labels some music with an application type: the extension is enough.
+  assert.equal(isAudioFile('song.ogg', 'application/ogg'), true);
+  assert.equal(isAudioFile('voice.opus', 'application/ogg'), true);
+  assert.equal(isAudioFile('album.flac', 'application/x-flac'), true);
+  assert.equal(isAudioFile('song', 'audio/mpeg'), true);
   assert.equal(storedFileName('abc', 'Song.MP3'), 'abc.mp3');
   assert.equal(storedFileName('abc', 'no extension'), 'abc');
 });

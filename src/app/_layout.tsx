@@ -56,7 +56,7 @@ const TABS: { name: string; title: string; icon: IconName; iconActive: IconName 
   { name: 'index', title: 'Today', icon: 'today-outline', iconActive: 'today' },
   { name: 'inbox', title: 'Inbox', icon: 'file-tray-outline', iconActive: 'file-tray' },
   { name: 'gym', title: 'Gym', icon: 'barbell-outline', iconActive: 'barbell' },
-  // Titled by the language being learnt (see tabTitle).
+  // Always "Language", whatever is being learnt (see tabTitle).
   { name: 'language', title: 'Language', icon: 'language-outline', iconActive: 'language' },
   { name: 'library', title: 'Library', icon: 'library-outline', iconActive: 'library' },
 ];

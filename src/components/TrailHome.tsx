@@ -357,7 +357,9 @@ export function TrailHome(p: Props) {
                       <Text style={[styles.ringValue, { color: rest ? colors.faint : b.color }]}>{rest ? '–' : b.value}</Text>
                       <Text style={styles.ringUnit}>{rest ? 'rest' : `of ${b.total}`}</Text>
                     </Ring>
-                    <Text style={styles.ringLabel}>{b.label}</Text>
+                    <Text style={styles.ringLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                      {b.label}
+                    </Text>
                   </View>
                 );
               })}

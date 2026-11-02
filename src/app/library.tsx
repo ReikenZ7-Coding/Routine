@@ -2,10 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { Extrapolation, interpolate, type SharedValue, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
-import { Ambience } from '../components/Art';
+import { useSharedValue } from 'react-native-reanimated';
 import { Glass } from '../components/Glass';
-import { useFrame } from '../components/glass/light';
+import { WorldFade } from '../components/glass/WorldFade';
 import { Press } from '../components/Motion';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FilterRow, Segmented } from '../components/Hub';
@@ -148,36 +147,6 @@ export default function LibraryScreen() {
     </View>
   );
 }
-
-const FADE_STEPS = 10;
-const FADE_STEP = 3.2;
-
-/**
- * A fade into the world itself: thin strips of the screen's own backdrop, each lined up with the world behind it and
- * more transparent than the one above, laid over the top of a scroll that runs under fixed chrome. A plain gradient
- * would need one colour for the whole width, and the world is never one colour. It comes in over the first 24 of
- * scroll, so at rest the first row sits clear of it; it follows the scroll on the UI thread.
- */
-function WorldFade({ top, scroll }: { top: number; scroll: SharedValue<number> }) {
-  const frame = useFrame();
-  const shown = useAnimatedStyle(() => ({ opacity: interpolate(scroll.get(), [0, 24], [0, 1], Extrapolation.CLAMP) }));
-  return (
-    <Animated.View pointerEvents="none" style={[fadeStyles.fade, { height: FADE_STEPS * FADE_STEP }, shown]}>
-      {Array.from({ length: FADE_STEPS }, (_, i) => (
-        <View key={i} style={[fadeStyles.strip, { top: i * FADE_STEP, height: FADE_STEP + 0.5, opacity: 1 - (i / FADE_STEPS) ** 2 }]}>
-          <View style={{ position: 'absolute', left: 0, top: -(top + i * FADE_STEP), width: frame.w, height: frame.h }}>
-            <Ambience />
-          </View>
-        </View>
-      ))}
-    </Animated.View>
-  );
-}
-
-const fadeStyles = StyleSheet.create({
-  fade: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 2 },
-  strip: { position: 'absolute', left: 0, right: 0, overflow: 'hidden' },
-});
 
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({

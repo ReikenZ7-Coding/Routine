@@ -74,20 +74,14 @@ function YourMusic({ onForm }: { onForm: (f: MusicForm) => void }) {
     <View style={styles.section}>
       <MusicHeading
         title="Your music"
-        right={empty ? null : <ActionChip icon="add" label="Import" onPress={s.importMusic} accessibilityLabel="Import music" />}
+        right={<ActionChip icon="add" label="Import" onPress={s.importMusic} accessibilityLabel="Import music" />}
       />
       <Glass>
         <Animated.View layout={GROW}>
           {empty && !s.importing ? (
+            // Empty: one line in the pane, with Import beside the heading. Each section says only what it adds.
             <Animated.View entering={SHOW} exiting={HIDE} style={styles.empty}>
-              <View style={styles.emptyTile}>
-                <Ionicons name="musical-notes-outline" size={24} color={colors.text} />
-              </View>
-              <Text style={[type.bodyMedium, styles.center]}>Bring your own songs</Text>
-              <Text style={[type.hint, styles.center]}>
-                Import music files from your phone. They play one after another, even with the screen off.
-              </Text>
-              <Button label="Import music" variant="secondary" icon="add" onPress={s.importMusic} style={styles.emptyButton} />
+              <Text style={type.hint}>Import songs from your phone. They play one after another, even with the screen off.</Text>
             </Animated.View>
           ) : (
             <View style={styles.rows}>
@@ -111,8 +105,9 @@ function YourMusic({ onForm }: { onForm: (f: MusicForm) => void }) {
           ) : null}
           {s.importNotes.length ? (
             <Animated.View entering={SHOW} exiting={HIDE} style={styles.notes}>
-              {s.importNotes.map((n) => (
-                <FieldError key={n} message={n} />
+              {s.importNotes.map((n, i) => (
+                // Two files can share a name and a problem, so the line's place is its key.
+                <FieldError key={i} message={n} />
               ))}
               <Button label="Dismiss" variant="plain" onPress={s.clearImportNotes} style={styles.dismiss} />
             </Animated.View>
@@ -188,34 +183,19 @@ function Playlists({ onForm }: { onForm: (f: MusicForm) => void }) {
       <MusicHeading
         title="Playlists"
         right={
-          empty ? null : (
-            <ActionChip
-              icon="link-outline"
-              label="Add link"
-              onPress={() => onForm({ kind: 'link' })}
-              accessibilityLabel="Add a playlist link"
-            />
-          )
+          <ActionChip
+            icon="link-outline"
+            label="Add link"
+            onPress={() => onForm({ kind: 'link' })}
+            accessibilityLabel="Add a playlist link"
+          />
         }
       />
       <Glass>
         <Animated.View layout={GROW}>
           {empty ? (
             <Animated.View entering={SHOW} exiting={HIDE} style={styles.empty}>
-              <View style={styles.emptyTile}>
-                <Ionicons name="list" size={24} color={colors.text} />
-              </View>
-              <Text style={[type.bodyMedium, styles.center]}>Keep your playlists close</Text>
-              <Text style={[type.hint, styles.center]}>
-                Save a share link from Spotify, YouTube Music or any music app, and open it from here in one tap.
-              </Text>
-              <Button
-                label="Add a link"
-                variant="secondary"
-                icon="link-outline"
-                onPress={() => onForm({ kind: 'link' })}
-                style={styles.emptyButton}
-              />
+              <Text style={type.hint}>Save a share link from Spotify, YouTube Music or any music app to open it in one tap.</Text>
             </Animated.View>
           ) : (
             <View style={styles.rows}>
@@ -461,7 +441,6 @@ function LinkSheet({ visible, link, onClose }: { visible: boolean; link?: Playli
 const makeStyles = ({ colors, radii, name }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
-    center: { textAlign: 'center' },
     section: { marginTop: 28 },
     heading: {
       flexDirection: 'row',
@@ -479,8 +458,8 @@ const makeStyles = ({ colors, radii, name }: Theme) =>
     rowActive: {
       backgroundColor: colors.material.inset.fill,
       borderWidth: 1,
-      borderColor: name === 'pine' ? colors.litRim : colors.material.inset.border,
-      borderTopColor: name === 'pine' ? colors.litRim : colors.material.inset.borderTop,
+      borderColor: colors.material.selectRim ?? colors.material.inset.border,
+      borderTopColor: colors.material.selectRim ?? colors.material.inset.borderTop,
     },
     tile: {
       width: 44,
@@ -496,20 +475,7 @@ const makeStyles = ({ colors, radii, name }: Theme) =>
     more: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     serviceLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     rowError: { paddingHorizontal: 14, paddingBottom: 8 },
-    empty: { alignItems: 'center', paddingHorizontal: 20, paddingTop: 22, paddingBottom: 18, gap: 6 },
-    emptyTile: {
-      width: 52,
-      height: 52,
-      borderRadius: 26,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 6,
-      backgroundColor: colors.material.inset.fill,
-      borderWidth: 1,
-      borderColor: colors.material.inset.border,
-      borderTopColor: colors.material.inset.borderTop,
-    },
-    emptyButton: { marginTop: 10, alignSelf: 'stretch' },
+    empty: { paddingHorizontal: 16, paddingVertical: 14 },
     busy: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
     busyRule: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
     notes: { paddingHorizontal: 16, paddingBottom: 4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },

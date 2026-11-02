@@ -236,8 +236,8 @@ const LRM = '\u200E';
 export const inLine = (name: string) => `${LRM}${name}${LRM}`;
 const CATALOGUE = [...POPULAR, ...MORE];
 const CHINESE: StudyLanguage = { id: 'zh', code: 'zh', name: 'Chinese' };
-/** The longest name the tab bar shows in full; longer names read "Language" there. */
-const TAB_NAME_MAX = 10;
+/** The longest name a balance ring shows in full; longer names read "Language" there. */
+const SHORT_NAME_MAX = 10;
 
 export function languageInfo(code: string): LanguageInfo | undefined {
   return CATALOGUE.find((l) => l.code === code);
@@ -305,11 +305,20 @@ export function removeLanguage(state: LanguageState, id: string): LanguageState 
   return { ...state, languages, current, words: state.words.filter((w) => w.lang !== id) };
 }
 
-/** The tab's label: the language when there is one (and it fits), "Languages" for several, "Language" before choosing. */
-export function tabTitle(languages: StudyLanguage[]): string {
+/**
+ * The tab's label, and the Today shortcut's: always "Language". It names the subject, so it reads right for one
+ * language or several, and it fits a tab cell on a 320dp phone, where "Portuguese" or even "Languages" does not.
+ * The language's own name lives where there is room: the page title, the Today row and the Balance ring.
+ */
+export function tabTitle(_languages: StudyLanguage[]): string {
+  return 'Language';
+}
+
+/** A short label with more room (the Balance ring): the language when there is one and it fits, else the subject. */
+export function shortTitle(languages: StudyLanguage[]): string {
   if (languages.length > 1) return 'Languages';
   const only = languages[0];
-  return only && only.name.length <= TAB_NAME_MAX ? only.name : 'Language';
+  return only && only.name.length <= SHORT_NAME_MAX ? only.name : 'Language';
 }
 
 /** What is being practised, for sentences: "Spanish", "Spanish and Japanese", or "language" for none or three plus. */

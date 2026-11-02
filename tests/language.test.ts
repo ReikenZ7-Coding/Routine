@@ -21,6 +21,7 @@ import {
   removeLanguage,
   review,
   streakDays,
+  shortTitle,
   tabTitle,
   todaysLog,
   upgradeLanguageState,
@@ -187,9 +188,12 @@ test('labels follow the languages', () => {
   const es = makeLanguage('es');
   const ja = makeLanguage('ja');
   assert.equal(tabTitle([]), 'Language');
-  assert.equal(tabTitle([es]), 'Spanish');
-  assert.equal(tabTitle([es, ja]), 'Languages');
-  assert.equal(tabTitle([makeLanguage(OTHER, 'Scottish Gaelic')]), 'Language'); // too long for the tab bar
+  assert.equal(tabTitle([es]), 'Language'); // the tab stays generic: names do not fit a 320dp tab cell
+  assert.equal(tabTitle([es, ja]), 'Language');
+  assert.equal(shortTitle([]), 'Language');
+  assert.equal(shortTitle([es]), 'Spanish');
+  assert.equal(shortTitle([es, ja]), 'Languages');
+  assert.equal(shortTitle([makeLanguage(OTHER, 'Scottish Gaelic')]), 'Language'); // too long for a ring
   assert.equal(practiceTitle([es]), 'Spanish practice');
   assert.equal(practiceTitle([es, ja]), 'Language practice');
   assert.equal(practiceSubject([es, ja]), 'Spanish and Japanese');
@@ -211,6 +215,6 @@ test('the catalogue is consistent', () => {
   assert.equal(new Set(all.map((l) => l.code)).size, all.length);
   for (const l of POPULAR) assert.equal(l.starter?.length, 8, l.name);
   for (const l of MORE) assert.equal(l.starter, undefined, l.name);
-  // every name fits the tab bar
-  for (const l of all) assert.equal(tabTitle([makeLanguage(l.code)]), l.name);
+  // every catalogue name fits a balance ring
+  for (const l of all) assert.equal(shortTitle([makeLanguage(l.code)]), l.name);
 });

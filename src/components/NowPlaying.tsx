@@ -1,8 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useRef, useState } from 'react';
-import { type LayoutChangeEvent, Modal, PanResponder, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+  Modal,
+  PanResponder,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Segmented } from './Hub';
-import Animated from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { Chip } from './Chip';
 import { FieldError } from './Field';
 import { Dim, FadeSwap, rise, Press, SelectFade } from './Motion';
@@ -14,6 +24,7 @@ import { type NowItem, SOUNDS, useSounds } from '../lib/sounds';
 import { SceneArt } from './Art';
 import { Glass, GlassScroll, WorldFrame } from './Glass';
 import { MINI_HEIGHT, useBar } from './glass/chrome';
+import { WorldFade } from './glass/WorldFade';
 import { alphaOf } from './glass/colour';
 import { type Theme, useStyles, useTheme } from '../theme';
 
@@ -227,18 +238,45 @@ function shuffleProps(s: Sounds): { label: string; onPress: () => void; active?:
   return { label: 'Shuffle', onPress: s.shuffle, active: s.shuffleOn, toggle: true };
 }
 
-/** Repeat for songs; a focus sound always loops, so the slot fades away and holds the row's balance. */
+/**
+ * Repeat for songs. A focus sound always loops, so its slot shows a quiet loop mark instead (not a button), and
+ * the row keeps five controls either way; the two crossfade when you switch between a sound and a song.
+ */
 function RepeatSlot() {
   const s = useSounds();
+  const { colors } = useTheme();
+  const styles = useStyles(makeGlassStyles);
+  const inGlass = !!colors.material.controlsInGlass;
   const track = isTrack(s.current);
+  const mark = <Ionicons name="infinite" size={20} color={colors.muted} />;
   return (
-    <View
-      pointerEvents={track ? 'auto' : 'none'}
-      importantForAccessibility={track ? 'auto' : 'no-hide-descendants'}
-      accessibilityElementsHidden={!track}
-    >
-      <Dim on={!track} to={0}>
-        <Control icon="repeat" label="Repeat all" onPress={s.toggleRepeat} active={s.repeatOn} toggle small />
+    <View>
+      <View
+        pointerEvents={track ? 'auto' : 'none'}
+        importantForAccessibility={track ? 'auto' : 'no-hide-descendants'}
+        accessibilityElementsHidden={!track}
+      >
+        <Dim on={!track} to={0}>
+          <Control icon="repeat" label="Repeat all" onPress={s.toggleRepeat} active={s.repeatOn} toggle small />
+        </Dim>
+      </View>
+      <Dim on={track} to={0} style={StyleSheet.absoluteFill}>
+        <View
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}
+          accessible={!track}
+          accessibilityLabel="Focus sounds loop"
+          importantForAccessibility={track ? 'no-hide-descendants' : 'yes'}
+          accessibilityElementsHidden={track}
+        >
+          {inGlass ? (
+            <Glass tier="control" radius={26} receded style={styles.control}>
+              {mark}
+            </Glass>
+          ) : (
+            <View style={styles.control}>{mark}</View>
+          )}
+        </View>
       </Dim>
     </View>
   );
@@ -316,16 +354,18 @@ function Seek({ position, length, onSeek, label }: { position: number; length: n
   latest.current = { length, onSeek };
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const at = (x: number) => (width.current > 0 ? Math.max(0, Math.min(1, x / width.current)) * latest.current.length : 0);
+  // The bar claims a touch only once it moves sideways, so a scroll that starts on it still scrolls the player;
+  // a plain tap seeks through the Pressable inside. Once a drag has started it keeps the touch to the end.
   const pan = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => latest.current.length > 0,
-        onMoveShouldSetPanResponder: (_, g) => latest.current.length > 0 && Math.abs(g.dx) > Math.abs(g.dy),
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, g) => latest.current.length > 0 && Math.abs(g.dx) > 4 && Math.abs(g.dx) > Math.abs(g.dy),
         onPanResponderTerminationRequest: () => false,
-        onPanResponderGrant: (e) => {
+        onPanResponderGrant: (e, g) => {
           if (settle.current) clearTimeout(settle.current);
-          startX.current = e.nativeEvent.locationX;
-          setDrag(at(startX.current));
+          startX.current = e.nativeEvent.locationX - g.dx;
+          setDrag(at(startX.current + g.dx));
         },
         onPanResponderMove: (_, g) => setDrag(at(startX.current + g.dx)),
         onPanResponderRelease: (_, g) => {
@@ -343,6 +383,14 @@ function Seek({ position, length, onSeek, label }: { position: number; length: n
   const shown = drag ?? position;
   const pct = length > 0 ? Math.min(1, shown / length) : 0;
   const step = (d: number) => onSeek(Math.max(0, Math.min(length, position + d)));
+  const tap = (e: GestureResponderEvent) => {
+    if (!(latest.current.length > 0)) return;
+    if (settle.current) clearTimeout(settle.current);
+    const to = at(e.nativeEvent.locationX);
+    latest.current.onSeek(to);
+    setDrag(to);
+    settle.current = setTimeout(() => setDrag(null), 450);
+  };
   return (
     <View>
       <View
@@ -356,6 +404,7 @@ function Seek({ position, length, onSeek, label }: { position: number; length: n
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
         onAccessibilityAction={(e) => step(e.nativeEvent.actionName === 'increment' ? 10 : -10)}
       >
+        <Pressable style={StyleSheet.absoluteFill} onPress={tap} accessible={false} focusable={false} />
         <View pointerEvents="none" style={styles.rail} />
         <View pointerEvents="none" style={[styles.fill, { width: `${pct * 100}%` }]} />
         <View pointerEvents="none" style={[styles.knob, { left: `${pct * 100}%` }]} />
@@ -379,7 +428,11 @@ function GlassPlayer({ onForm }: { onForm: (f: MusicForm) => void }) {
   const { width, height } = useWindowDimensions();
   const s = useSounds();
   const stone = name === 'stone';
+  const inGlass = !!colors.material.controlsInGlass;
   const track = isTrack(s.current);
+  // The bar stays put over the scroll; once the page moves, an opaque band of the world fades in behind it.
+  const scrollY = useSharedValue(0);
+  const [barHeight, setBarHeight] = useState(insets.top + 56);
   // Artwork fills the width but leaves room for the controls on short phones.
   const art = Math.min(width - (stone ? 64 : 72), height * 0.4);
   const close = () => s.setSheetOpen(false);
@@ -390,34 +443,46 @@ function GlassPlayer({ onForm }: { onForm: (f: MusicForm) => void }) {
     <View style={styles.root}>
       {/* The player is a world of its own, with the same moving light as the screens. */}
       <WorldFrame>
-        <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
-          {stone ? (
-            <Glass tier="control" radius={22} style={styles.round} onPress={close} accessibilityLabel="Close player">
-              <Ionicons name="chevron-back" size={20} color={iconColor} />
-            </Glass>
-          ) : (
-            <Press onPress={close} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel="Close player">
-              <Ionicons name="chevron-down" size={26} color={iconColor} />
-            </Press>
-          )}
-          <View style={styles.topCenter}>
-            <Text style={styles.topTitle}>Now Playing</Text>
-            <Text style={styles.topSub} numberOfLines={1}>
-              {topLine(s)}
-            </Text>
+        <View style={styles.bar} onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}>
+          <WorldFade top={0} solid={barHeight} scroll={scrollY} />
+          <View style={[styles.top, { paddingTop: insets.top + 8 }]}>
+            {inGlass ? (
+              <Glass tier="control" radius={22} style={styles.round} onPress={close} accessibilityLabel="Close player">
+                <Ionicons name="chevron-back" size={20} color={iconColor} />
+              </Glass>
+            ) : (
+              <Press onPress={close} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel="Close player">
+                <Ionicons name="chevron-down" size={26} color={iconColor} />
+              </Press>
+            )}
+            <View style={styles.topCenter}>
+              <Text style={styles.topTitle}>Now Playing</Text>
+              <Text style={styles.topSub} numberOfLines={1}>
+                {topLine(s)}
+              </Text>
+            </View>
+            {inGlass ? (
+              <Glass tier="control" radius={22} style={styles.round} onPress={s.cycleTimer} accessibilityLabel={timerLabel(s.timer)}>
+                <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={18} color={iconColor} />
+              </Glass>
+            ) : (
+              <Press
+                onPress={s.cycleTimer}
+                style={styles.round}
+                overlay={colors.material.pressFill}
+                accessibilityLabel={timerLabel(s.timer)}
+              >
+                <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={20} color={iconColor} />
+              </Press>
+            )}
           </View>
-          {stone ? (
-            <Glass tier="control" radius={22} style={styles.round} onPress={s.cycleTimer} accessibilityLabel={timerLabel(s.timer)}>
-              <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={18} color={iconColor} />
-            </Glass>
-          ) : (
-            <Press onPress={s.cycleTimer} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel={timerLabel(s.timer)}>
-              <Ionicons name={s.timer ? 'moon' : 'moon-outline'} size={20} color={iconColor} />
-            </Press>
-          )}
         </View>
 
-        <GlassScroll style={styles.flex} contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 32 }]}>
+        <GlassScroll
+          style={styles.flex}
+          offsetOut={scrollY}
+          contentContainerStyle={[styles.body, { paddingTop: barHeight, paddingBottom: insets.bottom + 32 }]}
+        >
           <View style={styles.artWrap}>
             {stone ? (
               // Stone frames the stones in a lit glass mount; the scene crossfades when the sound changes.
@@ -515,8 +580,10 @@ function timerLabel(minutes: number): string {
 }
 
 /**
- * A round transport control. Stone sets each in its own glass circle; the other looks keep them bare and bright.
- * A toggle (shuffle or repeat for songs) shows its on state as a lit inset disc that fades in.
+ * A round transport control. Looks with controlsInGlass (Stone) set each in its own glass circle; the others keep
+ * them bare and bright. A toggle (shuffle or repeat for songs) shows its on state three ways at once, so it
+ * never rests on a faint fill alone: a lit inset disc, the glyph in the accent, and an accent dot under it (as
+ * music players do). The accent is gated at 3:1 on the disc (scripts/check-contrast.py, "player toggle").
  */
 function Control({
   icon,
@@ -533,19 +600,29 @@ function Control({
   active?: boolean;
   toggle?: boolean;
 }) {
-  const { colors, name } = useTheme();
+  const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
-  const stone = name === 'stone';
+  const inGlass = !!colors.material.controlsInGlass;
   const a11y = toggle
     ? { accessibilityLabel: `${label}, ${active ? 'on' : 'off'}`, accessibilityState: { checked: !!active } }
     : { accessibilityLabel: label };
-  const glyph = (
+  const size = small ? 18 : 22;
+  const glyph = toggle ? (
     <>
-      {toggle ? <SelectFade on={!!active} radius={26} style={styles.controlOn} /> : null}
-      <Ionicons name={icon as 'shuffle'} size={small ? 18 : 22} color={colors.text} />
+      <SelectFade on={!!active} radius={26} style={styles.controlOn} />
+      <FadeSwap
+        on={!!active}
+        off={<Ionicons name={icon as 'shuffle'} size={size} color={colors.text} />}
+        onContent={<Ionicons name={icon as 'shuffle'} size={size} color={colors.accent} />}
+      />
+      <Dim on={!active} to={0} style={styles.onDot}>
+        <View style={styles.onDotFill} />
+      </Dim>
     </>
+  ) : (
+    <Ionicons name={icon as 'shuffle'} size={size} color={colors.text} />
   );
-  return stone ? (
+  return inGlass ? (
     <Glass tier="control" radius={26} style={styles.control} onPress={onPress} {...a11y}>
       {glyph}
     </Glass>
@@ -561,7 +638,15 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
     root: { flex: 1, backgroundColor: colors.bg },
     body: { paddingHorizontal: 24 },
     flex: { flex: 1 },
-    top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingBottom: 4 },
+    bar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 3 },
+    top: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 24,
+      paddingBottom: 4,
+      zIndex: 3,
+    },
     round: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     topCenter: { flex: 1, alignItems: 'center' },
     topTitle: { fontFamily: name === 'stone' ? fonts.body : fonts.bodyBold, fontSize: 16, color: colors.text },
@@ -609,6 +694,8 @@ const makeGlassStyles = ({ colors, fonts, name }: Theme) =>
       borderWidth: 1,
       borderColor: colors.litRim,
     },
+    onDot: { position: 'absolute', bottom: 8, alignSelf: 'center' },
+    onDotFill: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.accent },
     big: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
     bigLavender: {
       backgroundColor: colors.node,
@@ -688,7 +775,7 @@ const makeStyles = ({ colors, fonts, type, radii, name }: Theme) =>
         : {
             backgroundColor: colors.material.inset.fill,
             borderWidth: 1,
-            borderColor: name === 'pine' ? colors.litRim : colors.controlBorder,
+            borderColor: colors.material.selectRim ?? colors.controlBorder,
           },
   });
 

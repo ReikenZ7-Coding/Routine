@@ -89,10 +89,18 @@ export function extensionOf(name: string): string {
   return dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
 }
 
-/** Whether a picked file is something the player can try: an audio type, or a known audio extension. */
+/**
+ * The picker's filter. Android reports some music as an application type (OGG and OPUS as application/ogg,
+ * FLAC as application/x-flac), so those are offered too.
+ */
+export const PICKER_TYPES = ['audio/*', 'application/ogg', 'application/x-ogg', 'application/x-flac', 'application/flac'];
+
+/**
+ * Whether a picked file is something the player can try: an audio type, or a known audio extension. Either is
+ * enough, because phones label the same file differently (song.ogg as application/ogg, voice.m4a with no type).
+ */
 export function isAudioFile(name: string, mimeType?: string | null): boolean {
   if (mimeType && mimeType.startsWith('audio/')) return true;
-  if (mimeType && mimeType !== 'application/octet-stream' && !mimeType.startsWith('video/')) return false;
   return AUDIO_EXTENSIONS.includes(extensionOf(name));
 }
 
@@ -155,6 +163,40 @@ export function otherIndex(current: number, length: number, rand: () => number =
 export function clampSeek(seconds: number, length: number): number {
   if (!Number.isFinite(seconds) || seconds < 0) return 0;
   return length > 0 ? Math.min(seconds, length) : seconds;
+}
+
+// ---- Loading ----
+
+/** What is known after the player is handed a new source, until its own first status arrives. */
+export interface LoadWatch {
+  /** The previous source's length, which the player's status still reports for a moment. */
+  before: number;
+  /** Whether a status update has said "not loaded" since the replace (the player has let go of the old source). */
+  sawUnloaded: boolean;
+  /**
+   * The player sends nothing more for the old source once replaced, so its first loaded update is the new one's
+   * (the web player, which drops the old element and its listeners). On Android, updates already on their way
+   * can still arrive, but the player always passes through "not loaded" while it prepares the new source.
+   */
+  firstIsNew?: boolean;
+}
+
+export interface StatusLike {
+  isLoaded: boolean;
+  duration: number;
+  error?: string | null;
+}
+
+/**
+ * Reads one status update after a replace. "fresh" once it describes the new source: loaded with a length, and
+ * either after an unloaded update, with a length other than the old source's, or on a player whose first update
+ * is always the new source's. A failed load is never fresh, so the old length is never saved onto the new song.
+ */
+export function watchLoad(w: LoadWatch, s: StatusLike): LoadWatch | 'fresh' {
+  if (s.error) return { ...w, sawUnloaded: true, firstIsNew: false };
+  if (!s.isLoaded) return w.sawUnloaded ? w : { ...w, sawUnloaded: true };
+  if (s.duration > 0 && (w.sawUnloaded || w.firstIsNew || s.duration !== w.before)) return 'fresh';
+  return w;
 }
 
 // ---- Playlist links ----

@@ -19,7 +19,7 @@ Bare backdrop (titles, section headings, hints): the sharp backdrop with scrim a
   single star speck doesn't count, in the zones where that text sits.
 Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
   onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
-  against their track 3:1. Pine also checks its canopy slab (check_canopy).
+  against their track 3:1, and the accent on the player's lit toggle disc 3:1. Pine also checks its canopy slab (check_canopy).
 """
 import importlib.util
 import json
@@ -396,6 +396,18 @@ def gate_look(look, theme, g):
         bg = sharp[oy:int(zb * FH), ox:int(x1 * FW)]
         for tname in (only[0] if only else ('text', 'muted', 'link')):
             g.text(look, zname, tname, colors[tname], bg, (ox, oy))
+
+    # The player's shuffle and repeat when on: the glyph and a dot under it in the accent, over the lit inset disc.
+    # The disc sits in its own glass circle on looks with controlsInGlass, on Paper's player sheet, and on the bare
+    # world (the middle of the screen, where the transport row sits) elsewhere. 3:1 there, as a state indicator.
+    if mat.get('controlsInGlass'):
+        under = control[y0:]
+    elif look == 'paper':
+        under = sheet[y0:]
+    else:
+        under = sharp[int(0.40 * FH):int(0.85 * FH), int(0.04 * FW):int(0.96 * FW)]
+    disc = over(under, ic, ia)
+    g.check(look, 'player toggle on', 'accent', text_on(disc, colors['accent']), NONTEXT, (0, y0))
 
     canopy = mat.get('canopy')
     if canopy:

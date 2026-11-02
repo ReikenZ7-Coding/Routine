@@ -16,12 +16,15 @@ import {
   afterEnd,
   clampSeek,
   isAudioFile,
+  type LoadWatch,
   otherIndex,
+  PICKER_TYPES,
   playOrder,
   previousRestarts,
   stepIn,
   storedFileName,
   titleFromFileName,
+  watchLoad,
   webFallback,
 } from './music';
 import { deleteCopy, hasFile, keepCopy } from './musicFiles';
@@ -107,6 +110,8 @@ const SoundContext = createContext<SoundState | null>(null);
 
 type Selection = { kind: 'sound'; index: number } | { kind: 'track'; id: string };
 
+const keyOf = (s: Selection) => (s.kind === 'sound' ? `sound:${s.index}` : `track:${s.id}`);
+
 const soundItem = (s: Sound): NowItem => ({ kind: 'sound', id: s.id, name: s.name, subtitle: s.subtitle });
 const trackItem = (t: Track): NowItem => ({ kind: 'track', id: t.id, name: t.title, subtitle: 'Your music' });
 
@@ -136,6 +141,39 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   const player = useAudioPlayer(SOUNDS[0].source, { updateInterval: 250 });
   const status = useAudioPlayerStatus(player);
   const controls = useRef(false);
+
+  // Right after a replace, the player's status still describes the previous source (its length, its position)
+  // until the new one reports in. `freshFor` names the source the status belongs to; until it matches the
+  // selection, the length comes from the saved song and nothing is learnt from the status.
+  const watch = useRef<LoadWatch | null>(null);
+  const pending = useRef<string | undefined>(undefined);
+  const [freshFor, setFreshFor] = useState<string | undefined>(keyOf({ kind: 'sound', index: 0 }));
+  const replaceSource = useCallback(
+    (source: AudioSource, next: Selection) => {
+      let before = 0;
+      try {
+        before = player.currentStatus?.duration ?? 0;
+      } catch {
+        // No status yet: nothing to tell apart.
+      }
+      watch.current = { before, sawUnloaded: false, firstIsNew: Platform.OS === 'web' };
+      pending.current = keyOf(next);
+      setFreshFor(undefined);
+      player.replace(source);
+    },
+    [player],
+  );
+  useEffect(() => {
+    const sub = player.addListener('playbackStatusUpdate', (st) => {
+      if (!watch.current) return;
+      const w = watchLoad(watch.current, st);
+      if (w === 'fresh') {
+        watch.current = null;
+        setFreshFor(pending.current);
+      } else watch.current = w;
+    });
+    return () => sub.remove();
+  }, [player]);
 
   const tracks = music.tracks;
   const ids = useMemo(() => tracks.map((t) => t.id), [tracks]);
@@ -170,7 +208,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         next.kind === sel.kind &&
         (next.kind === 'sound' ? next.index === (sel as { index: number }).index : next.id === (sel as { id: string }).id);
       if (!same) {
-        player.replace(source);
+        replaceSource(source, next);
         setSel(next);
       }
       // Focus sounds loop; songs end and the queue moves on.
@@ -181,7 +219,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         claimMediaControls(player, item, controls);
       } else if (!same && controls.current) claimMediaControls(player, item, controls);
     },
-    [sel, player],
+    [sel, player, replaceSource],
   );
 
   const selectSound = useCallback(
@@ -228,23 +266,25 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [player]);
 
-  // Learn a song's length the first time it loads, so the list can show it.
+  // Learn a song's length the first time it loads, so the list can show it: only from a status that belongs to
+  // this song (see freshFor), and never from one that failed.
+  const fresh = freshFor === keyOf(sel);
   useEffect(() => {
-    if (!currentTrack || !status.isLoaded || !(status.duration > 0)) return;
+    if (!currentTrack || !fresh || status.error || !status.isLoaded || !(status.duration > 0)) return;
     const d = Math.round(status.duration);
     if (currentTrack.duration === d) return;
     updateMusic((m) => ({ ...m, tracks: m.tracks.map((t) => (t.id === currentTrack.id ? { ...t, duration: d } : t)) }));
-  }, [currentTrack, status.isLoaded, status.duration, updateMusic]);
+  }, [currentTrack, fresh, status.error, status.isLoaded, status.duration, updateMusic]);
 
   // If the song playing is removed, fall back to the first focus sound, paused.
   useEffect(() => {
     if (sel.kind === 'track' && !tracks.some((t) => t.id === sel.id)) {
       player.pause();
-      player.replace(SOUNDS[0].source);
+      replaceSource(SOUNDS[0].source, { kind: 'sound', index: 0 });
       player.loop = true;
       setSel({ kind: 'sound', index: 0 });
     }
-  }, [sel, tracks, player]);
+  }, [sel, tracks, player, replaceSource]);
 
   // The sleep timer pauses playback when it runs out, then switches itself off.
   useEffect(() => {
@@ -260,7 +300,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     if (importing) return;
     let picked: DocumentPicker.DocumentPickerResult;
     try {
-      picked = await DocumentPicker.getDocumentAsync({ type: 'audio/*', multiple: true, copyToCacheDirectory: true });
+      picked = await DocumentPicker.getDocumentAsync({ type: PICKER_TYPES, multiple: true, copyToCacheDirectory: true });
     } catch {
       setImportNotes(["Couldn't open your files. Try again in a moment."]);
       return;
@@ -326,7 +366,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
   );
 
   const playing = status.playing;
-  const position = status.currentTime ?? 0;
+  // Until the new source reports in, the status's position and length are the previous source's.
+  const position = fresh ? (status.currentTime ?? 0) : 0;
+  const length = (fresh && status.duration) || (sel.kind === 'sound' ? 22 : (currentTrack?.duration ?? 0));
   const playable = useMemo(() => order.filter((id) => !missing.has(id)), [order, missing]);
   const nextId = sel.kind === 'track' ? afterEnd(playable, sel.id, music.repeat) : undefined;
   const upNext = nextId && nextId !== (sel as { id?: string }).id ? tracks.find((t) => t.id === nextId)?.title : undefined;
@@ -365,9 +407,9 @@ export function SoundProvider({ children }: { children: ReactNode }) {
         if (next) selectTrack(next, playing);
       },
       position,
-      length: status.duration || (sel.kind === 'sound' ? 22 : (currentTrack?.duration ?? 0)),
+      length,
       seek: (seconds) => {
-        player.seekTo(clampSeek(seconds, status.duration || 0)).catch(() => {});
+        player.seekTo(clampSeek(seconds, length)).catch(() => {});
       },
       started,
       sheetOpen,
@@ -386,7 +428,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       cycleTimer: () => setTimer((t) => TIMER_STEPS[(TIMER_STEPS.indexOf(t) + 1) % TIMER_STEPS.length]),
       missing,
       playError:
-        sel.kind === 'track' && status.error
+        sel.kind === 'track' && status.error && (fresh || watch.current?.sawUnloaded)
           ? "This song couldn't be played. The file may be damaged, or in a format this phone can't play."
           : undefined,
       importMusic: () => {
@@ -405,7 +447,8 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       currentTrack,
       playing,
       position,
-      status.duration,
+      length,
+      fresh,
       status.error,
       playable,
       upNext,

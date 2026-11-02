@@ -50,6 +50,9 @@ export function GlassTabBar({
   const placed = useRef(false);
   const lastIndex = useRef(state.index);
   const slot = width ? width / state.routes.length : 0;
+  // A narrow phone (about 320dp) leaves each tab under 60dp: the labels tighten to 12px and lose their side air,
+  // so "Language" still fits whole beside "Library".
+  const narrow = slot > 0 && slot < 60;
 
   useEffect(() => {
     if (!slot) return;
@@ -129,9 +132,12 @@ export function GlassTabBar({
               }
             };
             const item = (on: boolean) => (
-              <View style={styles.item}>
+              <View style={[styles.item, narrow && styles.itemNarrow]}>
                 {options.tabBarIcon?.({ focused: on, color: on ? m.drop.ink : colors.muted, size: 24 })}
-                <Text style={[styles.label, on && styles.labelOn, { color: on ? m.drop.ink : colors.muted }]} numberOfLines={1}>
+                <Text
+                  style={[styles.label, narrow && styles.labelNarrow, on && styles.labelOn, { color: on ? m.drop.ink : colors.muted }]}
+                  numberOfLines={1}
+                >
                   {label}
                 </Text>
               </View>
@@ -147,7 +153,7 @@ export function GlassTabBar({
                 accessibilityState={{ selected: focused }}
                 accessibilityLabel={label}
               >
-                <FadeSwap on={focused} duration={180} off={item(false)} onContent={item(true)} />
+                <FadeSwap on={focused} duration={180} off={item(false)} onContent={item(true)} style={styles.cell} />
               </Press>
             );
           })}
@@ -182,10 +188,15 @@ const makeStyles = ({ colors, fonts, name }: Theme) => {
     glint: { borderWidth: 1, borderColor: colors.material.pressRim },
     tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
     dockTab: { justifyContent: 'flex-start', paddingTop: 10 },
-    item: { alignItems: 'center', gap: 3 },
+    // As wide as the cell, with a little air each side (the current tab's bolder label included): a label too long
+    // for a narrow phone or a large font size shortens with an ellipsis instead of running into its neighbour.
+    item: { alignSelf: 'stretch', alignItems: 'center', gap: 3, paddingHorizontal: 2 },
+    itemNarrow: { paddingHorizontal: 0 },
+    cell: { alignSelf: 'stretch' },
     // Lavender's labels are 13, the caption floor; the other looks keep their tighter 12.
     label: { fontFamily: fonts.bodyMedium, fontSize: name === 'lavender' ? 13 : 12 },
     // Paper's current tab is set in bold ink, the reference's solid-icon-and-bold-label tab.
     labelOn: name === 'paper' ? { fontFamily: fonts.bodyBold } : {},
+    labelNarrow: { fontSize: 12, letterSpacing: -0.2 },
   });
 };

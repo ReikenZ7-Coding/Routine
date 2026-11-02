@@ -11,11 +11,16 @@ function folder(): Directory {
   return dir;
 }
 
-/** Copies a picked file into the music folder under `fileName` and returns the copy's uri. */
+/**
+ * Keeps a picked file in the music folder under `fileName` and returns the kept file's uri. The picker's own
+ * copy in the app's cache is moved rather than copied, so a song takes its space once, not twice.
+ */
 export async function keepCopy(pickedUri: string, fileName: string): Promise<string> {
   const target = new File(folder(), fileName);
   if (target.exists) target.delete();
-  await new File(pickedUri).copy(target);
+  const picked = new File(pickedUri);
+  if (picked.uri.startsWith(Paths.cache.uri)) await picked.move(target);
+  else await picked.copy(target);
   return target.uri;
 }
 

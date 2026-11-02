@@ -94,6 +94,10 @@ export interface GlassMaterial {
   tag?: { fill: string; ink: string };
   /** Pine: the moon orb, a soft disc of light bleeding in from a card's top-right corner (fill and its rim). */
   orb?: { fill: string; rim: string };
+  /** Stone: the player's transport controls and its header buttons each sit in their own glass circle. */
+  controlsInGlass?: boolean;
+  /** Pine: a selected row inside glass (the playing sound or song) is outlined in this lit rim. */
+  selectRim?: string;
 }
 
 export interface Palette {
@@ -307,6 +311,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       litRim: 'rgba(230,214,179,0.90)',
       litGlow: '0px 8px 22px rgba(230,208,160,0.30)',
       material: {
+        controlsInGlass: true,
         live: { tint: 'systemUltraThinMaterialDark', intensity: 10, reduction: 0.42, webBlur: 28, webSaturate: 1.1 },
         chromeTint: 'rgba(24,24,18,0.36)',
         lensSaturation: 1.0,
@@ -489,6 +494,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       // moonlight spilling from under the lit card onto the floor (offset, never a flat halo)
       litGlow: '0px 12px 28px -10px rgba(124,227,188,0.38)',
       material: {
+        selectRim: 'rgba(124,227,188,0.60)',
         live: { tint: 'systemUltraThinMaterialDark', intensity: 10, reduction: 0.42, webBlur: 24, webSaturate: 1.3 },
         chromeTint: 'rgba(4,18,15,0.55)',
         lensSaturation: 1.15,

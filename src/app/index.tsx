@@ -18,7 +18,7 @@ import { StatsSheet } from '../components/StatsSheet';
 import { type TrailItem, TrailHome } from '../components/TrailHome';
 import { WordForm } from '../components/WordForm';
 import { marksFor, monthGrid, weekOf } from '../lib/agenda';
-import { currentLanguage, dueWords, newWord, practiceTitle, tabTitle, todaysLog } from '../lib/language';
+import { currentLanguage, dueWords, newWord, practiceTitle, shortTitle, tabTitle, todaysLog } from '../lib/language';
 import { type PhoneEvent, formatEventTime, phoneEventsByDay } from '../lib/deviceCalendar';
 import { nextSession, sessionFor, sessionProgress } from '../lib/gym';
 import { itemsFor, toggleItem } from '../lib/inbox';
@@ -152,7 +152,9 @@ export default function TodayScreen() {
   // past day keeps it if minutes were logged.
   const learning = language.languages;
   const studying = currentLanguage(language);
+  // The shortcut circle is narrow, so it stays generic; the balance ring has room for the language's name.
   const practiceLabel = tabTitle(learning);
+  const ringLabel = shortTitle(learning);
   const practice = todaysLog(language, selected);
   const practiceDone = practice.minutes >= language.target;
   const showPractice = (learning.length > 0 && !isPast) || practice.minutes > 0;
@@ -423,7 +425,7 @@ export default function TodayScreen() {
                 soft: kinds.gym.soft,
               },
               {
-                label: practiceLabel,
+                label: ringLabel,
                 value: practice.minutes,
                 total: showPractice ? language.target : 0,
                 unit: 'min',

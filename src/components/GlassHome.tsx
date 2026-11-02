@@ -8,7 +8,7 @@ import { type AccessibilityActionEvent, StyleSheet, Text, useWindowDimensions, V
 import Animated, { ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { type Kind, type Theme, useStyles, useTheme } from '../theme';
 import { SceneArt } from './Art';
-import { Glass } from './Glass';
+import { Glass, GlassScroll } from './Glass';
 import { alphaOf } from './glass/colour';
 import { Dim, EASE_OUT, Enter, FadeSwap, Pop, Press, SelectFade, useReduceMotion } from './Motion';
 
@@ -167,7 +167,9 @@ function LavenderHome(p: Props) {
       </Enter>
 
       <SectionHead title="Categories" action="See all" onAction={p.onSeeAll} />
-      <View style={styles.circles}>
+      {/* Spread across a wide phone; on a narrow one (360dp and under) the row runs to the screen's edge and
+          scrolls sideways, so no circle or label is cut off at the margin. */}
+      <GlassScroll horizontal showsHorizontalScrollIndicator={false} style={styles.circlesScroll} contentContainerStyle={styles.circles}>
         {p.categories.map((c) => (
           <View key={c.label} style={styles.circleItem}>
             <Glass
@@ -193,7 +195,7 @@ function LavenderHome(p: Props) {
             </Text>
           </View>
         ))}
-      </View>
+      </GlassScroll>
 
       <SectionHead title="Today" action={p.total ? `${p.done}/${p.total} done` : undefined} pill />
       <View style={styles.rows}>
@@ -297,6 +299,10 @@ function StoneHome(p: Props) {
   const { colors, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const allDone = p.total > 0 && p.done === p.total;
+  // Five 64dp tiles fit the panel from about 392dp. Narrower, the row scrolls sideways with 62dp slots: just
+  // wide enough for "Groceries" beside "Language", and the fifth tile peeks in at the panel's edge.
+  const { width } = useWindowDimensions();
+  const slot = width - 32 >= 16 + 5 * 64 + 8 + 16 ? 64 : 62;
   return (
     <View>
       <View style={styles.bar}>
@@ -375,13 +381,13 @@ function StoneHome(p: Props) {
           <Text style={styles.stonePanelTitle} accessibilityRole="header">
             Categories
           </Text>
-          <View style={styles.tiles}>
+          <GlassScroll horizontal showsHorizontalScrollIndicator={false} style={styles.tilesScroll} contentContainerStyle={styles.tiles}>
             {p.categories.map((c) => {
               const warm = !!c.active;
               return (
                 <Press
                   key={c.label}
-                  outerStyle={styles.tileSlot}
+                  outerStyle={[styles.tileSlot, { width: slot }]}
                   style={styles.tileItem}
                   onPress={c.onPress}
                   accessibilityLabel={c.active ? `${c.label}, done today` : c.label}
@@ -400,7 +406,7 @@ function StoneHome(p: Props) {
                 </Press>
               );
             })}
-          </View>
+          </GlassScroll>
         </Glass>
       </Enter>
 
@@ -577,7 +583,8 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     sectionAction: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     countPill: { height: 28, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' },
     countText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.muted, fontVariant: ['tabular-nums'] },
-    circles: { flexDirection: 'row', justifyContent: 'space-between' },
+    circlesScroll: { marginHorizontal: -16, marginVertical: -8, flexGrow: 0 },
+    circles: { flexGrow: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 8 },
     circleItem: { alignItems: 'center', gap: 8, width: 72 },
     circle: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
     doneFill: { backgroundImage: `linear-gradient(180deg, ${colors.doneFill[0]}, ${colors.doneFill[1]})` },
@@ -662,7 +669,8 @@ const makeStyles = ({ colors, fonts, radii }: Theme) =>
     ghostPillText: { fontFamily: fonts.bodyMedium, fontSize: 16, color: colors.text },
     stonePanel: { marginTop: 14, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14 },
     stonePanelTitle: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 22, color: colors.text },
-    tiles: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 },
+    tilesScroll: { marginHorizontal: -16, marginTop: 6, flexGrow: 0 },
+    tiles: { flexGrow: 1, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, gap: 2 },
     tileSlot: { width: 64 },
     tileItem: { alignItems: 'center', gap: 8, minHeight: 44, borderRadius: radii.inset, paddingBottom: 2 },
     tile: {
