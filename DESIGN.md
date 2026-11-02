@@ -33,10 +33,8 @@ colors:
   lavender-node-ahead-fill: "rgba(58,66,166,0.92)"
   lavender-node-current-fill: "rgba(74,53,200,0.92)"
   lavender-warm-tile: "rgba(255,179,230,0.30)"
-  lavender-on-warm-tile: "#FFFFFF"
   lavender-on-kind: "#2A1A78"
   lavender-danger: "#FFF8FA"
-  lavender-tile: "rgba(255,255,255,0.18)"
   lavender-inset-fill: "rgba(255,255,255,0.04)"
   lavender-inset-border: "rgba(255,255,255,0.16)"
   lavender-inset-border-top: "rgba(255,255,255,0.34)"
@@ -94,10 +92,8 @@ colors:
   stone-node-ahead-fill: "rgba(58,57,47,0.92)"
   stone-node-current-fill: "rgba(46,45,36,0.92)"
   stone-warm-tile: "rgba(230,214,179,0.30)"
-  stone-on-warm-tile: "#F4E6BF"
   stone-on-kind: "#2E2D24"
   stone-danger: "#FAE7E1"
-  stone-tile: "rgba(255,250,235,0.1)"
   stone-inset-fill: "rgba(255,246,226,0.04)"
   stone-inset-border: "rgba(255,247,228,0.10)"
   stone-inset-border-top: "rgba(255,247,228,0.22)"
@@ -155,10 +151,8 @@ colors:
   paper-node-ahead-fill: "rgba(255,255,255,0.65)"
   paper-node-current-fill: "rgba(255,255,255,0.80)"
   paper-warm-tile: "#FFE2C8"
-  paper-on-warm-tile: "#131512"
   paper-on-kind: "#FFFFFF"
   paper-danger: "#B8281A"
-  paper-tile: "#F1F1ED"
   paper-inset-fill: "rgba(255,255,255,0.65)"
   paper-inset-border: "rgba(20,22,18,0.06)"
   paper-inset-border-top: "#FFFFFF"
@@ -216,10 +210,8 @@ colors:
   pine-node-ahead-fill: "#071D19"
   pine-node-current-fill: "#071D19"
   pine-warm-tile: "rgba(124,227,188,0.16)"
-  pine-on-warm-tile: "#7CE3BC"
   pine-on-kind: "#06201A"
   pine-danger: "#F7C8C0"
-  pine-tile: "rgba(124,227,188,0.1)"
   pine-inset-fill: "rgba(214,240,228,0.05)"
   pine-inset-border: "rgba(214,240,228,0.10)"
   pine-inset-border-top: "rgba(214,240,228,0.18)"
@@ -256,8 +248,8 @@ colors:
   pine-canopy-inset-border: "rgba(168,240,212,0.16)"
   pine-canopy-inset-border-top: "rgba(4,14,12,0.40)"
   # Pine, derived in Segmented.tsx (not in theme.ts): the filter chip fill is bg at 50%, its rim the accent at 50%.
-  pine-hub-fill: "rgba(7,29,25,0.50)"
-  pine-hub-rim: "rgba(124,227,188,0.50)"
+  pine-chip-fill: "rgba(7,29,25,0.50)"
+  pine-chip-rim: "rgba(124,227,188,0.50)"
 typography:
   body:
     fontFamily: "DM Sans, sans-serif"
@@ -296,6 +288,12 @@ typography:
     fontFamily: "DM Sans, sans-serif"
     fontSize: "13px"
     fontWeight: 500
+  lavender-greeting:
+    fontFamily: "DM Sans, sans-serif"
+    fontSize: "30px"
+    fontWeight: 700
+    lineHeight: "36px"
+    letterSpacing: "-0.6px"
   lavender-title:
     fontFamily: "DM Sans, sans-serif"
     fontSize: "30px"
@@ -333,6 +331,12 @@ typography:
     fontFamily: "DM Sans, sans-serif"
     fontSize: "16px"
     fontWeight: 700
+  stone-greeting:
+    fontFamily: "DM Sans, sans-serif"
+    fontSize: "30px"
+    fontWeight: 300
+    lineHeight: "36px"
+    letterSpacing: "-0.6px"
   stone-title:
     fontFamily: "DM Sans, sans-serif"
     fontSize: "30px"
@@ -454,9 +458,9 @@ typography:
     fontWeight: 700
     letterSpacing: "0.2px"
   pine-num:
-    fontFamily: "DM Mono, monospace"
+    fontFamily: "DM Sans, sans-serif"
     fontSize: "15px"
-    fontWeight: 400
+    fontWeight: 500
     fontFeature: "tnum"
   pine-button:
     fontFamily: "DM Sans, sans-serif"
@@ -754,7 +758,7 @@ components:
     height: "44px"
     padding: "0px 16px"
   pine-filter-chip:
-    backgroundColor: "{colors.pine-hub-fill}"
+    backgroundColor: "{colors.pine-chip-fill}"
     textColor: "{colors.pine-text}"
     typography: "{typography.chip}"
     rounded: "{rounded.pill}"
@@ -813,7 +817,7 @@ components:
 
 # Design System: Routine
 
-<!-- Where the frontmatter comes from. Colours and radii are copied from src/theme.ts (PALETTES), except pine-hub-fill and pine-hub-rim, which Segmented.tsx derives with alphaOf. The shared type roles (body, body-medium, small, hint, caption, link) and every <look>-title, -section-title, -sheet-title, -label, -badge and -num are makeType in src/theme.ts. These typography tokens are read off component files instead: chip (Chip.tsx, Segmented.tsx), tab-label (GlassTabBar.tsx), paper-greeting and pine-greeting (TrailHome.tsx), paper-header-badge (PageTitle.tsx, 13px in every look), and every <look>-button (Button.tsx draws 16px; theme's own type.button is 15px and unused, as are type.hero and type.heading). Radii float-bar, fab, canopy-foot, tile and check-box are literals in GlassTabBar, Fab, Canopy, the row tiles and CheckRow. Spacing names are labels for literals used across the components, not theme tokens. Component sizes are read off the component files. Do not add any of these labels to src/theme.ts on the strength of this file; if code and this file disagree, the code wins and this file is stale. The art and the moving light live in assets/art/looks.json and scripts/render-art.py; the contrast gate is scripts/check-contrast.py. The full glass layer values (rims, bodies, caustics, sheet and drop) stay in src/theme.ts colors.material; shadows, inner rim lines, motion and component snippets are in .impeccable/design.json. -->
+<!-- Where the frontmatter comes from. Colours and radii are copied from src/theme.ts (PALETTES), except pine-chip-fill and pine-chip-rim, which Segmented.tsx derives with alphaOf. The shared type roles (body, body-medium, small, hint, caption, link) and every <look>-title, -section-title, -sheet-title, -label, -badge and -num are makeType in src/theme.ts. These typography tokens are read off component files instead: chip (Chip.tsx, Segmented.tsx), tab-label (GlassTabBar.tsx), every <look>-greeting (TrailHome.tsx), paper-header-badge (PageTitle.tsx, 13px in every look), and every <look>-button (Button.tsx draws 16px; theme's own type.button is 15px and unused, as are type.hero and type.heading). Radii float-bar, fab, canopy-foot, tile and check-box are literals in GlassTabBar, Fab, Canopy, the row pebbles and CheckRow. Spacing names are labels for literals used across the components, not theme tokens. Component sizes are read off the component files. Do not add any of these labels to src/theme.ts on the strength of this file; if code and this file disagree, the code wins and this file is stale. The art and the moving light live in assets/art/looks.json and scripts/render-art.py; the contrast gate is scripts/check-contrast.py. The full glass layer values (rims, bodies, caustics, sheet and drop) stay in src/theme.ts colors.material; shadows, inner rim lines, motion and component snippets are in .impeccable/design.json. -->
 
 ## Overview
 
@@ -841,7 +845,7 @@ The density is calm and single-column: one thing per pane, generous 16px gutters
 
 **Paper: "Morning on the Ridge".** A bright, cool daylight page with ink-wash mountains at the top of Today, a warm dawn glow top right and a sage bounce lower left. A low sun drifts over 30 seconds and a mist band slides over 40; the mountains move slower than the content as you scroll. The glass is milk glass, 70 to 84% white, with a bright top rim and layered paper-on-desk shadows. Type is ink: Bricolage Grotesque for titles over DM Sans, and colour appears only where it carries meaning (each kind's colour on its progress, the ember streak, the vermilion of an error). Signature: the ink-wash mountains behind Today's header, which move slower than the content and catch one band of morning light when the whole day is done; the trail drawn in pine ink, like a footpath up the mountain.
 
-**Pine: "Moon Under the Canopy".** Night in the pines: a deep evergreen floor, a mint moon glow top right, a low aurora band, and faceted pines along the foot catching the moon on one side. The moon drifts over 16 seconds, the shortest clock of the four, and Pine's sheen rises from below. The glass is smoked green with mint edge light. Type is sporty and bold, with DM Mono for numerals. Signature: the canopy slab, a lit teal plane drawn behind every screen's header (the same header as every look's, in the same place), bleeding to both edges and ending in a rounded foot with a thin mint rim and its own faceted pines; and the trail in mint.
+**Pine: "Moon Under the Canopy".** Night in the pines: a deep evergreen floor, a mint moon glow top right, a low aurora band, and faceted pines along the foot catching the moon on one side. The moon drifts over 16 seconds, the shortest clock of the four, and Pine's sheen rises from below. The glass is smoked green with mint edge light. Type is sporty and bold, numbers in DM Sans Medium with tabular figures. Signature: the canopy slab, a lit teal plane drawn behind every screen's header (the same header as every look's, in the same place), bleeding to both edges and ending in a rounded foot with a thin mint rim and its own faceted pines; and the trail in mint.
 
 ## Colors
 
@@ -863,7 +867,7 @@ The reward layer: the done tick, progress and streak accents, the lit rim of wha
 - **Lavender:** Rose Petal to Rose Tick (`lavender-done-top`, `lavender-done-bottom`) for a ticked control with Indigo Ink on it; Rose Light (`lavender-accent`, also the streak flame) for progress bars and the action glow; a white lit rim; a Rose Wash behind a lit streak flame. The trail's nodes and count badge are Frost Node white (`lavender-node`) with Violet Count ink (`lavender-on-node`).
 - **Stone:** the done tick is champagne, the same gradient as the primary, because in Stone finishing something is the main event. Accent, streak, node and lit rim are all champagne family; Champagne Wash (`stone-warm-tile`) sits behind a lit streak flame.
 - **Paper:** the done tick is ink glass with white check; accent is ink; the streak alone is Ember (`paper-streak`); the trail node is Pine Ink (`paper-node`); a lit streak flame sits on Dawn Apricot (`paper-warm-tile`).
-- **Pine:** everything rewarding is mint: done tick, accent, streak, node, lit rim (`pine-lit-rim`) and a Mint Wash tile. The canopy slab runs Canopy Teal to Canopy Foot (`pine-canopy-top`, `pine-canopy-mid`, `pine-canopy-foot`) with a Canopy Rim (`pine-canopy-rim`) along its foot; secondary text on the slab uses Slab Sage (`pine-on-slab-muted`); glass laid on the slab becomes a Slab Trough (`pine-canopy-inset-fill`, `-border`, `-border-top`); the slab's count badge is a Night Badge pill (`pine-canopy-badge`). The Library's filter chips sit on Night Floor at half strength with a Mint Half-Rim (`pine-hub-fill`, `pine-hub-rim`).
+- **Pine:** everything rewarding is mint: done tick, accent, streak, node, lit rim (`pine-lit-rim`) and a Mint Wash tile. The canopy slab runs Canopy Teal to Canopy Foot (`pine-canopy-top`, `pine-canopy-mid`, `pine-canopy-foot`) with a Canopy Rim (`pine-canopy-rim`) along its foot; secondary text on the slab uses Slab Sage (`pine-on-slab-muted`); glass laid on the slab becomes a Slab Trough (`pine-canopy-inset-fill`, `-border`, `-border-top`); the slab's count badge is a Night Badge pill (`pine-canopy-badge`). The Library's filter chips sit on Night Floor at half strength with a Mint Half-Rim (`pine-chip-fill`, `pine-chip-rim`).
 
 ### Tertiary
 
@@ -886,7 +890,7 @@ Text, secondary text, captions, hairlines, outlines, tracks, and the surfaces th
 Every look also names the same surface roles:
 
 - **World** (`<look>-world-top`, `-world-mid`, `-world-bottom`): the gradient painted under the backdrop image, top to bottom. `<look>-bg` is the flat stand-in.
-- **Inset glass** (`<look>-inset-fill`, `-inset-border`, `-inset-border-top`): the trough every nested control sits in: fields, glass buttons, chips, tick wells, row tiles on the page looks, the segmented trough inside glass. The top border is the brighter edge (on Paper it is pure white).
+- **Inset glass** (`<look>-inset-fill`, `-inset-border`, `-inset-border-top`): the trough every nested control sits in: fields, glass buttons, chips, tick wells, row pebbles, the segmented trough inside glass. The top border is the brighter edge (on Paper it is pure white).
 - **Tile** (`<look>-tile`): the light square behind a row's icon on Pine's trail and the track of its in-card progress bar.
 - **Press fill** (`<look>-press-fill`): the light that fades in under the content while a surface is touched.
 - **Chrome tint** (`<look>-chrome-tint`): laid over the tab bar's and mini player's live blur, for their labels.
@@ -911,15 +915,15 @@ Every look also names the same surface roles:
 
 **Body Font:** DM Sans (with sans-serif fallback), in every look.
 
-**Label/Mono Font:** DM Sans for labels in every look. DM Mono on Pine only, for numerals.
+**Label and Number Font:** DM Sans for labels and numbers in every look, numbers with tabular figures. DM Mono appears in one place only, the backup code field, in every look.
 
-**Lavender.** Display DM Sans Bold, body DM Sans. No mono: numbers are DM Sans with tabular figures.
+**Lavender.** Display DM Sans Bold, body DM Sans; numbers DM Sans with tabular figures.
 
-**Stone.** Display DM Sans Light, body DM Sans. No bold anywhere (its "bold" is Medium) and no mono.
+**Stone.** Display DM Sans Light, body DM Sans. No bold anywhere (its "bold" is Medium); the flashcard word (`fonts.word`) and the focus clock are Light.
 
-**Paper.** Display Bricolage Grotesque Bold, body DM Sans. No mono: big numerals are Bricolage, small numbers DM Sans tabular.
+**Paper.** Display Bricolage Grotesque Bold, body DM Sans; the Balance ring numbers are Bricolage, small numbers DM Sans tabular.
 
-**Pine.** Display DM Sans Bold, body DM Sans. DM Mono for numerals (timers, weights, counts, the trail's step count).
+**Pine.** Display DM Sans Bold, body DM Sans; numbers DM Sans Medium with tabular figures.
 
 **Character:** One humanist sans (DM Sans) carries every look's reading text, so the app always feels like one product; the display voice changes with the world. Lavender is round and confident, Stone is thin and editorial, Paper is a characterful grotesque printed in ink, Pine is sporty, tight and bold. Small labels are sentence case in every look.
 
@@ -936,24 +940,24 @@ Shared roles (all looks, from `makeType` in `src/theme.ts`):
 
 Per-look roles (frontmatter `<look>-title`, `-section-title`, `-sheet-title`, `-label`, `-badge`, `-num`, `-button`):
 
-- **Display:** Today's name line, in each look's display face at 30 on a 36 line with -0.6px tracking (`paper-greeting`, `pine-greeting`; Bold on Lavender, Light on Stone).
+- **Display:** Today's name line, in each look's display face at 30 on a 36 line with -0.6px tracking (`<look>-greeting`: DM Sans Bold on Lavender and Pine, Light on Stone, Bricolage Bold on Paper).
 - **Title:** the screen title. 30 on a 36 line in every look: Lavender Bold, Stone Light, Paper Bricolage Bold, Pine Bold with tight tracking (-0.8px).
 - **Section title:** Lavender Bold 18, Stone Regular 18 with a hair of positive tracking, Paper Bricolage 20, Pine Bold 21, all on a 26 line.
 - **Sheet title:** Lavender Bold 26, Stone Light 28, Paper Bricolage 24, Pine Bold 24, all on a 34 line.
 - **Label:** small captions over groups and fields (the `Micro` caption on filter rows, the label above every field). Sentence case in every look, never uppercase, on an 18 line: Lavender and Stone 13px Medium with 0.4px tracking, Paper 14px Medium, Pine 13px Bold with 0.2px tracking.
 - **Badge:** status pills and count badges, sentence case in every look. Lavender and Stone Medium 13 with 0.4px tracking; Paper Bold 12 with 0.2px tracking; Pine Bold 13 with 0.2px tracking. The screen header's count badge is 13 in every look.
-- **Num:** counts, weights and times, always tabular. Pine's are DM Mono.
+- **Num:** counts, weights and times, always tabular, in DM Sans in every look.
 - **Button:** Bold 16 on Lavender, Paper and Pine; Medium 16 on Stone.
-- **Tab label:** Medium 13 (`tab-label`) in every look; the current tab's label goes to the look's bold (Stone's bold is Medium).
+- **Tab label:** Medium 13 (`tab-label`) in every look (12 on a phone 360dp wide or less), the same weight whether or not the tab is current: the drop and its ink mark the current tab, so the same label fits the same cell in every look.
 - **Numeral:** the focus timer's clock, 52 on a 56 line with tabular figures, in the look's numeral face (`fonts.numeral`): DM Sans Light on Lavender and Stone, DM Sans Medium on Paper and Pine. Never mono.
 
 ### Named Rules
 
 **The Tabular Numbers Rule.** Every number that can change (counts, times, weights, timers, progress) uses tabular figures, so nothing jitters as it ticks.
 
-**The Mono Is for Numerals Rule.** Mono appears only in Pine, and only for numerals. Words, labels and phrases such as "4 in a row" or "40 kg × 8" are set in the sans with tabular figures. Mono is never used to make something look technical. The one other use is the backup code field, which holds a machine code people copy character by character, so a fixed-width face is doing real work there.
+**The Mono Is for Code Rule.** Numbers, words, labels and phrases such as "4 in a row" or "40 kg × 8" are set in the sans in every look, numbers with tabular figures. The one monospace is the backup code field (`fonts.code`), in every look: it holds a machine code people copy character by character, so a fixed-width face is doing real work there. Mono is never used to make something look technical.
 
-**The Sixteen Floor Rule.** Reading text is 16px and secondary lines are 14px; no sentence is ever set smaller. Below 14px sit only short marks that are not sentences: labels and captions (13; Paper's labels stay at 14), counts in segments, chips, ticks and badges (13; Paper's status badges Bold 12), tab labels (13; 12 only on a phone too narrow for 13) and the counter inside a 24px check box (12). Nothing goes below 12px.
+**The Sixteen Floor Rule.** Reading text is 16px and secondary lines are 14px; no sentence is ever set smaller. Below 14px sit only short marks that are not sentences: labels and captions (13; Paper's labels stay at 14), counts in segments, chips, ticks and badges (13; Paper's status badges Bold 12), tab labels (13; 12 only on a phone 360dp wide or less) and the counter inside a 24px check box (12). Nothing goes below 12px.
 
 ## Layout
 
@@ -961,17 +965,18 @@ Routine is a phone app used one-handed for a few seconds at a time. Every screen
 
 **One layout per screen.** Every look shows the same components in the same order and the same places, with the same controls and the same behaviour. Header art is the one structural freedom a look has, and it only ever sits behind the same header: Paper's mountains flush with the top of the frame, Pine's canopy slab, the bare world on Lavender and Stone.
 
-- **Today (every look):** the greeting line, the name, and the date line with its chevron (it opens the calendar strip in a collapse straight under the header); on the right, three 44dp round buttons, in order: sounds and music (a dot shows while something plays), your week, settings. Under it, the streak pill, then "Today's trail" with its count badge, the trail (below), the Balance rings for routines, gym and language practice (the chevron sits in the heading; folded, one line sums them up), then "How was today?". The floating button adds a routine, to-do, grocery item or word, and steps aside while the page scrolls down. The header row starts 4dp below the scroll's top padding and the next thing starts 28dp below it in every look; on Pine that space is the slab's own padding and the gap under its foot.
-- **Page headers (Inbox, Gym, Language, Library):** `PageTitle` in every look: the title, a subtitle under it, an optional count badge on the right, and anything that belongs to the header under them (the Library's shelf switch), 16dp apart. The title starts 4dp below the scroll's top padding and the safe area, and the next thing starts 28dp under the header, in every look; on Pine the canopy slab is drawn behind the same box and its padding and the gap under its foot take the place of the margins.
-- **Library (every look):** the header ("Library", "Your routines and the shopping list", the Routines / Groceries switch with icons and counts), then a labelled search pill, then on the routines shelf the "When" and "Repeat" filter chip rows (hidden until there is a routine to filter). The page scrolls as one, header included. Routines: a "Create new routine" row (an inset well with a plus, a title and one line), then shelves "Today · 1/4 done", "Not today" and "Ideas" (Ideas hide while a search or filter is on) of full-width list rows. Each row is the routine's glyph in an inset pebble (stepping back to 85% when not on today's plan, 60% when done or skipped), the name with a streak pill (flame and count, from two days on), a meta line, the 26dp tick ring in a 44 target (a plus for a counter, filling with the routine colour when done) and a visible "more" button for editing, skipping and reminders. There is no floating button on the routines shelf: the create row is the action. Groceries: "To buy · N" with a Share chip, one glass pane per aisle (an inset tile with the aisle's glyph in the groceries ink, the aisle's name in sentence case and its count) and one hint pane; an empty list says "All bought" in one pane under a "To buy" heading. Then "Bought today" and "Coming up", and a floating button to add an item.
-- **Now Playing (every look):** a full-screen page in the look's world. A fixed top bar (close, a chevron down; "Now Playing" with what is playing under it; the sleep timer, a moon), the art square, the title and subtitle (with a timer badge while a timer is set), the seek bar with its times, the transport row (shuffle, previous, the 76dp play disc in the look's node colour, next, repeat), then "Focus sounds" as the stacked segmented control, "Your music" and "Playlists". Stone sets the top-bar buttons and the transport controls on their own glass circles (`material.controlsInGlass`), the same glyphs in the same places.
+- **Today (every look):** the greeting line and the name, with three 44dp round buttons on the right, in order: sounds and music (while something plays its glyph crossfades to pause and a dot fades in), your week, settings. Under them, the full width, the date line with its chevron on one line (it opens the calendar strip in a collapse straight under the header); it never wraps, so the chevron never strands on a narrow phone. Then the streak pill, "Today's trail" with its count badge, the trail (below) with one hint pane under it ("Tap a step to tick it off. Press and hold a routine to edit it."), the Balance rings for routines, gym and language practice (the chevron sits in the heading; folded, one line sums them up, folding in as the rings fold out), then "How was today?". The floating button adds a routine, to-do, grocery item or word, and steps aside while the page scrolls down. The header row starts 4dp below the scroll's top padding and the next thing starts 28dp below it in every look; on Pine that space is the slab's own 16dp of padding and the 12dp gap under its foot.
+- **A day still to come (every look):** picked from the calendar, the same trail with nothing lit and nothing to tick. A routine's card opens the routine to change it (a chevron where the ring was; read as "Edit Stretch"), a to-do shows without a ring, and the hint pane says "This day is still ahead. Tap a routine to change it, and tick things off on the day." Past days tick as today does.
+- **Page headers (Inbox, Gym, Language, Library):** `PageTitle` in every look: the title, a subtitle under it, an optional count badge on the right, and anything that belongs to the header under them (the Library's shelf switch), 16dp apart. The title starts 4dp below the scroll's top padding and the safe area, and the next thing starts 28dp under the header, in every look; on Pine the canopy slab is drawn behind the same box and its padding (16dp under the subtitle, clear of the foot's curve) and the 12dp gap under its foot take the place of the margins.
+- **Library (every look):** the header ("Library", "Your routines and the shopping list", the Routines / Groceries switch with icons and counts), then a labelled search pill, then on the routines shelf the "When" and "Repeat" filter chip rows (hidden until there is a routine to filter). The page scrolls as one, header included. Routines: a "Create new routine" row (an inset well with a plus, a title and one line), then shelves "Today · 1/4 done", "Not today" and "Ideas" (Ideas hide while a search or filter is on) of full-width list rows. Each row is the routine's glyph in an inset pebble (stepping back to 85% when not on today's plan, 60% when done or skipped), the name (wrapping to a second line rather than shrinking beside the controls), a meta line led by a streak pill (flame and count, from two days on), the 26dp tick ring in a 44 target (a plus for a counter, filling with the routine colour when done) and a visible "more" button for editing, skipping and reminders. Groceries: an "Add an item" row (the same row, in the same place), then "To buy · N" with a Share chip, one glass pane per aisle (an inset tile with the aisle's glyph in the groceries ink, the aisle's name in sentence case and its count) and one hint pane; an empty list says "All bought" in one pane under a "To buy" heading. Then "Bought today" and "Coming up". Both shelves add through their create row, so the Library has no floating button and switching shelves never makes one appear or go.
+- **Now Playing (every look):** a full-screen page in the look's world. A fixed top bar (close, a chevron down; "Now Playing" with what is playing under it; the sleep timer, a moon), the art square, the title and subtitle (with a timer badge while a timer is set), the seek bar with its times, the transport row (shuffle, previous, the 76dp play disc in the look's node colour, next, repeat), then "Focus sounds" as the stacked segmented control, "Your music" and "Playlists". The top-bar buttons and the transport controls are bare glyphs in every look; the four transport controls are 48dp so the row fits a 320dp phone, and the focus sound labels wrap to two lines inside their segments rather than run together.
 - **Inbox (every look):** the header, the labelled composer (control glass with the add disc always at its end; with nothing typed it puts the cursor in the field), then "To sort · N" with its kind dot and the how-to as its footer, "Planned" and "Done this week". With nothing to sort and nothing planned, one "Nothing to sort" pane with the tray in the inbox ink takes the list's place.
-- **Gym (every look):** the header with its session count, today's session card (the name, "Today · 1 of 9 sets", an 8dp bar on the look's track, a hint), the exercises, "Weekly plan" (48dp rows; rest days read "Rest" in muted) and "History". A best-ever lift carries a soft "New best" pill with a trophy.
-- **Language (every look):** the header with its word count, the language switcher when there are several, "Today's practice" on pane glass, the focus timer, the review card and "My words".
+- **Gym (every look):** the header with its session count, today's session card (the name, "Today · 1 of 9 sets", an 8dp bar on the look's track, a hint), the exercises (each: the name and plan line, the weight stepper, then the set bubbles on a row of their own so they never wrap beside the stepper), "Weekly plan" (48dp rows; rest days read "Rest" in muted) and "History". A best-ever lift carries a soft "New best" pill with a trophy.
+- **Language (every look):** the header with its word count, the language switcher when there are several, "Today's practice" on pane glass, the focus timer (its title, the 15/25 min switch on its own row under it, which folds away while a session runs, then the clock and Start), the review card and "My words".
 
 **Spacing rhythm.** Sections start 28px apart (`section`) with a 44px-tall header row; panes pad 16px across and 12px down; heroes pad 16; trail cards pad 14, Library rows 12; form fields stack 16px apart with the label 8px above its control. Interactive targets are at least 44 by 44 with at least 8px between them; a glass surface smaller than 44 grows its hit area invisibly to 44.
 
-**Chrome.** The tab bar has five items, never more. In every look it floats 16px in from each side and 10px above the bottom inset, 72dp tall with a 30 radius, and a glass drop fills the current tab's slot; only its colours and glass come from the look. The floating button sits 20px from the right, clear of the tab bar and the mini player, and steps out of the way while the page scrolls down. Content fades out under the status bar and before the tab bar through the look's edge colours (`<look>-edge-top`, `<look>-edge-bottom`), so nothing is cut by a hard line.
+**Chrome.** The tab bar has five items, never more. In every look it floats 16px in from each side and 10px above the bottom inset, 72dp tall with a 30 radius, and a glass drop fills the current tab's slot; only its colours and glass come from the look. The floating button sits 20px from the right, clear of the tab bar and the mini player, and steps out of the way while the page scrolls down. It floats over the content: the card under it at rest stays one tap anywhere on its open part, and every card can scroll clear of it. Content fades out under the status bar and before the tab bar through the look's edge colours (`<look>-edge-top`, `<look>-edge-bottom`), so nothing is cut by a hard line.
 
 **Sheets.** Every panel and form is a bottom sheet. One sheet at a time: when one hands over to another, the next waits for the first to leave and the dim stays up between them.
 
@@ -1053,17 +1058,17 @@ A new screen is assembled from the shared kit, never from raw views with their o
 **How code varies by look.** The four looks are skins of one app: a look changes colours, its glass material, its backdrop and header art, its typeface and weights, and small tokenised radius and rim details, never which components a screen shows, their order, their places, their controls or what they do. Branch on what a look has, not on its name:
 - `colors.material.canopy` exists only on Pine: `PageTitle` and Today draw the canopy slab behind the same header box, and secondary text there uses `onSlabMuted`. The slab never moves anything.
 - `HEADER_RATIOS[name]` (header art drawn behind Today's header, Paper's mountains) is art only, as is the slab.
-- `colors.material.controlsInGlass` (Stone): the player's top-bar buttons and transport controls sit on their own glass circles; the glyphs and their places do not change.
+- `colors.material.sheenFromBelow` (Pine): the sheen that crosses glass rises from the lower edge; light only.
 - `colors.material.selectRim` (Pine): the playing sound or song is outlined in this lit rim; other looks keep the inset border.
 - `colors.material.outlineChips` (Pine): the filter chips are a dark fill with a mint rim, the same chip in its own colours.
-- `fonts.numeral`: the face of the focus timer's clock.
-- `theme.dark` is false only on Paper (light type on a dark page everywhere else): use it for strengths that depend on the page's lightness. The status bar style has its own token, `colors.statusBar`.
-- `theme.name` picks art and a typeface only (the backdrop and header art, Stone's light flashcard word). It never changes what a screen shows or where.
+- `fonts.numeral`: the face of the focus timer's clock. `fonts.word`: the flashcard word (Light on Stone). `fonts.mono` and `fonts.monoMedium` are the number faces (DM Sans with tabular figures in every look; the names are historical); `fonts.code` is the one monospace, for the backup code.
+- `colors.statusBar` is `dark` only on Paper (dark ink on a light page); the contrast gate keys its worse-light case off it.
+- `theme.name` picks art only (the backdrop, the header art, the scenes); faces come from `fonts`. It never changes what a screen shows or where, and no component or gate check tests a look's name.
 
 ### Screen header
 - Every screen other than Today opens with `PageTitle`, the same in every look: the title in the look's title face, a subtitle under it (14px on a 19 line, 2dp below) in `onSlabMuted` (which equals `muted` on every look but Pine), and an optional count badge on the right ("2 sessions", "12 words"). Gym and Language show the badge; Inbox does not, and Library leaves it off because its switch already counts both shelves.
 - The badge is a pill, 30dp tall with 12px side padding, 13px in the look's badge face, sentence case: inset glass with text ink, or on Pine's slab a dark Night Badge pill with a mint rim and a mint count.
-- The title starts 4dp below the scroll's top padding and the safe area; children (the Library's switch) sit 16dp under the title block; the next thing on the page starts 28dp under the header. On Pine the slab is drawn behind the same box: its padding and the 20dp gap under its foot make up those margins.
+- The title starts 4dp below the scroll's top padding and the safe area; children (the Library's switch) sit 16dp under the title block; the next thing on the page starts 28dp under the header. On Pine the slab is drawn behind the same box: its padding (16dp under the last line, clear of the foot's curve) and the 12dp gap under its foot make up those margins.
 
 ### Buttons
 - **Shape:** full pill (`rounded.pill`), 48dp tall.
@@ -1075,7 +1080,7 @@ A new screen is assembled from the shared kit, never from raw views with their o
 
 ### Chips and segmented switch
 - **Chip:** a 44dp pill of inset glass, 16px padding, Medium 14. Chosen: the primary gradient fades in under the label over 150ms while the label crossfades to on-primary. Light selection haptic on press.
-- **Filter chip (Library, every look):** the same 44dp pill with 14px padding and an optional 14px icon, on the look's inset glass. Pine colours it its own way (`material.outlineChips`): a dark fill of the night floor at 50% (`pine-hub-fill`) with a mint rim at 50% (`pine-hub-rim`).
+- **Filter chip (Library, every look):** the same 44dp pill with 14px padding and an optional 14px icon, on the look's inset glass. Pine colours it its own way (`material.outlineChips`): a dark fill of the night floor at 50% (`pine-chip-fill`) with a mint rim at 50% (`pine-chip-rim`).
 - **Action chip:** a 44dp pill with a 16px icon in link colour beside a section title ("Add session", "Share").
 - **Chip rows:** captioned by a label, scroll sideways, rest with a chip's start on the left edge, and a chip running off the right edge fades out as a hint of "more this way".
 - **Segmented switch:** two to four choices in a glass trough. A childless drop glides to the chosen one in 220ms ease-out while labels crossfade; inside glass the trough is inset, on the bare world it is control glass. Counts sit beside the label.
@@ -1087,7 +1092,7 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **Border:** the 1px per-side rim, lit from the top.
 - **Internal Padding:** 16 across and 12 down for panes; heroes 16; trail cards 14 (16 on the right), at least 76dp tall; Library rows 12, at least 72dp tall.
 - **Rows:** a kind icon, title and meta line, and a way to tick. On Today's trail, in every look, the icon sits in a 44dp inset pebble (the look's inset glass) drawn in the kind's text ink. The tick is an empty ring in a 44dp target (a checkbox, never a play button) into which the done fill fades with a check, with a pop (a grow to 1.25 then a bouncy settle). On the trail the whole card is the target and its ring is 26dp; in a Library row the same 26dp ring sits in its own 44dp target beside the "more" button. Long press edits, with a light haptic; screen readers get "Edit" as an action.
-- **Library rows:** the routine's glyph in a 44dp inset pebble (in the routine's text ink), the name (Bold 16) with a streak pill (22dp, flame and count) once it has run two days, a meta line, the tick ring and a 44dp "more" button. The same row in every look.
+- **Library rows:** the routine's glyph in a 44dp inset pebble (in the routine's text ink), the name (Bold 16, up to two lines), a meta line led by a streak pill (22dp, flame and count) once it has run two days, the tick ring and a 44dp "more" button. The tick and the more button are the only fixed widths, so the name keeps the row's width on a narrow phone. The same row in every look.
 
 ### Inputs / Fields
 - **Style:** inset glass, the look's inset radius, at least 48dp tall, 14px across, body 16.
@@ -1096,16 +1101,16 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **Error:** the rim turns danger and an inline message with an alert icon appears under the field in danger ink, 14px Medium, announced politely; in a sheet it scrolls into view with its field.
 
 ### Navigation
-- **Tab bar:** chrome glass with live blur and the look's chrome tint. Five tabs: Today, Inbox, Gym, Language, Library. The Language tab always reads "Language" (it names the subject, for one language or several): a tab cell on a 320dp phone has no room for "Portuguese" or even "Languages", so the language's own name lives in the page title, the Today row and the Balance ring (up to ten letters there). Icons 24 over a 13px Medium label in every look, capped at its cell with 2dp of air each side so a long label ellipsizes rather than meeting its neighbour. A glass drop sits under the current tab and flows to the next on a pair of springs (the leading edge springs ahead, the trailing edge catches up), then its rim glints once. Labels crossfade over 180ms between muted and the drop's ink, and the current label goes to the look's bold. The bar is the same shape and placement in every look: it floats 16 in from each side, 10 above the safe area, 72dp tall with a 30 radius, the drop filling the current tab's slot. Under reduced motion the drop fades out and back in at its new place.
+- **Tab bar:** chrome glass with live blur and the look's chrome tint. Five tabs: Today, Inbox, Gym, Language, Library. The Language tab always reads "Language" (it names the subject, for one language or several): a tab cell on a 320dp phone has no room for "Portuguese" or even "Languages", so the language's own name lives in the page title, the Today row and the Balance ring (up to ten letters there). Icons 24 over a 13px Medium label in every look (12px at 360dp and under), capped at its cell with 2dp of air each side so a long label ellipsizes rather than meeting its neighbour. A glass drop sits under the current tab and flows to the next on a pair of springs (the leading edge springs ahead, the trailing edge catches up), then its rim glints once. Labels crossfade over 180ms between muted and the drop's ink and keep their weight. The bar is the same shape and placement in every look: it floats 16 in from each side, 10 above the safe area, 72dp tall with a 30 radius, the drop filling the current tab's slot. Under reduced motion the drop fades out and back in at its new place.
 
 ### Floating button
-- One per screen where the screen has a single add action (Today, Groceries), the same in every look: a 56dp disc of the look's primary gradient, its rim lit at the top from the glass's top rim, a specular cap, and the look's action glow under it. It slides 24px down and fades while the page scrolls down, and returns on scroll up or at either end (fade only under reduced motion). Always has an `accessibilityLabel`.
+- Today's one add action (a routine, to-do, grocery item or word), the same in every look; the Library's shelves add through their create rows instead: a 56dp disc of the look's primary gradient, its rim lit at the top from the glass's top rim, a specular cap, and the look's action glow under it. It slides 24px down and fades while the page scrolls down, and returns on scroll up or at either end (fade only under reduced motion). Always has an `accessibilityLabel`.
 
 ### Sheets
 - Thick sheet glass rising from the bottom over a dimmed world (the look's backdrop): 320ms in on a soft decelerating curve, 220ms out, the dim fading in 200ms. A 40 by 4 grip at the top that can be dragged down to close. The lens follows the sheet as it moves. The keyboard lifts the sheet by as much room as there is above it, then shrinks the scroll. Reduced motion: the sheet fades instead of sliding.
 
 ### The player
-- One shared player for the focus sounds and your own songs (`src/lib/sounds.tsx`), the same full-screen page in every look's own world. The top bar stays put (close on the left, the sleep timer's moon on the right) over the scroll: once the page moves, an opaque band of the world fades in behind the bar with a 32dp fade below it (`WorldFade`, the same fade as the Library's), so nothing scrolls through its title. The art, name, seek line and transport scroll with "Focus sounds" (the stacked segmented picker), "Your music" and "Playlists" below them. The play disc is the look's `node` colour with `onNode` ink (gated at 4.5:1) and the action glow; the art rests in the look's hero shadow.
+- One shared player for the focus sounds and your own songs (`src/lib/sounds.tsx`), the same full-screen page in every look's own world. The top bar stays put (close on the left, the sleep timer's moon on the right) over the scroll: once the page moves, an opaque band of the world fades in behind the bar with a 32dp fade below it (`WorldFade`, the same fade the screens use under a fixed bar), so nothing scrolls through its title. The art, name, seek line and transport scroll with "Focus sounds" (the stacked segmented picker), "Your music" and "Playlists" below them. The play disc is the look's `node` colour with `onNode` ink (gated at 4.5:1) and the action glow; the art rests in the look's hero shadow.
 - Transport: shuffle, previous, play, next, repeat. For a focus sound shuffle picks another sound, and the repeat slot crossfades to a quiet loop mark (infinity, in muted ink, read as "Focus sounds loop"; not a button), so the row keeps its five places. For songs shuffle and repeat are toggles whose on state shows three ways: a lit inset disc, the glyph in the accent, and a 5dp accent dot under it (gated at 3:1 on the disc). Songs get a seek bar that takes a tap or a sideways drag; a vertical swipe that starts on it still scrolls the player. A loop shows progress only.
 - A song's length is saved from its own first status only (`watchLoad` in `music.ts`): right after a change of source the player still reports the previous one's length and position, so until the new one reports in, the bar shows the saved length and Previous restarts from 0.
 - Your music and Playlists are panes of rows: an inset tile (a note for a song, a list or link glyph for a playlist), the name, a meta line, and a 44dp more button that opens the rename or remove sheet. Playlist links show the service in words ("Opens in Spotify"), never its logo or colours. Each heading keeps its action chip (Import, Add link); an empty pane is a single line saying what the section is for, so two empty sections never stack two identical icon, title, paragraph and button cards.
@@ -1114,9 +1119,9 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - Never a blank screen or a bare spinner on the world: the screen's first panes appear empty in the look's own glass with a soft band of light passing across them.
 
 ### Signature: the trail (every look)
-- The same object in all four looks, drawn from each look's tokens (`node`, `onNode`, `trailWalked`, `trailAhead`, `nodeAhead`, `nodeAheadFill`, `nodeCurrentFill`). Nodes sit in a 56dp rail on a dotted path that swings out unevenly between rows (18 one way, 12 the other) like a footpath on a map. The walked part is dense, strong dots (3px every 8px, `trailWalked`); the way ahead is smaller, sparser ones (2.5px every 9.5px, `trailAhead`).
+- The same object in all four looks, drawn from each look's tokens (`node`, `onNode`, `trailWalked`, `trailAhead`, `nodeAhead`, `nodeAheadFill`, `nodeCurrentFill`). Nodes sit in a 56dp rail on a dotted path that swings out unevenly between rows (18 one way, 12 the other) like a footpath on a map. The walked part is dense, strong dots (3px every 8px, `trailWalked`); the way ahead is smaller, sparser ones (2.5px every 9.5px, `trailAhead`). A stretch is walked only where it leaves a finished step for another finished step or for the lit one; every other stretch is the way ahead, so the path never reads as walked through a step that isn't done (an anytime counter at 3 of 8 above the lit evening step sits on the way ahead).
 - The node carries the step's state, as layers that crossfade: a 22dp waypoint ahead (a `nodeAhead` ring on `nodeAheadFill` with a 6dp dot; a flag at the summit, the last step), the step up next as a 30dp `node` ring with an 11dp dot on `nodeCurrentFill`, which breathes a ring out to 1.4x every 1.8s, a filled 30dp `node` with an `onNode` check when done (a flag at the summit), and a dashed waypoint when skipped. It pops when ticked.
-- Each step is a pane card: the icon pebble, the title, a 4dp progress bar for counters and sessions, the meta line, and a 26dp check ring at the right end that fills with the kind colour (a chevron instead when the card opens another screen). One tap anywhere on the card ticks it, or adds one to a counter; long press edits (and screen readers get "Edit" as an action). The step up next is lit (the lit rim and glow) and its meta line, in text ink, says "Up next · 21:00 · in 53 min" or "Happening now · 5 min left". Ticking a step sends one pass of the look's sheen across its card (520ms).
+- Each step is a pane card: the icon pebble, the title, a 4dp progress bar for counters and sessions, the meta line, and a 26dp check ring at the right end that fills with the kind colour (a chevron instead when the card opens another screen). One tap anywhere on the card ticks it, or adds one to a counter; long press edits (and screen readers get "Edit" as an action). A counter that is up next is read as "Add one to Glasses of water, 1 of 4, Up next · 06:13 · in 55 min". On a day still to come nothing is lit, a routine's card opens the routine (a chevron in place of the ring) and a to-do card has no ring and is not pressable. The step up next is lit (the lit rim and glow) and its meta line, in text ink, says "Up next · 21:00 · in 53 min" or "Happening now · 5 min left", with non-breaking spaces so a line only ever breaks after a "·" and a number never leaves its unit ("in 15 h 43 min" stays whole). Ticking a step sends one pass of the look's sheen across its card (520ms).
 - When every step is done, a "Trail complete" hero card opens above the trail. Paper's mountains also catch one band of light (header art only).
 - An empty day is one centred pane: a pebble, "A clear day", one line, and an "Add to your day" button.
 - The gate checks the trail on the world in the rail (node, walked dots, waypoint rings and the lit ring at 3:1; `onNode` on `node` at 4.5:1).
@@ -1147,7 +1152,7 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **Do** keep the bottom navigation at five items or fewer.
 - **Do** respect the system's reduced-motion setting through `useReduceMotion()`: drop transforms, keep fades.
 - **Do** keep the saved data keys (`routine.routines.v1`, `routine.gym.v1`, `routine.chinese.v1`, `routine.groceries.v1`, `routine.settings.v1`, `routine.journal.v1`, `routine.inbox.v1`, `routine.music.v1`) and their data shapes compatible through any redesign.
-- **Do** build a new screen from the shared kit (`Glass`, `Press`, `Button`, `Chip`, `Segmented`, `Field`, `Section`, `PageTitle`, `Sheet`, `Fab`, the motion pieces), give it one layout for all four looks, branch only on the material's properties (`canopy`, `controlsInGlass`, `selectRim`, `outlineChips`) and only for colour, surface or header art, never on look names, and check it in all four looks.
+- **Do** build a new screen from the shared kit (`Glass`, `Press`, `Button`, `Chip`, `Segmented`, `Field`, `Section`, `PageTitle`, `Sheet`, `Fab`, the motion pieces), give it one layout for all four looks, branch only on the material's properties (`canopy`, `selectRim`, `outlineChips`, `sheenFromBelow`) and font tokens, and only for colour, surface, light, typeface or header art, never on look names, and check it in all four looks.
 - **Do** let done things recede (faint ink, a line through a done title, a dimmed tile, a thinner body) and the one next thing be lit.
 - **Do** keep secondary text in the look's own tinted near-ink; never set grey text on grey glass.
 
@@ -1160,7 +1165,7 @@ A new screen is assembled from the shared kit, never from raw views with their o
 - **Don't** use gradient text.
 - **Don't** use glass as pure decoration: a pane must hold content or a control.
 - **Don't** add a coloured stripe thicker than 1px down one side of a card as an accent.
-- **Don't** use mono as a costume. Mono is Pine's numerals only.
+- **Don't** use mono as a costume. The one monospace is the backup code field, in every look.
 - **Don't** build hero-metric stat tiles (a big number, a small label, a trend arrow, in a grid). Stats are told in a sentence and a chart, as on "Your week".
 - **Don't** use clip-art or stock AI-style illustration: no lone figure in a glowing portal, no drawn magnolia. The worlds are light, mist, landscape and photographed material.
 - **Don't** invent a colour, font or shadow in a screen file; add the token to `src/theme.ts` for all four looks.
