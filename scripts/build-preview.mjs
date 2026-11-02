@@ -35,6 +35,6 @@ const fragmentOut = process.argv[4];
 if (fragmentOut) {
   const style = html.match(/<style id="expo-reset">[\s\S]*?<\/style>/)[0].replace('</style>', 'body{background:#7A62E0}</style>');
   const body = html.match(/<body>([\s\S]*)<\/body>/)[1];
-  writeFileSync(fragmentOut, `<title>Allin</title>\n${style}\n${body}`);
+  writeFileSync(fragmentOut, `<title>Symphony OS</title>\n${style}\n${body}`);
   console.log(`Wrote ${fragmentOut}`);
 }

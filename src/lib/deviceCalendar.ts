@@ -1,5 +1,5 @@
 // Read-only bridge to the calendars already on the phone (Google, Samsung, Outlook…),
-// so a day in Allin shows your existing events next to your routines.
+// so a day in Symphony OS shows your existing events next to your routines.
 import * as Calendar from 'expo-calendar/legacy';
 import { Platform } from 'react-native';
 import { dateKey } from './schedule';
@@ -15,7 +15,7 @@ export interface PhoneEvent {
 
 export const calendarSupported = Platform.OS !== 'web';
 
-/** Ask for permission. Returns true when Allin may read the phone's calendars. */
+/** Ask for permission. Returns true when Symphony OS may read the phone's calendars. */
 export async function connectPhoneCalendar(): Promise<boolean> {
   if (!calendarSupported) return false;
   const { status } = await Calendar.requestCalendarPermissionsAsync();

@@ -44,21 +44,21 @@ jobs:
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
 
       - name: Name the APK
-        run: cp android/app/build/outputs/apk/release/app-release.apk allin-${{ github.run_number }}.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk symphony-os-${{ github.run_number }}.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: allin-apk
-          path: allin-${{ github.run_number }}.apk
+          name: symphony-os-apk
+          path: symphony-os-${{ github.run_number }}.apk
 
       - name: Publish a downloadable build
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Allin build ${{ github.run_number }} (${{ github.ref_name }})
+          name: Symphony OS build ${{ github.run_number }} (${{ github.ref_name }})
           target_commitish: ${{ github.sha }}
           prerelease: true
-          files: allin-${{ github.run_number }}.apk
+          files: symphony-os-${{ github.run_number }}.apk
           body: |
             Android test build from `${{ github.ref_name }}` at ${{ github.sha }}.
             Download the APK on your phone and open it to install (allow "Install unknown apps" if asked).

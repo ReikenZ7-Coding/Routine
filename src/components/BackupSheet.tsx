@@ -37,7 +37,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
     if (Platform.OS === 'web') return setShown(text);
     setExporting(true);
     try {
-      await Share.share({ title: 'Allin backup', message: text });
+      await Share.share({ title: 'Symphony OS backup', message: text });
     } catch {
       setShown(text);
     } finally {

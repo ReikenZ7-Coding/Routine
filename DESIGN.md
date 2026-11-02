@@ -1,5 +1,5 @@
 ---
-name: Allin
+name: Symphony OS
 description: One calm daily companion for every kind of routine, seen through glass in four worlds of light.
 colors:
   # Lavender
@@ -815,7 +815,7 @@ components:
     size: "24px"
 ---
 
-# Design System: Allin
+# Design System: Symphony OS
 
 <!-- Where the frontmatter comes from. Colours and radii are copied from src/theme.ts (PALETTES), except pine-chip-fill and pine-chip-rim, which Segmented.tsx derives with alphaOf. The shared type roles (body, body-medium, small, hint, caption, link) and every <look>-title, -section-title, -sheet-title, -label, -badge and -num are makeType in src/theme.ts. These typography tokens are read off component files instead: chip (Chip.tsx, Segmented.tsx), tab-label (GlassTabBar.tsx), every <look>-greeting (TrailHome.tsx), paper-header-badge (PageTitle.tsx, 13px in every look), and every <look>-button (Button.tsx draws 16px; theme's own type.button is 15px and unused, as are type.hero and type.heading). Radii float-bar, fab, canopy-foot, tile and check-box are literals in GlassTabBar, Fab, Canopy, the row pebbles and CheckRow. Spacing names are labels for literals used across the components, not theme tokens. Component sizes are read off the component files. Do not add any of these labels to src/theme.ts on the strength of this file; if code and this file disagree, the code wins and this file is stale. The art and the moving light live in assets/art/looks.json and scripts/render-art.py; the contrast gate is scripts/check-contrast.py. The full glass layer values (rims, bodies, caustics, sheet and drop) stay in src/theme.ts colors.material; shadows, inner rim lines, motion and component snippets are in .impeccable/design.json. -->
 
@@ -823,7 +823,7 @@ components:
 
 **Creative North Star: "The Window on the Day"**
 
-Every surface in Allin is a pane of glass held up to a world, and that world has its own weather and its own light. The light never stops moving: a rose and an azure orb circle slowly behind Lavender, a beam of window light sways across Stone's room, a low sun and a band of mist drift over Paper's mountains, a moon glow wanders over Pine's canopy. The glass catches that light as it passes, so a list of chores feels like looking out of a window at a particular hour, not like filling in a form. The person picks the hour that suits them in Settings, and each one is a complete world: its own backdrop, its own glass, its own type voice, its own reward. Underneath, every look is the same app: the same screens, with the same components in the same order and the same places, doing the same things.
+Every surface in Symphony OS is a pane of glass held up to a world, and that world has its own weather and its own light. The light never stops moving: a rose and an azure orb circle slowly behind Lavender, a beam of window light sways across Stone's room, a low sun and a band of mist drift over Paper's mountains, a moon glow wanders over Pine's canopy. The glass catches that light as it passes, so a list of chores feels like looking out of a window at a particular hour, not like filling in a form. The person picks the hour that suits them in Settings, and each one is a complete world: its own backdrop, its own glass, its own type voice, its own reward. Underneath, every look is the same app: the same screens, with the same components in the same order and the same places, doing the same things.
 
 What stays the same across all four is the physics. There is one glass material with a fixed stack of layers and a fixed set of tiers; one light clock that runs at the root of the app; one motion grammar where every change of state fades, eases or springs and nothing ever cuts; one contrast gate that rebuilds each look pixel by pixel and refuses any text under 4.5:1. The four looks are four tunings of the same instrument. A new screen should be designed once against the shared system, then voiced per look through tokens, never forked into four layouts. A look may differ only in its colours, its glass material, its backdrop and header art, its typeface and weights, and the small radius and rim details its tokens carry.
 
@@ -961,7 +961,7 @@ Per-look roles (frontmatter `<look>-title`, `-section-title`, `-sheet-title`, `-
 
 ## Layout
 
-Allin is a phone app used one-handed for a few seconds at a time. Every screen is a single column with 16px side gutters, inside a frame the art is drawn for (400 by 860dp). There are no breakpoints. The answer to "what do I do now?" sits at the top: the next routine on Today, today's session on Gym, today's practice on Language.
+Symphony OS is a phone app used one-handed for a few seconds at a time. Every screen is a single column with 16px side gutters, inside a frame the art is drawn for (400 by 860dp). There are no breakpoints. The answer to "what do I do now?" sits at the top: the next routine on Today, today's session on Gym, today's practice on Language.
 
 **One layout per screen.** Every look shows the same components in the same order and the same places, with the same controls and the same behaviour. Header art is the one structural freedom a look has, and it only ever sits behind the same header: Paper's mountains flush with the top of the frame, Pine's canopy slab, the bare world on Lavender and Stone.
 
@@ -982,7 +982,7 @@ Allin is a phone app used one-handed for a few seconds at a time. Every screen i
 
 ## Elevation & Depth
 
-Depth in Allin is optical, not just shadow. A surface is a piece of glass with the world behind it: it shows a blurred copy of the backdrop (the lens, a pre-blurred image aligned to where the surface actually sits, so it stays correct while scrolling), it catches the moving light as it passes behind, and it is lit from above by its rim. Shadows then say how far the glass floats. The system is lensed and lit, with structural shadows by tier.
+Depth in Symphony OS is optical, not just shadow. A surface is a piece of glass with the world behind it: it shows a blurred copy of the backdrop (the lens, a pre-blurred image aligned to where the surface actually sits, so it stays correct while scrolling), it catches the moving light as it passes behind, and it is lit from above by its rim. Shadows then say how far the glass floats. The system is lensed and lit, with structural shadows by tier.
 
 **The layer stack (bottom to top):** outer shadow by tier; a 1px shell rim with its own colour per side (lit from the top); the lens; the body (base tint, a body gradient at the look's angle, two radial caustics of edge light picked up from the world, and an optional flat `tint`); the light catch; the bloom (Lavender and Pine heroes); the sheen (a diagonal band that slides as the surface moves through the screen, rising from below on Pine); Stone's hairline and grain; the content; the inner rim lines and top glow; the press light; the focus ring.
 

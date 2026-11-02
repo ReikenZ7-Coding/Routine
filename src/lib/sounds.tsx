@@ -93,14 +93,14 @@ interface SoundState {
   missing: Set<string>;
   /** Why the current song could not play, in plain words. */
   playError?: string;
-  /** Pick songs and copy them into Allin. */
+  /** Pick songs and copy them into Symphony OS. */
   importMusic: () => void;
   importing: ImportProgress | null;
   /** What went wrong in the last import (one line per file), until the next import or dismissal. */
   importNotes: string[];
   clearImportNotes: () => void;
   removeTrack: (id: string) => void;
-  /** Pauses Allin's own sound and hands the link to its app. Resolves to an error message, if it failed. */
+  /** Pauses the app's own sound and hands the link to its app. Resolves to an error message, if it failed. */
   openLink: (link: PlaylistLink) => Promise<string | undefined>;
 }
 
@@ -118,7 +118,7 @@ const trackItem = (t: Track): NowItem => ({ kind: 'track', id: t.id, name: t.tit
 /** Holds the media controls on Android (needed to keep playing in the background), with the item's name. */
 function claimMediaControls(player: AudioPlayer, item: NowItem, active: { current: boolean }) {
   if (Platform.OS === 'web') return;
-  const metadata = { title: item.name, artist: item.kind === 'sound' ? 'Allin · Focus sounds' : 'Allin' };
+  const metadata = { title: item.name, artist: item.kind === 'sound' ? 'Symphony OS · Focus sounds' : 'Symphony OS' };
   try {
     if (active.current) player.updateLockScreenMetadata(metadata);
     else {

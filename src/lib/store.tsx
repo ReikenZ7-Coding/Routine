@@ -23,7 +23,7 @@ const INBOX_KEY = 'routine.inbox.v1';
 const MUSIC_KEY = 'routine.music.v1';
 
 export interface Settings {
-  /** User allowed Allin to read the phone's calendars. */
+  /** User allowed Symphony OS to read the phone's calendars. */
   calendarConnected: boolean;
   theme: ThemeName;
   /** First name for the greeting. */

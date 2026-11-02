@@ -8,11 +8,11 @@ android
 
 ## Users
 
-People who struggle to organise their day. They forget things they meant to do, lose track of time, and end up not getting to the tasks that matter. They open Allin on an Android phone several times a day, often for a few seconds: in the morning to see what the day holds, between things to tick something off, in the evening to see how the day went.
+People who struggle to organise their day. They forget things they meant to do, lose track of time, and end up not getting to the tasks that matter. They open Symphony OS on an Android phone several times a day, often for a few seconds: in the morning to see what the day holds, between things to tick something off, in the evening to see how the day went.
 
 ## Product Purpose
 
-Allin helps people remember their daily tasks and manage their time better. If someone can't sort out their daily tasks, they don't get to them and don't spend their time well. Allin gives them one place that tells them what is next, reminds them before it's due, and shows how their day and week are going, so they can build better habits.
+Symphony OS helps people remember their daily tasks and manage their time better. If someone can't sort out their daily tasks, they don't get to them and don't spend their time well. Symphony OS gives them one place that tells them what is next, reminds them before it's due, and shows how their day and week are going, so they can build better habits.
 
 Success means a person who used to forget things opens the app, knows within a glance what to do next, does it, and comes back the next day.
 
@@ -39,11 +39,11 @@ Decided by the builder (Matthew delegated it, 2026-11-01): one calm daily compan
 - Built with Expo SDK 58 and React Native (new architecture). Android APKs are built by GitHub Actions on every push.
 - Saved data must survive every redesign. The AsyncStorage keys (`routine.*.v1`) and data shapes stay compatible.
 - Matthew wants every screen and every look reworked (2026-11-01). Features stay; their presentation is open.
-- No music streaming inside Allin (licensing, off purpose): playlist links hand over to the service's own app, with no sign-in, API, or service logos and colours. No AI tab (needs a paid key).
+- No music streaming inside Symphony OS (licensing, off purpose): playlist links hand over to the service's own app, with no sign-in, API, or service logos and colours. No AI tab (needs a paid key).
 
 ## Brand Commitments
 
-- Name: Allin (renamed from Routine on 2 November 2026). The Android package id stays com.reikenz7.routine so updates install over the old app and keep its data.
+- Name: Symphony OS (renamed from Routine, then Symphony OS, on 2 November 2026; the app is growing into a personal dashboard OS). The Android package id stays com.reikenz7.routine so updates install over the old app and keep its data.
 - Voice: warm, friendly, plain words; encouraging, never scolding.
 - Four looks, chosen in Settings: Lavender, Stone, Paper and Pine. Each one is modelled on a reference Matthew supplied (in `routine-looks` project memory).
 - The four looks are skins of one app (Matthew, 2026-11-02): on every screen and sheet each look shows the same components, in the same order and places, with the same controls and behaviour. A look may differ only in colours, glass material, backdrop and header art, typeface and weight, and small tokenised radius and rim details.

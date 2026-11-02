@@ -1,4 +1,4 @@
-# Allin
+# Symphony OS
 
 A simple Android app for tracking everyday routines: groceries, gym sessions, language practice and anything else you repeat.
 
@@ -10,7 +10,7 @@ Also in: **Gym** (weekly plan, set logging, last-time weights, rest timer), **La
 
 ## Get the APK
 
-Every push builds an Android APK with GitHub Actions. Open the repo's **Releases**, pick the newest `Allin build`, and download the `.apk` on your phone.
+Every push builds an Android APK with GitHub Actions. Open the repo's **Releases**, pick the newest `Symphony OS build`, and download the `.apk` on your phone.
 
 ## Develop
 
