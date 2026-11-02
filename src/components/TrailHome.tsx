@@ -203,7 +203,8 @@ export function TrailHome(p: Props) {
           </View>
           <Text style={styles.streakText}>
             {streakText}
-            <Text style={styles.streakMuted}>{p.total > 0 ? `  ·  ${p.done}/${p.total} today` : ''}</Text>
+            {/* The desktop's header and the trail's badge already count the day. */}
+            {trailOnly ? null : <Text style={styles.streakMuted}>{p.total > 0 ? `  ·  ${p.done}/${p.total} today` : ''}</Text>}
           </Text>
         </Glass>
 
@@ -277,6 +278,7 @@ export function TrailHome(p: Props) {
                 current={i === current}
                 summit={i === p.items.length - 1}
                 currentLabel={it.key === p.nextKey ? p.nextLabel : undefined}
+                gutter={trailOnly ? p.items.some((x) => x.onMore) : undefined}
                 onLayout={(h) => setRows((r) => (r[it.key] === h ? r : { ...r, [it.key]: h }))}
               />
             ))}
@@ -385,6 +387,7 @@ function TrailRow({
   current,
   summit,
   currentLabel,
+  gutter,
   onLayout,
 }: {
   item: TrailItem;
@@ -392,6 +395,9 @@ function TrailRow({
   current: boolean;
   summit: boolean;
   currentLabel?: string;
+  /** Set on the desktop only (undefined on the phone): some row has an edit button, so a row without one keeps
+   *  its place and every card ends at the same edge. */
+  gutter?: boolean;
   onLayout: (height: number) => void;
 }) {
   const { colors } = useTheme();
@@ -481,7 +487,7 @@ function TrailRow({
         onLayout={(e) => {
           const { height, width } = e.nativeEvent.layout;
           onLayout(Math.round(height));
-          const w = width - RAIL - (item.onMore ? 46 : 0);
+          const w = width - RAIL - (item.onMore || gutter ? 46 : 0);
           setCardW((was) => (Math.abs(was - w) < 1 ? was : w));
         }}
       >
@@ -491,8 +497,11 @@ function TrailRow({
         {card}
         {item.onMore ? (
           <Press onPress={item.onMore} style={styles.more} overlay={colors.material.pressFill} accessibilityLabel={`Edit ${item.title}`}>
-            <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+            {/* It only edits: the desktop says so with a pencil (the phone keeps its own glyph). */}
+            <Ionicons name={gutter !== undefined ? 'create-outline' : 'ellipsis-horizontal'} size={20} color={colors.text} />
           </Press>
+        ) : gutter ? (
+          <View style={styles.more} />
         ) : null}
       </View>
     </Enter>

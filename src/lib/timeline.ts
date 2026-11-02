@@ -85,3 +85,28 @@ export function laneOut(entries: { start: number; end: number }[]): { lane: numb
   close();
   return out;
 }
+
+/**
+ * How overlapping blocks share a day column. Each block keeps its lane (laneOut). A cluster whose blocks all start
+ * at least `gap` minutes after every block they overlap cascades: each later block is indented by its lane and
+ * takes the rest of the width, its title clear below the earlier titles. A cluster where two overlapping blocks
+ * start within `gap` minutes of each other sits side by side instead (`side`), as cascading would hide a title.
+ */
+export function cascadeOut(entries: { start: number; end: number }[], gap = 30): { lane: number; lanes: number; side: boolean }[] {
+  const out = laneOut(entries).map((l) => ({ ...l, side: false }));
+  const order = entries.map((e, i) => ({ ...e, i })).sort((a, b) => a.start - b.start || b.end - a.end);
+  let cluster: typeof order = [];
+  let clusterEnd = 0;
+  const close = () => {
+    const side = cluster.some((a, x) => cluster.some((b, y) => y > x && b.start - a.start < gap && b.start < a.end));
+    for (const e of cluster) out[e.i].side = side;
+    cluster = [];
+  };
+  for (const e of order) {
+    if (cluster.length && e.start >= clusterEnd) close();
+    clusterEnd = cluster.length ? Math.max(clusterEnd, e.end) : e.end;
+    cluster.push(e);
+  }
+  close();
+  return out;
+}

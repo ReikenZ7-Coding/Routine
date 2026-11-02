@@ -157,6 +157,8 @@ export interface GlassProps {
   accessibilityState?: AccessibilityState;
   accessibilityActions?: AccessibilityActionInfo[];
   onAccessibilityAction?: (e: AccessibilityActionEvent) => void;
+  /** Extra ARIA attributes for the web, on a pressable surface (the desktop's menu buttons: aria-haspopup). */
+  aria?: Record<string, string | boolean | undefined>;
   children?: ReactNode;
 }
 
@@ -188,6 +190,7 @@ export function Glass({
   accessibilityState,
   accessibilityActions,
   onAccessibilityAction,
+  aria,
   children,
 }: GlassProps) {
   const theme = useTheme();
@@ -428,6 +431,7 @@ export function Glass({
       accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
+      {...(aria as object)}
     >
       <Animated.View style={[styles.outer, styles.fill, outerStyle, squeezes ? squeeze : null]}>{shell}</Animated.View>
     </Pressable>

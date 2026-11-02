@@ -26,15 +26,27 @@ export function useDesktop(): DesktopInfo {
   return useContext(DesktopContext);
 }
 
-/** The root's switch, with its bands remembered between renders. */
-export function useDesktopSwitch(): DesktopInfo {
+/** Whether the first frame drew the desktop shell (null until the switch has run once). */
+let started: boolean | null = null;
+
+/** The app opened wide: its first frame was the desktop shell. */
+export function startedWide(): boolean {
+  return started === true;
+}
+
+/** The root's switch on the web, with its bands remembered between renders. */
+function useWebSwitch(): DesktopInfo {
   const { width } = useWindowDimensions();
   const last = useRef<DesktopInfo>(PHONE);
-  if (Platform.OS !== 'web') return PHONE;
   const was = last.current;
   const on = was.on ? width >= DESKTOP_MIN - BAND : width >= DESKTOP_MIN;
   const comfortable = !was.compact && was.on ? width >= COMFORTABLE_MIN - BAND : width >= COMFORTABLE_MIN;
   const next = on ? { on: true, compact: !comfortable } : PHONE;
   if (next.on !== was.on || next.compact !== was.compact) last.current = next;
+  if (started === null) started = last.current.on;
   return last.current;
 }
+
+/** The root's switch. On Android and iOS it is always the phone, and it doesn't listen to the window's size, so
+ *  a phone app never re-renders for a split screen or a fold. */
+export const useDesktopSwitch: () => DesktopInfo = Platform.OS === 'web' ? useWebSwitch : () => PHONE;

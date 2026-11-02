@@ -4,7 +4,7 @@ import { type StudyLanguage, type Word, infoFor, isRtl, readingLabel, wordLabel 
 import { type Theme, useStyles } from '../theme';
 import { Button } from './Button';
 import { Field, Input } from './Field';
-import { ConfirmDelete, Sheet } from './Sheet';
+import { ConfirmDelete, Sheet, SheetFooter } from './Sheet';
 
 export interface WordFields {
   /** The word or phrase. */
@@ -94,7 +94,9 @@ export function WordForm({ visible, language, word, onSave, onDelete, onClose }:
         />
       </Field>
 
-      <Button label={word ? 'Save' : 'Add word'} onPress={save} style={styles.save} />
+      <SheetFooter>
+        <Button label={word ? 'Save' : 'Add word'} onPress={save} style={styles.save} />
+      </SheetFooter>
       {word && onDelete && <ConfirmDelete label="Delete word" question={`Remove ${word.hanzi} from your list?`} onConfirm={onDelete} />}
     </Sheet>
   );

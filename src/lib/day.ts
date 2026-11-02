@@ -80,6 +80,13 @@ export function dayPlan(state: LifeState, date: string, today: string): DayPlan 
   };
 }
 
+/** A day's count without its shopping lines, for totals over many days (the calendar's header): its routines,
+ *  to-dos, workout and practice. A shopping list is one errand, not one thing to do per item on it. */
+export function thingsPlanned(plan: DayPlan, date: string): { planned: number; done: number } {
+  const bought = plan.groceries.filter((g) => boughtOn(g, date)).length;
+  return { planned: plan.total - plan.groceries.length, done: plan.done - bought };
+}
+
 /** The counts beside the desktop sidebar's items. Zero means no count is shown. */
 export interface NavCounts {
   /** Steps still to do today. */

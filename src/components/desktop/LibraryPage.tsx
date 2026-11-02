@@ -218,7 +218,7 @@ function RoutineRow({
           />
         ) : null}
       </View>
-      <IconButton icon="ellipsis-horizontal" label={`Edit ${r.name}`} bare onPress={onMore} />
+      <IconButton icon="create-outline" label={`Edit ${r.name}`} bare onPress={onMore} />
     </View>
   );
 }

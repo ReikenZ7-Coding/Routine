@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { type ComponentRef, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { type InboxItem, inboxOpen, planFor, recentlyDone, toggleItem } from '../../lib/inbox';
-import { addDays, friendlyDate, parseKey } from '../../lib/schedule';
+import { addDays, friendlyDate, friendlyDateInline, parseKey } from '../../lib/schedule';
 import { newId, useStore } from '../../lib/store';
 import { type Theme, useStyles, useTheme } from '../../theme';
 import { Glass } from '../Glass';
@@ -68,7 +68,8 @@ export function InboxPage() {
           ) : null}
         </Row>
       ) : (
-        <Row>
+        // A board: the three columns share the tallest one's height.
+        <Row match>
           <Panel
             span={4}
             index={0}
@@ -161,10 +162,10 @@ export function TodoRow({
   const [name, setName] = useState(item.title);
   const done = !!item.doneOn;
   const meta = done
-    ? `Done ${friendlyDate(item.doneOn!, today).toLowerCase()}`
+    ? `Done ${friendlyDateInline(item.doneOn!, today)}`
     : item.date
       ? item.date < today
-        ? `Was planned ${friendlyDate(item.date, today).toLowerCase()}`
+        ? `Was planned ${friendlyDateInline(item.date, today)}`
         : friendlyDate(item.date, today)
       : 'No day yet';
   const toggle = (k: 'plan' | 'more') => setOpen((o) => (o === k ? null : k));

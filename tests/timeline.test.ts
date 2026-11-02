@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { inboxOpen, itemsFor, toggleItem } from '../src/lib/inbox.ts';
 import { type Routine, iconFor } from '../src/lib/routines.ts';
-import { formatSpan, laneOut, parseClock, timedRoutines, upNext } from '../src/lib/timeline.ts';
+import { cascadeOut, formatSpan, laneOut, parseClock, timedRoutines, upNext } from '../src/lib/timeline.ts';
 
 const r = (id: string, start?: string, duration?: number, extra: Partial<Routine> = {}): Routine => ({
   id,
@@ -93,4 +93,25 @@ test('laneOut gives blocks that only touch one lane each', () => {
       { lane: 0, lanes: 1 },
     ],
   );
+});
+
+test('cascadeOut cascades staggered blocks and keeps blocks that start together side by side', () => {
+  // Lunch 12:30-13:15, a call at 13:00: the call starts 30 min later, so it cascades over lunch.
+  const staggered = cascadeOut([
+    { start: 750, end: 795 },
+    { start: 780, end: 800 },
+  ]);
+  assert.deepEqual(staggered, [
+    { lane: 0, lanes: 2, side: false },
+    { lane: 1, lanes: 2, side: false },
+  ]);
+  // Two blocks at 09:00 and one at 09:10: titles would hide, so the cluster sits side by side.
+  const together = cascadeOut([
+    { start: 540, end: 600 },
+    { start: 540, end: 570 },
+    { start: 550, end: 580 },
+  ]);
+  assert.ok(together.every((b) => b.side));
+  // A block on its own takes the column.
+  assert.deepEqual(cascadeOut([{ start: 600, end: 630 }]), [{ lane: 0, lanes: 1, side: false }]);
 });

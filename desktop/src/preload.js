@@ -2,7 +2,7 @@
 
 // Runs before the page in its own isolated world, sandboxed: it can only reach the page's DOM and storage, and
 // main over IPC. A sandboxed preload can't load the other files in src/, so it carries its two constants itself
-// (test/preload.test.js checks they match looks.js and main.js).
+// (test/config.test.js checks they match looks.js and main.js).
 
 const { contextBridge, ipcRenderer } = require('electron');
 
@@ -47,6 +47,12 @@ contextBridge.exposeInMainWorld(
   'symphonyDesktop',
   Object.freeze({
     platform: process.platform,
-    setLook: (name) => sendLook(name),
+    // The page said which look it chose, so the reads still pending (of settings it may not have saved yet)
+    // would only put the old look back.
+    setLook: (name) => {
+      for (const t of timers) clearTimeout(t);
+      timers = [];
+      sendLook(name);
+    },
   }),
 );

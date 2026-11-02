@@ -113,6 +113,10 @@ export function longDate(key: string): string {
   return `${date.toLocaleDateString('en-GB', { weekday: 'long' })} ${d} ${date.toLocaleDateString('en-GB', { month: 'long' })}`;
 }
 
+/** Running as the Windows app, where every shortcut reaches the page. A browser keeps Ctrl+N (a new window) and
+ *  Ctrl+1 to 9 (its tabs) for itself, so in a browser neither is offered. */
+export const IN_APP = !!(globalThis as { symphonyDesktop?: unknown }).symphonyDesktop;
+
 /** Ctrl on Windows and Linux, ⌘ in a Mac browser. */
 export const MOD =
   typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test((navigator as { platform?: string }).platform ?? '') ? '⌘' : 'Ctrl';

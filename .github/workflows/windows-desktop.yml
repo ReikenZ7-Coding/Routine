@@ -1,11 +1,15 @@
 name: Windows desktop
 
+# Every push builds and publishes a test installer, as the Android workflow does for the APK: branch builds are
+# how a change gets tried on a real machine before it is merged.
 on:
   push:
   workflow_dispatch:
 
+# The build (which runs third-party npm install scripts) can only read the repo; only the publish job, which runs
+# no project code, may write a release.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -91,6 +95,17 @@ jobs:
           name: symphony-os-windows-smoke
           path: desktop/release/smoke/
           if-no-files-found: ignore
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: symphony-os-windows
 
       - name: Publish a downloadable build
         uses: softprops/action-gh-release@v2

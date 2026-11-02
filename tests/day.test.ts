@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { type LifeState, dayPlan, dueNow, navCounts, needsYou, nextUp, weekSeries } from '../src/lib/day.ts';
+import { type LifeState, dayPlan, dueNow, navCounts, needsYou, nextUp, thingsPlanned, weekSeries } from '../src/lib/day.ts';
 import { EMPTY_GYM, type GymState } from '../src/lib/gym.ts';
 import { EMPTY_LANGUAGE, type LanguageState } from '../src/lib/language.ts';
 import type { Routine } from '../src/lib/routines.ts';
@@ -126,4 +126,12 @@ test('nextUp words the step as Today does', () => {
   assert.equal(nextUp(plan, today, 8 * 60)?.line, 'Up next · 09:00 · in 1 h');
   assert.equal(nextUp(plan, today, 9 * 60 + 10)?.line, 'Happening now · 20 min left');
   assert.equal(nextUp(plan, today, 10 * 60), undefined);
+});
+
+test('things planned leaves the shopping lines out of a total over days', () => {
+  // 5 routines + 1 to-do + workout + practice; the milk is one errand on the list, not a thing planned
+  assert.deepEqual(thingsPlanned(dayPlan(full, today, today), today), { planned: 8, done: 1 });
+  const bought = { ...full, groceries: [{ ...milk, lastBought: today }] };
+  assert.equal(dayPlan(bought, today, today).done, 2);
+  assert.deepEqual(thingsPlanned(dayPlan(bought, today, today), today), { planned: 8, done: 1 });
 });

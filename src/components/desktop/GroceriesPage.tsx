@@ -3,7 +3,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Platform, Share, StyleSheet, Text, View } from 'react-native';
-import { type GroceryItem, boughtOn, friendlyDate, groceryListText, needsBuying, nextDue } from '../../lib/schedule';
+import { type GroceryItem, boughtOn, friendlyDate, friendlyDateInline, groceryListText, needsBuying, nextDue } from '../../lib/schedule';
 import { STARTER_STAPLES, useStore } from '../../lib/store';
 import { type Theme, useStyles, useTheme } from '../../theme';
 import { aisleIcon, byAisle, subtitle } from '../../screens/GroceriesScreen';
@@ -89,7 +89,7 @@ export function GroceriesPage() {
           </Text>
         ) : null}
       </View>
-      <IconButton icon="ellipsis-horizontal" label={`Edit ${g.name}`} size={36} bare onPress={() => setEditing(g)} />
+      <IconButton icon="create-outline" label={`Edit ${g.name}`} size={36} bare onPress={() => setEditing(g)} />
     </View>
   );
 
@@ -166,7 +166,7 @@ export function GroceriesPage() {
                   onPress={() => setEditing(item)}
                   style={[styles.later, i > 0 && styles.rule]}
                   radius={10}
-                  accessibilityLabel={`${item.name}, ${subtitle(item)}${due ? `, back ${friendlyDate(due, today).toLowerCase()}` : ''}. Edit item`}
+                  accessibilityLabel={`${item.name}, ${subtitle(item)}${due ? `, back ${friendlyDateInline(due, today)}` : ''}. Edit item`}
                 >
                   <View style={styles.flex}>
                     <Text style={text.rowTitle}>{item.name}</Text>

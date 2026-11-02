@@ -16,10 +16,11 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import type { DayPlan, NavCounts, Need } from '../../lib/day';
 import { THEME_OPTIONS, type Theme, useStyles, useTheme } from '../../theme';
 import { Glass } from '../Glass';
-import { EASE_OUT, FADE, useReduceMotion } from '../Motion';
+import { Collapse, EASE_OUT, FADE, useReduceMotion } from '../Motion';
 import { Hover } from './Hover';
 import { moveFocus } from './Popover';
 import { NAV, type NavItem, type PageKey } from './nav';
@@ -36,6 +37,8 @@ const GROUP = 34;
 const NAV_TOP = 20;
 const NAV_TOP_RAIL = 64;
 const NEED_ROW = 40;
+/** The Needs you label and the gap above it: a group label's, so it never reads as part of Home life. */
+const NEEDS_HEAD = 46;
 
 export interface SidebarProps {
   /** The sidebar's width, animated by the shell. */
@@ -222,7 +225,8 @@ export function Sidebar(p: SidebarProps) {
                           accessibilityLabel={label}
                           aria={{ 'aria-current': on ? 'page' : undefined }}
                           onHoverChange={(h) => (h ? showTip(label, item.key, false) : hideTip())}
-                          onFocusChange={(f) => (f ? showTip(label, item.key, true) : hideTip())}
+                          // A click's focus leaves the tip to the pointer, so it doesn't stay up after a click.
+                          onFocusChange={(f, keyboard) => (f ? keyboard && showTip(label, item.key, true) : hideTip())}
                         >
                           <Ionicons
                             name={(on ? item.iconActive : item.icon) as 'home'}
@@ -259,7 +263,10 @@ export function Sidebar(p: SidebarProps) {
           {/* Laid out at the panel's width in both widths, so its lines never rewrap in the rail and push the user
               button out of the glass; the rail clips it like the other labelled content. */}
           <Animated.View style={[styles.panelWidth, labelled]} pointerEvents={p.expanded ? 'auto' : 'none'}>
-            <Progress plan={p.plan} line={p.upNextLine} onPress={() => p.onGo('/')} hidden={!p.expanded} />
+            {/* Only while today holds something: "0 of 0" over an empty bar says nothing. */}
+            <Collapse open={p.plan.total > 0}>
+              <Progress plan={p.plan} line={p.upNextLine} onPress={() => p.onGo('/')} hidden={!p.expanded} />
+            </Collapse>
           </Animated.View>
 
           <Hover onPress={p.onSettings} style={styles.user} radius={16} accessibilityLabel={`Settings${p.name ? `, ${p.name}` : ''}`}>
@@ -280,7 +287,7 @@ export function Sidebar(p: SidebarProps) {
           </Hover>
         </View>
       </Glass>
-      {tip && !p.expanded ? <Tooltip label={tip.label} y={tip.y} /> : null}
+      <Tooltip tip={tip && !p.expanded ? tip : null} />
     </Animated.View>
   );
 }
@@ -311,12 +318,12 @@ function NeedsBlock({ needs, onGo, hidden }: { needs: Need[]; onGo: (href: NavIt
   const go = (n: Need) =>
     onGo(n.to === 'today' ? '/' : n.to === 'inbox' ? '/inbox' : n.to === 'language' ? '/language' : n.to === 'gym' ? '/gym' : '/groceries');
   // Rows that fit under the label; one slot goes to the link to Overview when the list is longer.
-  const fit = Math.max(0, Math.floor((room - 30) / NEED_ROW));
+  const fit = Math.max(0, Math.floor((room - NEEDS_HEAD) / NEED_ROW));
   const shown = needs.length > fit ? Math.max(0, Math.min(3, fit) - 1) : Math.min(3, needs.length);
   const rest = needs.length - shown;
   return (
     <View style={styles.needs} onLayout={(e) => setRoom(e.nativeEvent.layout.height)} role="complementary" aria-label="Needs you">
-      {room >= 30 + NEED_ROW || needs.length === 0 ? (
+      {room >= NEEDS_HEAD + NEED_ROW || needs.length === 0 ? (
         <>
           <Text style={styles.needsLabel}>Needs you</Text>
           {needs.length === 0 ? (
@@ -402,19 +409,32 @@ function Progress({ plan, line, onPress, hidden }: { plan: DayPlan; line?: strin
   );
 }
 
-function Tooltip({ label, y }: { label: string; y: number }) {
+/** The rail's label for the item under the pointer or focus: fades in over 120 ms and out over 160 ms. */
+function Tooltip({ tip }: { tip: { label: string; y: number } | null }) {
   const styles = useStyles(makeStyles);
   const { colors } = useTheme();
   const v = useSharedValue(0);
+  // The last tip stays drawn while it fades out.
+  const [shown, setShown] = useState(tip);
   useEffect(() => {
-    v.set(withTiming(1, { duration: 120, easing: EASE_OUT, ...FADE }));
-  }, [v, label, y]);
+    if (tip) {
+      setShown(tip);
+      v.set(withTiming(1, { duration: 120, easing: EASE_OUT, ...FADE }));
+    } else
+      v.set(
+        withTiming(0, { duration: 160, easing: EASE_OUT, ...FADE }, (done) => {
+          'worklet';
+          if (done) scheduleOnRN(setShown, null);
+        }),
+      );
+  }, [v, tip]);
   const anim = useAnimatedStyle(() => ({ opacity: v.get() }));
+  if (!shown) return null;
   return (
-    <Animated.View pointerEvents="none" style={[styles.tip, { top: y - 18 }, anim]} aria-hidden>
+    <Animated.View pointerEvents="none" style={[styles.tip, { top: shown.y - 18 }, anim]} aria-hidden>
       <Glass tier="sheet" topOnly={false} radius={12} style={[styles.tipGlass, { boxShadow: colors.material.shadowFloat }]}>
         <Text style={styles.tipText} numberOfLines={1}>
-          {label}
+          {shown.label}
         </Text>
       </Glass>
     </Animated.View>
@@ -488,7 +508,7 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
       backgroundColor: colors.accent,
     },
     needs: { flex: 1, minHeight: 0, justifyContent: 'flex-end', paddingBottom: 12, overflow: 'hidden' },
-    needsLabel: { ...type.label, fontSize: 13, paddingLeft: 14, marginBottom: 6 },
+    needsLabel: { ...type.label, fontSize: 13, paddingLeft: 14, marginTop: 16, marginBottom: 6 },
     needsEmpty: { ...type.small, paddingLeft: 14, paddingRight: 8 },
     needRow: { height: NEED_ROW, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 14, paddingRight: 10 },
     needTitle: { flex: 1, fontFamily: fonts.body, fontSize: 16, color: colors.text },

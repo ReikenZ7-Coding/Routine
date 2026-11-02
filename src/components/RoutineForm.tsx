@@ -10,7 +10,8 @@ import { Button } from './Button';
 import { Chip } from './Chip';
 import { Field, FieldError, Input } from './Field';
 import { FadeSwap, Press, SelectFade } from './Motion';
-import { ConfirmDelete, Sheet } from './Sheet';
+import { ConfirmDelete, Sheet, SheetFooter } from './Sheet';
+import { useDesktop } from './desktop/context';
 
 type Errors = Partial<Record<'name' | 'days' | 'start' | 'remind', string>>;
 
@@ -51,6 +52,10 @@ function choiceFor(r: Repeat): RepeatChoice {
 
 export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippedToday, onClose, draft }: Props) {
   const { colors, kinds } = useTheme();
+  const desktop = useDesktop().on;
+  // On the web a switch's off track is the browser's grey, close to invisible on glass: the desktop draws it in
+  // the control border (3:1 on every look's glass). The phone keeps the platform's own off track.
+  const track = desktop ? { false: colors.controlBorder, true: kinds.routines.color } : { true: kinds.routines.color };
   const styles = useStyles(makeStyles);
   const [name, setName] = useState('');
   const [choice, setChoice] = useState<RepeatChoice>('daily');
@@ -228,7 +233,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
             invalid={!!errors.start}
             keyboardType="numbers-and-punctuation"
             maxLength={5}
-            placeholder="07:30"
+            placeholder={desktop ? 'e.g. 07:30' : '07:30'}
             accessibilityLabel="Start time"
           />
         </View>
@@ -285,9 +290,11 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
       <View style={styles.switchRow}>
         <View style={styles.flex}>
           <Text style={styles.switchTitle}>Count it</Text>
-          <Text style={styles.switchSub}>Tap +1 each time, like glasses of water</Text>
+          <Text style={styles.switchSub}>
+            {desktop ? 'Add one each time, like glasses of water' : 'Tap +1 each time, like glasses of water'}
+          </Text>
         </View>
-        <Switch value={counter} onValueChange={setCounter} trackColor={{ true: kinds.routines.color }} accessibilityLabel="Count it" />
+        <Switch value={counter} onValueChange={setCounter} trackColor={track} accessibilityLabel="Count it" />
       </View>
       {counter && (
         <View style={styles.inline}>
@@ -318,7 +325,7 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
             clear('remind');
             setNotice(undefined);
           }}
-          trackColor={{ true: kinds.routines.color }}
+          trackColor={track}
           accessibilityLabel="Remind me"
         />
       </View>
@@ -346,7 +353,9 @@ export function RoutineForm({ visible, routine, onSave, onDelete, onSkip, skippe
         </>
       )}
 
-      <Button label={routine ? 'Save' : 'Add routine'} onPress={save} busy={saving} style={styles.save} />
+      <SheetFooter>
+        <Button label={routine ? 'Save' : 'Add routine'} onPress={save} busy={saving} style={styles.save} />
+      </SheetFooter>
       {routine && onSkip && (
         <Button
           label={skippedToday ? 'Undo skip' : 'Skip today (keeps your streak)'}

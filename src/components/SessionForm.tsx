@@ -9,7 +9,7 @@ import { Button } from './Button';
 import { Chip } from './Chip';
 import { Field, FieldError, Input } from './Field';
 import { Press } from './Motion';
-import { ConfirmDelete, Sheet } from './Sheet';
+import { ConfirmDelete, Sheet, SheetFooter } from './Sheet';
 
 interface Props {
   visible: boolean;
@@ -176,7 +176,9 @@ export function SessionForm({ visible, session, takenDays, onSave, onDelete, onC
         style={styles.addRow}
       />
 
-      <Button label={session ? 'Save' : 'Add session'} onPress={save} style={styles.save} />
+      <SheetFooter>
+        <Button label={session ? 'Save' : 'Add session'} onPress={save} style={styles.save} />
+      </SheetFooter>
       {session && onDelete && (
         <ConfirmDelete
           label="Delete session"

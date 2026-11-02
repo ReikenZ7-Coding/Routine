@@ -1,6 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { type GroceryItem, addDays, describeRepeat, markBought, needsBuying, nextDue, unmarkBought } from '../src/lib/schedule.ts';
+import {
+  type GroceryItem,
+  addDays,
+  describeRepeat,
+  friendlyDateInline,
+  markBought,
+  needsBuying,
+  nextDue,
+  unmarkBought,
+} from '../src/lib/schedule.ts';
 
 const today = '2026-10-29'; // a Thursday
 
@@ -51,4 +60,12 @@ test('repeat descriptions read naturally', () => {
   assert.equal(describeRepeat({ kind: 'everyNDays', n: 7 }), 'Every week');
   assert.equal(describeRepeat({ kind: 'weekdays', days: [4, 1] }), 'Mon, Thu');
   assert.equal(describeRepeat({ kind: 'once' }), 'One-off');
+});
+
+test('dates inside a sentence lowercase only today and tomorrow', () => {
+  assert.equal(friendlyDateInline(today, today), 'today');
+  assert.equal(friendlyDateInline(addDays(today, 1), today), 'tomorrow');
+  // 2026-11-01 is a Sunday; weekday and month keep their capitals
+  assert.equal(friendlyDateInline('2026-11-01', today), 'Sun 1 Nov');
+  assert.equal(friendlyDateInline(addDays(today, -1), today), 'Wed 28 Oct');
 });

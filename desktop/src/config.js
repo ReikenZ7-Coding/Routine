@@ -17,9 +17,14 @@ const APP_SCHEME = 'app';
 const APP_HOST = 'symphony';
 const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 
-/** Smallest window the desktop layout is designed for (it switches to the desktop shell at 1024 wide). */
-const MIN_SIZE = { width: 1024, height: 700 };
-/** First-launch window size, shrunk to fit smaller screens. */
+/** The page width where the app draws its desktop layout (src/components/desktop/context.ts, DESKTOP_MIN). */
+const DESKTOP_MIN = 1024;
+/** Smallest page the window allows (a content size, not the outer frame): never narrower than the desktop
+ *  layout, so resizing the window never drops it into the phone layout. Shrunk on smaller screens. */
+const MIN_SIZE = { width: DESKTOP_MIN, height: 700 };
+/** First-launch page size, shrunk to fit smaller screens. */
 const DEFAULT_SIZE = { width: 1440, height: 900 };
+/** The self-test's page: a comfortable desktop window on any runner's screen. */
+const SMOKE_SIZE = { width: 1280, height: 800 };
 
-module.exports = { PRODUCT_NAME, APP_ID, DATA_FOLDER, APP_SCHEME, APP_HOST, APP_ORIGIN, MIN_SIZE, DEFAULT_SIZE };
+module.exports = { PRODUCT_NAME, APP_ID, DATA_FOLDER, APP_SCHEME, APP_HOST, APP_ORIGIN, DESKTOP_MIN, MIN_SIZE, DEFAULT_SIZE, SMOKE_SIZE };

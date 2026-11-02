@@ -16,7 +16,8 @@ import { Field, FieldError, Input } from './Field';
 import { Glass } from './Glass';
 import { Dim, EASE_OUT, FadeSwap, Press, SelectFade } from './Motion';
 import { Divider } from './Section';
-import { ConfirmDelete, Sheet } from './Sheet';
+import { ConfirmDelete, Sheet, SheetFooter } from './Sheet';
+import { useDesktop } from './desktop/context';
 
 const SHOW = FadeIn.duration(200).easing(EASE_OUT);
 const HIDE = FadeOut.duration(140).easing(EASE_OUT);
@@ -56,14 +57,15 @@ function addedLabel(iso: string): string {
   return `Added ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`;
 }
 
-function trackMeta(t: Track, missing: boolean): string {
-  if (missing) return 'Not on this phone. Import it again to play it';
+function trackMeta(t: Track, missing: boolean, desktop = false): string {
+  if (missing) return `Not on this ${desktop ? 'computer' : 'phone'}. Import it again to play it`;
   const parts = [t.duration ? clock(t.duration) : null, addedLabel(t.addedAt), isSessionOnly(t) ? 'for this visit' : null];
   return parts.filter(Boolean).join(' · ');
 }
 
 function YourMusic({ onForm }: { onForm: (f: MusicForm) => void }) {
   const { colors, type } = useTheme();
+  const desktop = useDesktop().on;
   const styles = useStyles(makeStyles);
   const { music } = useStore();
   const s = useSounds();
@@ -81,7 +83,11 @@ function YourMusic({ onForm }: { onForm: (f: MusicForm) => void }) {
           {empty && !s.importing ? (
             // Empty: one line in the pane, with Import beside the heading. Each section says only what it adds.
             <Animated.View entering={SHOW} exiting={HIDE} style={styles.empty}>
-              <Text style={type.hint}>Import songs from your phone. They play one after another, even with the screen off.</Text>
+              <Text style={type.hint}>
+                {desktop
+                  ? 'Import songs from this computer. They play one after another while Symphony OS is open, and are cleared when you close it.'
+                  : 'Import songs from your phone. They play one after another, even with the screen off.'}
+              </Text>
             </Animated.View>
           ) : (
             <View style={styles.rows}>
@@ -127,9 +133,10 @@ function TrackRow({ track, onEdit }: { track: Track; onEdit: () => void }) {
   const { colors, type, radii } = useTheme();
   const styles = useStyles(makeStyles);
   const s = useSounds();
+  const desktop = useDesktop().on;
   const missing = s.missing.has(track.id);
   const active = s.current.kind === 'track' && s.current.id === track.id;
-  const meta = trackMeta(track, missing);
+  const meta = trackMeta(track, missing, desktop);
   return (
     <View style={styles.row}>
       <Press
@@ -165,7 +172,7 @@ function TrackRow({ track, onEdit }: { track: Track; onEdit: () => void }) {
         onPress={onEdit}
         accessibilityLabel={`Rename or remove ${track.title}`}
       >
-        <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+        <Ionicons name={desktop ? 'create-outline' : 'ellipsis-horizontal'} size={20} color={colors.text} />
       </Press>
     </View>
   );
@@ -173,6 +180,7 @@ function TrackRow({ track, onEdit }: { track: Track; onEdit: () => void }) {
 
 function Playlists({ onForm }: { onForm: (f: MusicForm) => void }) {
   const { colors, type } = useTheme();
+  const desktop = useDesktop().on;
   const styles = useStyles(makeStyles);
   const { music } = useStore();
   const links = music.links;
@@ -195,7 +203,9 @@ function Playlists({ onForm }: { onForm: (f: MusicForm) => void }) {
         <Animated.View layout={GROW}>
           {empty ? (
             <Animated.View entering={SHOW} exiting={HIDE} style={styles.empty}>
-              <Text style={type.hint}>Save a share link from Spotify, YouTube Music or any music app to open it in one tap.</Text>
+              <Text style={type.hint}>
+                {`Save a share link from Spotify, YouTube Music or any music app to open it in one ${desktop ? 'click' : 'tap'}.`}
+              </Text>
             </Animated.View>
           ) : (
             <View style={styles.rows}>
@@ -219,6 +229,8 @@ function Playlists({ onForm }: { onForm: (f: MusicForm) => void }) {
 }
 
 function LinkRow({ link, onEdit }: { link: PlaylistLink; onEdit: () => void }) {
+  // The desktop edits with the visible button beside the row, not a long press.
+  const desktop = useDesktop().on;
   const { colors, type } = useTheme();
   const styles = useStyles(makeStyles);
   const s = useSounds();
@@ -243,7 +255,7 @@ function LinkRow({ link, onEdit }: { link: PlaylistLink; onEdit: () => void }) {
           onLongPress={onEdit}
           accessibilityRole="link"
           accessibilityLabel={`Open ${link.name} in ${where}`}
-          accessibilityHint="Long press to rename or delete"
+          accessibilityHint={desktop ? undefined : 'Long press to rename or delete'}
         >
           <View style={styles.tile}>
             {opening ? (
@@ -265,7 +277,7 @@ function LinkRow({ link, onEdit }: { link: PlaylistLink; onEdit: () => void }) {
           </View>
         </Press>
         <Press style={styles.more} overlay={colors.material.pressFill} onPress={onEdit} accessibilityLabel={`Edit ${link.name}`}>
-          <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+          <Ionicons name={desktop ? 'create-outline' : 'ellipsis-horizontal'} size={20} color={colors.text} />
         </Press>
       </View>
       {error ? (
@@ -296,6 +308,7 @@ export function MusicForms({ form, onClose }: { form: MusicForm; onClose: () => 
 function TrackSheet({ visible, track, onClose }: { visible: boolean; track?: Track; onClose: () => void }) {
   const styles = useStyles(makeStyles);
   const { type } = useTheme();
+  const desktop = useDesktop().on;
   const { updateMusic } = useStore();
   const s = useSounds();
   const [title, setTitle] = useState('');
@@ -318,7 +331,7 @@ function TrackSheet({ visible, track, onClose }: { visible: boolean; track?: Tra
   const missing = track ? s.missing.has(track.id) : false;
   return (
     <Sheet visible={visible} title="Edit song" onClose={onClose}>
-      {track ? <Text style={type.hint}>{trackMeta(track, missing)}</Text> : null}
+      {track ? <Text style={type.hint}>{trackMeta(track, missing, desktop)}</Text> : null}
       <Field label="Name" error={error}>
         <Input
           value={title}
@@ -332,7 +345,9 @@ function TrackSheet({ visible, track, onClose }: { visible: boolean; track?: Tra
           accessibilityLabel="Song name"
         />
       </Field>
-      <Button label="Save" onPress={save} style={styles.save} />
+      <SheetFooter>
+        <Button label="Save" onPress={save} style={styles.save} />
+      </SheetFooter>
       {track ? (
         <ConfirmDelete
           label="Remove song"
@@ -422,7 +437,9 @@ function LinkSheet({ visible, link, onClose }: { visible: boolean; link?: Playli
             accessibilityLabel="Playlist name"
           />
         </Field>
-        <Button label={link ? 'Save' : 'Save link'} onPress={save} style={styles.save} />
+        <SheetFooter>
+          <Button label={link ? 'Save' : 'Save link'} onPress={save} style={styles.save} />
+        </SheetFooter>
         {link ? (
           <ConfirmDelete
             label="Delete link"

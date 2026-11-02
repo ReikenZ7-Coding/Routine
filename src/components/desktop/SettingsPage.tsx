@@ -1,5 +1,5 @@
-// Settings as a page: your name, the four looks side by side, the phone calendar, backup, where your things live on
-// this computer, and the keyboard shortcuts. The same settings and words as the phone's Settings sheet.
+// Settings as a page: your name, the four looks side by side, the phone calendar and backup, with where your things
+// live on this computer and the keyboard shortcuts in a column beside them. The same settings and words as the phone's Settings sheet.
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -11,14 +11,17 @@ import { FadeSwap, SelectFade } from '../Motion';
 import { Swatch } from '../SettingsSheet';
 import { useShell } from './api';
 import { Hover } from './Hover';
-import { MOD } from './nav';
+import { IN_APP, MOD } from './nav';
 import { Column, GlassButton, Page, Panel, Row } from './Page';
 
+// A browser keeps Ctrl+N and Ctrl+1 to 9 for its own windows and tabs, so only the Windows app lists them.
 const SHORTCUTS: [string, string][] = [
   [`${MOD}+K`, 'Search or jump to a page'],
-  [`${MOD}+N`, 'The New menu, then R, T, G or W'],
+  ...(IN_APP ? ([[`${MOD}+N`, 'The New menu, then R, T, G or W']] as [string, string][]) : []),
   [`${MOD}+B`, 'Collapse or expand the sidebar'],
-  [`${MOD}+1 to ${MOD}+9`, 'Overview, Today, Calendar, Inbox, Gym, Language, Groceries, Library, Music'],
+  ...(IN_APP
+    ? ([[`${MOD}+1 to ${MOD}+9`, 'Overview, Today, Calendar, Inbox, Gym, Language, Groceries, Library, Music']] as [string, string][])
+    : []),
   [`${MOD}+,`, 'Settings'],
   [`${MOD}+[ and ${MOD}+]`, 'The previous and next day on Today, week or month on Calendar'],
   ['Space or Enter, then 1, 2, 3', 'Turn a review card, then Again, Good or Easy'],
@@ -126,24 +129,27 @@ export function SettingsPage() {
             span={8}
             index={3}
             title="Backup and restore"
-            subtitle="Keep a copy, or move to a new phone"
+            subtitle="Keep a copy, or bring your phone's things across"
             right={<GlassButton label="Open backup" icon="archive-outline" onPress={() => shell.open('backup')} />}
           >
             <Text style={type.body}>A backup is one file with your routines, to-dos, workouts, words, lists and notes.</Text>
           </Panel>
+        </Column>
 
-          <Panel span={8} index={4} title="This computer">
+        {/* Where things live and the shortcuts: reference, so they sit to the side of the settings. */}
+        <Column span={4}>
+          <Panel span={4} index={4} title="This computer">
             <Text style={type.body}>
               Your things are saved on this computer. The phone app keeps its own copy; use Backup and restore to move everything across.
             </Text>
           </Panel>
 
-          <Panel span={8} index={5} title="Keyboard shortcuts" subtitle={`${MOD === 'Ctrl' ? 'Ctrl' : 'Command'} works from any page`}>
+          <Panel span={4} index={5} title="Keyboard shortcuts" subtitle={`${MOD === 'Ctrl' ? 'Ctrl' : 'Command'} works from any page`}>
             <View role="list">
               {SHORTCUTS.map(([keys, does], i) => (
                 <View key={keys} role="listitem" style={[styles.shortcut, i > 0 && { borderTopColor: colors.border, borderTopWidth: 1 }]}>
                   <Text style={styles.keys}>{keys}</Text>
-                  <Text style={[type.body, styles.flex]}>{does}</Text>
+                  <Text style={type.body}>{does}</Text>
                 </View>
               ))}
             </View>
@@ -157,7 +163,6 @@ export function SettingsPage() {
 const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
   const inset = colors.material.inset;
   return StyleSheet.create({
-    flex: { flex: 1, minWidth: 0 },
     label: { ...type.label, marginBottom: 8 },
     nameField: { maxWidth: 420 },
     looks: { flexDirection: 'row', gap: 12 },
@@ -179,7 +184,8 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
       borderWidth: 2,
       borderColor: colors.material.rimTop,
     },
-    shortcut: { flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 44, paddingVertical: 8 },
-    keys: { width: 220, fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.text, fontVariant: ['tabular-nums'] },
+    // The keys over what they do, to fit the side column.
+    shortcut: { gap: 2, paddingVertical: 10 },
+    keys: { fontFamily: fonts.bodyMedium, fontSize: 15, lineHeight: 20, color: colors.text, fontVariant: ['tabular-nums'] },
   });
 };

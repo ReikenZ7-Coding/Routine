@@ -23,8 +23,9 @@ Desktop frame (gate_desktop): the wide world (<look>-bg-wide.jpg and its lens) a
   chromeTint, and over a pane passing under it); the hover light on pane and chrome; sheet glass over the dim
   (palette, side panels, popovers); the kbd hint (inset in control glass); a kind's soft wash on pane at DESK_WASH
   (calendar blocks, the gym's New best); breadcrumbs, page titles, subtitles and page notes on the bare world right
-  of the sidebar; marks at 3:1 (the now line, chart bars, the day line's nodes,
-  the rail's dots) and the focus ring against the world and the glass.
+  of the sidebar; marks at 3:1 (the now line, chart bars, the day line's nodes on its band,
+  the rail's dots) and the focus ring against the world and the glass; the New pill's hover light; Pine's slab and
+  Paper's mountains behind the page header at each window (desk_canopy, desk_crag).
 Thresholds: text, muted, faint, label, link, danger and every kind's text 4.5:1; onKind on every kind fill,
   onPrimary on both primary stops and onDone on both done stops 4.5:1; controlBorder against the glass, kind fills and the accent
   against their track 3:1, and the accent on the player's lit toggle disc 3:1. Today's trail (node, walked path, waypoint
@@ -482,6 +483,17 @@ DESK = (GW, GH)
 # sidebar; a compact one keeps the 72 dp rail (its labelled sidebar opens over the content, checked as chrome).
 WINDOWS = [(1440, 900, 16, 16 + 264 + 32, 32), (1280, 800, 16, 16 + 264 + 32, 32), (1024, 768, 12, 12 + 72 + 24, 24)]
 FOCUS_HALO = 'rgba(20,22,48,0.85)'
+# layout.ts primaryHover: the primary pill's hover light deepens it under light ink and lifts it under dark ink
+PRIMARY_HOVER = {True: 'rgba(0,0,0,0.16)', False: 'rgba(255,255,255,0.16)'}
+# The header art on a desktop page (src/components/desktop/HeaderArt.tsx), in window dp. The page header's text
+# starts 12 dp under the page's top (80 dp, 76 compact); the header's foot is where the page's header ends.
+PAGE_TOP = {False: 80, True: 76}
+TITLE_LINE = {False: 44, True: 40}
+HEADER_FEET = (166, 210)  # one-line and two-line subtitles under the title
+SUB_LINE = 22
+TITLE_MAX = 720  # the header's title and subtitle column is at most this wide (Page.tsx TITLE_MAX)
+SLAB = {'under': 16, 'stop': 140, 'moon': (118, 44, 112)}  # moon: centre in from the right, down, and its reach
+CRAG = {'width': 600, 'compactWidth': 520, 'share': 0.45, 'peak': 24, 'peakAt': 100 / 900, 'fade': 96}  # HeaderArt.tsx CRAG
 
 
 def place_wide(light, p, alpha_img):
@@ -615,6 +627,13 @@ def gate_desktop(look, theme, g):
     for k, names in (('routines', ['text', 'muted', 'kind.routines.text']), ('gym', ['text', 'kind.gym.text'])):
         sc, sa = col(kinds[k]['soft'])
         surfaces[f'pane {k} soft'] = (over(pane, sc, sa * DESK_WASH if sa < 1 else sa), names)
+    # A calendar block cascading over an earlier one is raised on the sheet's last stop (no dim under it), with the
+    # routines wash over that.
+    rc, ra_ = col(mat['sheet']['body'][-1])
+    sc, sa = col(kinds['routines']['soft'])
+    raised = over(lens, rc, ra_)
+    surfaces['block raised'] = (raised, ['text', 'muted'])
+    surfaces['block raised routines soft'] = (over(raised, sc, sa * DESK_WASH if sa < 1 else sa), ['text', 'muted', 'kind.routines.text'])
     if mat.get('bloom'):
         bm = re.search(r'radial-gradient\(\s*([\d.]+% [\d.]+%) at ([\d.]+% [\d.]+%)\s*,\s*(rgba?\([^)]*\))', mat['bloom'])
         bc, ba = col(bm.group(3))
@@ -651,11 +670,21 @@ def gate_desktop(look, theme, g):
         fc, fa = col(kinds[k]['color'])
         g.check(L, 'chart track', f'kind.{k} bar', ratio(lum(over(pane, fc, fa)), lum(track)), NONTEXT, dims=DESK)
     hero = surfaces.get('hero', (pane,))[0]
-    for tname in ('node', 'nodeAhead'):
-        c, a = col(colors[tname])
-        g.check(L, 'hero', f'day line {tname}', ratio(lum(over(hero, c, a)), lum(hero)), NONTEXT, dims=DESK)
+    # The day line is a band of the track over the hero, the hours already gone a second layer of it; its nodes and
+    # the now marker sit on both. Steps sharing a node show their count inside it.
     tc2, ta2 = col(colors['text'])
-    g.check(L, 'hero', 'day line now (text)', ratio(lum(over(hero, tc2, ta2)), lum(hero)), NONTEXT, dims=DESK)
+    # Pine's band is its slab trough (its track is a light tint); every other look's is its track.
+    bc_, ba_ = col(mat['canopy']['inset']['fill']) if mat.get('canopy') else (trc, tra)
+    band = over(hero, bc_, ba_)
+    past = over(band, bc_, ba_)
+    for bname, bg in (('day line band', band), ('day line past', past)):
+        for tname in ('node', 'nodeAhead'):
+            c, a = col(colors[tname])
+            g.check(L, bname, tname, ratio(lum(over(bg, c, a)), lum(bg)), NONTEXT, dims=DESK)
+        g.check(L, bname, 'now (text)', ratio(lum(over(bg, tc2, ta2)), lum(bg)), NONTEXT, dims=DESK)
+        for fill in ('nodeAheadFill', 'nodeCurrentFill'):
+            c, a = col(colors[fill])
+            g.text(L, f'{bname} {fill}', 'count (text)', colors['text'], over(bg, c, a), dims=DESK)
     g.check(L, 'sidebar', 'rail dot (accent)', ratio(lum(over(side, ac, aa)), lum(side)), NONTEXT, dims=DESK)
 
     # The focus ring: a white ring with a dark halo. On Paper's light world the halo carries it; on the darker
@@ -664,6 +693,140 @@ def gate_desktop(look, theme, g):
     for sname, bg in (('world', sharp_seen), ('pane', pane), ('sidebar', side)):
         c, a = col(ring)
         g.check(L, sname, 'focus ring', ratio(lum(over(bg, c, a)), lum(bg)), NONTEXT, dims=DESK)
+
+    # The New pill under the pointer: its ink through the white hover light, on both primary stops.
+    hv, hva = col(PRIMARY_HOVER[bool(lum(col(colors['onPrimary'])[0][None, None])[0, 0] > 0.5)])
+    for i, stop in enumerate(colors['primaryGradient']):
+        c, a = col(stop)
+        g.text(L, f'New hover stop {i}', 'onPrimary', colors['onPrimary'], over(over(pane, c, a), hv, hva), dims=DESK)
+
+    if mat.get('canopy'):
+        desk_canopy(look, colors, mat, g, L)
+    if META['looks'][look].get('header') and look == 'paper':
+        desk_crag(look, colors, mat, sharp_lit, g, L)
+
+
+def desk_slab(look, canopy, w, h):
+    """Pine's slab on a desktop window, at 1 px per dp: from the gap right of the sidebar to the window's right
+    edge, h dp tall. The gradient's middle stop sits 140 dp down; the pines stand at the bottom right at the slab's
+    height up to canopy.maxArt dp; the moon glow behind the bell and New, taken at its peak over its whole drift."""
+    spec = META['looks'][look]['canopy']
+    stops = [col(c)[0] for c in canopy['gradient']]
+    y = np.arange(h, dtype=float)[:, None, None]
+    top = stops[0] + (stops[1] - stops[0]) * np.clip(y / SLAB['stop'], 0, 1)
+    low = stops[1] + (stops[2] - stops[1]) * np.clip((y - SLAB['stop']) / max(1, h - SLAB['stop']), 0, 1)
+    slab = np.broadcast_to(np.where(y < SLAB['stop'], top, low), (h, w, 3)).astype(float).copy()
+    ah = int(min(h, canopy['maxArt']))
+    full_w = int(round(ah / spec['ratio']))
+    aw = min(w, full_w)
+    art = np.asarray(Image.open(f"{ART}/{spec['file']}.png").convert('RGBA').resize((full_w, ah), Image.LANCZOS)).astype(float) / 255
+    art = art[:, -aw:]
+    slab[h - ah:, w - aw:] = over(slab[h - ah:, w - aw:], art[..., :3], art[..., 3] * canopy['art'])
+    mc, ma = col(canopy['moon'])
+    m = META['looks'][look]['lights'][0]['motion']
+    right, down, reach = SLAB['moon']
+    yy, xx = np.mgrid[:h, :w].astype(float)
+    peak = np.zeros((h, w))
+    for p in np.linspace(0, 1, SAMPLES, endpoint=False):
+        sn, cs = np.sin(2 * np.pi * p), np.cos(2 * np.pi * p)
+        tx, ty, sc = m['ax'] * sn, -m['ay'] * cs, 1 + m['s'] * sn
+        d = np.hypot(xx - (w - right + tx), yy - (down + ty))
+        peak = np.maximum(peak, np.clip(1 - d / (reach * sc), 0, 1))
+    return over(slab, mc, ma * peak)
+
+
+def header_rows(compact, foot):
+    """A page header's rows in window dp: the title's (text) and the subtitle's (onSlabMuted, its figures in text),
+    for a subtitle of one line (foot 166) or two."""
+    sub = (1 if foot <= HEADER_FEET[0] else 2) * SUB_LINE
+    top = PAGE_TOP[compact] + 12
+    return (top, top + TITLE_LINE[compact]), (foot - sub, foot)
+
+
+# Where the top bar's search field sits, from the content's right edge: its placeholder (muted) left of the look,
+# bell and New buttons and its own shortcut.
+SEARCH_CLEAR = 40 + 8 + 40 + 8 + 96 + 8 + 48
+
+
+def desk_canopy(look, colors, mat, g, L):
+    """Pine's slab behind each desktop page's header and the top bar. The breadcrumbs (onSlabMuted, the current page
+    in text) sit at the left of the top bar; the title (text) and the subtitle (onSlabMuted, its figures in text) in
+    the title's column, at most TITLE_MAX dp from the content's left edge, over the pines on a narrow window. Glass
+    on the slab becomes canopy.inset: the round buttons and the header buttons (text) anywhere on the slab, over the
+    pines and the moon; the search field's placeholder (muted) left of the buttons; a header's segmented labels
+    (muted) in the header's rows; the search field's shortcut sits on material.inset inside it."""
+    canopy = mat['canopy']
+    ic, ia = col(canopy['inset']['fill'])
+    kc, ka = col(mat['inset']['fill'])
+    for wd, hd, inset_dp, left_dp, pad in WINDOWS:
+        compact = wd < 1280
+        x0 = inset_dp * 2 + (72 if compact else 264)
+        w = wd - x0
+        for foot in HEADER_FEET:
+            h = foot + SLAB['under']
+            slab = desk_slab(look, canopy, w, h)
+            name = f'slab {wd}x{hd} {h}'
+            cl, cr = left_dp - x0, min(left_dp - x0 + TITLE_MAX, w - pad)
+            (t0, t1), (s0, s1) = header_rows(compact, foot)
+            crumbs = slab[28:68, cl:cl + 400]
+            for tname in ('text', 'onSlabMuted'):
+                g.text(L, f'{name} crumbs', tname, colors[tname], crumbs, (cl, 28), (w, h))
+                g.text(L, f'{name} subtitle', tname, colors[tname], slab[s0:s1, cl:cr], (cl, s0), (w, h))
+            g.text(L, f'{name} title', 'text', colors['text'], slab[t0:t1, cl:cr], (cl, t0), (w, h))
+            trough = over(slab, ic, ia)
+            g.text(L, f'{name} trough', 'text', colors['text'], trough, dims=(w, h))
+            sx = w - pad - SEARCH_CLEAR
+            g.text(L, f'{name} trough search', 'muted', colors['muted'], trough[28:68, :sx], (0, 28), (w, h))
+            g.text(L, f'{name} trough header', 'muted', colors['muted'], trough[t0:foot], (0, t0), (w, h))
+            g.text(L, f'{name} trough kbd', 'text', colors['text'], over(trough, kc, ka), dims=(w, h))
+
+
+def desk_crag(look, colors, mat, sharp_lit, g, L):
+    """Paper's mountains behind the right of the Overview and Today headers, on the lit world, at each window: the
+    picture is the header's width share wide (600 dp at most, 520 compact), its peak 24 dp under the window's top,
+    cut at the header's foot and faded over its last 72 dp. Glass doesn't see it (the lens is the world's), so only
+    bare text and inset discs sit on it: the title and subtitle where the title's column reaches over it, and the
+    day arrows' glyphs (text on material.inset) beside them."""
+    spec = META['looks'][look]['header']
+    full = Image.open(f"{ART}/{spec['file']}.png").convert('RGBA')
+    ic, ia = col(mat['inset']['fill'])
+    ax, ay = META['looks'][look]['wide']['anchor']
+    for wd, hd, inset_dp, left_dp, pad in WINDOWS:
+        compact = wd < 1280
+        width = max(wd, hd * 1.6)
+        height = width / 1.6
+        left, top = (wd - width) * ax, (hd - height) * ay
+        s = GW / width  # grid px per dp
+        cw = min(CRAG['compactWidth'] if compact else CRAG['width'], round(wd * CRAG['share']))
+        ih = round(cw * spec['ratio'])
+        mt = round(CRAG['peak'] - CRAG['peakAt'] * ih)
+        gx0, gw = int(round((wd - cw - left) * s)), int(round(cw * s))
+        art = np.asarray(full.resize((gw, int(round(ih * s))), Image.LANCZOS)).astype(float) / 255
+        for foot in HEADER_FEET:
+            # rows of the window from 0 to the foot, in the grid, and where each sits in the picture
+            gy0, gy1 = int(round((0 - top) * s)), int(round((foot - top) * s))
+            rows = np.arange(gy0, gy1)
+            wy = rows / s + top  # window dp
+            src = np.clip(np.round((wy - mt) * s).astype(int), 0, art.shape[0] - 1)
+            inside = (wy >= mt) & (wy < mt + ih)
+            fade = np.clip((foot - wy) / CRAG['fade'], 0, 1) * inside
+            layer = art[src]
+            img = sharp_lit.copy()
+            img[gy0:gy1, gx0:gx0 + gw] = over(img[gy0:gy1, gx0:gx0 + gw], layer[..., :3], layer[..., 3] * fade[:, None])
+            seen = ra.gblur(img, GLYPH * s)
+            name = f'crag {wd}x{hd} {foot}'
+            # The title's column: from where the picture starts to TITLE_MAX dp from the content's left edge.
+            (t0, t1), (s0, s1) = header_rows(compact, foot)
+            right = min(left_dp + TITLE_MAX, wd - pad)
+            if right > wd - cw:
+                for (y0_, y1_), names, part in (((t0, t1), ('text',), 'title'), ((s0, s1), ('text', 'onSlabMuted'), 'subtitle')):
+                    zx0, zx1, zy0, zy1 = window_zone(look, (wd, hd), wd - cw, right, y0_, y1_)
+                    zone = seen[max(0, zy0):zy1, max(0, zx0):zx1]
+                    for tname in names:
+                        g.text(L, f'{name} {part}', tname, colors[tname], zone, (zx0, zy0), DESK)
+            zx0, zx1, zy0, zy1 = window_zone(look, (wd, hd), wd - cw, wd - pad, PAGE_TOP[compact] + 12, foot)
+            disc = over(seen[max(0, zy0):zy1, max(0, zx0):zx1], ic, ia)
+            g.text(L, f'{name} disc', 'text', colors['text'], disc, (zx0, zy0), DESK)
 
 
 def suggest(token, worst, need):

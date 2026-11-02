@@ -9,13 +9,13 @@ import { type ComponentRef, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { monthGrid } from '../../lib/agenda';
-import { type DayPlan, dayPlan } from '../../lib/day';
+import { type DayPlan, dayPlan, thingsPlanned } from '../../lib/day';
 import { moodOf } from '../../lib/journal';
 import { practiceSubject } from '../../lib/language';
 import { type Routine, isDoneOn, isSkipped, tapRoutine } from '../../lib/routines';
 import { addDays, boughtOn, parseKey } from '../../lib/schedule';
 import { useStore } from '../../lib/store';
-import { clock, laneOut } from '../../lib/timeline';
+import { cascadeOut, clock } from '../../lib/timeline';
 import { type Kind, type Theme, useStyles, useTheme } from '../../theme';
 import { alphaOf, washOf } from '../glass/colour';
 import { EASE_OUT, FADE } from '../Motion';
@@ -32,7 +32,12 @@ import { SHELL, useShellMetrics } from './layout';
 const START = 5;
 const END = 24;
 const GUTTER = 56;
-const LANE_ROWS = 3;
+/** The all-day lane shows two rows a day, then "N more" (which opens the day). */
+const LANE_ROWS = 2;
+/** A block that cascades over an earlier one is indented this much per lane. */
+const CASCADE = 12;
+/** A block shows its time on a second line from this height. */
+const TWO_LINES = 44;
 
 type View_ = 'week' | 'month';
 
@@ -84,9 +89,11 @@ export function CalendarPage() {
     () => (mode === 'month' ? new Map(monthDays.map((d) => [d, dayPlan(state, d, today)])) : new Map<string, DayPlan>()),
     [mode, monthDays, state, today],
   );
-  const shown = mode === 'week' ? plans : [...monthPlans.values()];
-  const planned = shown.reduce((n, p) => n + p.total, 0);
-  const done = shown.reduce((n, p) => n + p.done, 0);
+  // Routines, to-dos, workouts and practice; the shopping list's lines are not things planned.
+  const tallies =
+    mode === 'week' ? days.map((d, i) => thingsPlanned(plans[i], d)) : monthDays.map((d) => thingsPlanned(monthPlans.get(d)!, d));
+  const planned = tallies.reduce((n, t) => n + t.planned, 0);
+  const done = tallies.reduce((n, t) => n + t.done, 0);
 
   const step = (n: number) => (mode === 'week' ? setWeek((w) => addDays(w, 7 * n)) : setMonth((x) => shiftMonth(x, n)));
   usePageKeys({ '[': () => step(-1), ']': () => step(1) });
@@ -144,6 +151,25 @@ export function CalendarPage() {
     scrolled.current = false;
   }, [week, mode]);
 
+  // Two hours before now, moved up while a block would be cut under the all-day lane. The grid's 10 dp top pad
+  // keeps the hour's label in view above its line.
+  const openAt = () => {
+    let y = Math.max(0, (Math.floor(now / 60) - 2 - START) * hour);
+    for (let moved = true; moved; ) {
+      moved = false;
+      for (const p of plans)
+        for (const e of p.timed) {
+          const top = ((Math.max(e.start, START * 60) - START * 60) / 60) * hour;
+          const bottom = ((e.end - START * 60) / 60) * hour;
+          if (top < y && bottom > y - 10) {
+            y = top;
+            moved = true;
+          }
+        }
+    }
+    return y;
+  };
+
   const tick = (r: Routine, d: string) => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? tapRoutine(x, d) : x)));
   const newAt = (d: string, minute: number) =>
     shell.open('routine', undefined, {
@@ -152,15 +178,19 @@ export function CalendarPage() {
       repeat: { kind: 'weekdays', days: [parseKey(d).getDay()] },
     });
 
+  const span = mode === 'week' ? `${dayMonth(days[0])} to ${dayMonth(days[6])}` : monthName(month);
   const subtitle =
-    mode === 'week' ? (
-      <>
-        {dayMonth(days[0])} to {dayMonth(days[6])} · <Fig>{planned}</Fig> {planned === 1 ? 'thing' : 'things'} planned · <Fig>{done}</Fig>{' '}
-        done so far
-      </>
+    planned === 0 ? (
+      `${span} · Nothing planned this ${mode}.`
     ) : (
       <>
-        {monthName(month)} · <Fig>{planned}</Fig> {planned === 1 ? 'thing' : 'things'} planned · <Fig>{done}</Fig> done so far
+        {span} · <Fig>{planned}</Fig> {planned === 1 ? 'thing' : 'things'} planned
+        {done > 0 ? (
+          <>
+            {' '}
+            · <Fig>{done}</Fig> done so far
+          </>
+        ) : null}
       </>
     );
 
@@ -260,7 +290,7 @@ export function CalendarPage() {
               onLayout={() => {
                 if (scrolled.current) return;
                 scrolled.current = true;
-                grid.current?.scrollTo({ y: Math.max(0, (Math.floor(now / 60) - 2 - START) * hour), animated: false });
+                grid.current?.scrollTo({ y: openAt(), animated: false });
               }}
             >
               <View style={{ height: (END - START) * hour, flexDirection: 'row' }}>
@@ -364,8 +394,11 @@ function DayColumn({
 }) {
   const { colors, kinds } = useTheme();
   const styles = useStyles(makeStyles);
-  const lanes = useMemo(() => laneOut(plan.timed), [plan.timed]);
+  const lanes = useMemo(() => cascadeOut(plan.timed), [plan.timed]);
   const future = date > today;
+  // A block cascading over an earlier one is raised on the look's sheet colour, so the one under it doesn't show
+  // through.
+  const raised = colors.material.sheet.body[colors.material.sheet.body.length - 1];
   return (
     <View style={[styles.col, { borderColor: colors.border }]}>
       {Array.from({ length: END - START }, (_, h) => (
@@ -386,19 +419,30 @@ function DayColumn({
         const h = Math.max(24, ((e.end - e.start) / 60) * hour - 2);
         const isDone = isDoneOn(r, date);
         const skipped = isSkipped(r, date);
-        const { lane, lanes: n } = lanes[i];
-        const tall = h >= 40 && !future && !skipped;
+        const { lane, lanes: n, side } = lanes[i];
+        const tall = h >= TWO_LINES && !future && !skipped;
         const when = `${clock(e.start)} · ${e.end - e.start} min`;
+        const over = !side && lane > 0;
+        const wash = washOf(kinds.routines.soft, SHELL.wash);
         return (
-          <View key={e.id} style={[styles.blockAt, { top: top + 1, height: h, left: `${(lane / n) * 100}%`, width: `${100 / n}%` }]}>
+          <View
+            key={e.id}
+            style={[
+              styles.blockAt,
+              { top: top + 1, height: h, zIndex: lane },
+              side ? { left: `${(lane / n) * 100}%`, width: `${100 / n}%` } : { left: lane * CASCADE, right: 0 },
+            ]}
+          >
             <Hover
               onPress={() => onOpen(r)}
               outerStyle={styles.flex}
               // A done or skipped block recedes to the plain inset, its title struck in muted ink (no opacity, so it stays readable).
               style={[
                 styles.block,
+                over && { backgroundColor: raised, boxShadow: colors.material.shadowFloat },
                 !(isDone || skipped) && {
-                  backgroundColor: washOf(kinds.routines.soft, SHELL.wash),
+                  backgroundColor: over ? raised : wash,
+                  backgroundImage: over ? `linear-gradient(${wash}, ${wash})` : undefined,
                   borderColor: alphaOf(kinds.routines.color, 0.5),
                   borderTopColor: alphaOf(kinds.routines.color, 0.5),
                 },
@@ -412,7 +456,7 @@ function DayColumn({
                   {e.title}
                 </Text>
               </View>
-              {h >= 40 ? (
+              {h >= TWO_LINES ? (
                 <Text style={styles.blockMeta} numberOfLines={1}>
                   {skipped ? `Skipped · ${when}` : when}
                 </Text>

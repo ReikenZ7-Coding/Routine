@@ -206,6 +206,40 @@ export function LanguagePage() {
             }
             onAdd={() => openWord()}
           />
+          {/* Under the practice, so the two columns end close together. */}
+          <Panel
+            span={8}
+            index={4}
+            title={several ? 'Your languages' : 'Your language'}
+            right={<IconButton icon="add" label="Add a language" size={36} onPress={() => setAdding(true)} />}
+          >
+            {state.languages.map((l, i) => {
+              const n = wordsFor(state, l.id).length;
+              const native = infoFor(l).native;
+              return (
+                <Hover
+                  key={l.id}
+                  onPress={() => setManaging(l)}
+                  style={[styles.langRow, i > 0 && styles.rule]}
+                  radius={10}
+                  accessibilityLabel={`${l.name}, ${plural(n, 'word')}${l.id === lang.id ? ', showing now' : ''}. Options`}
+                >
+                  <LanguageTile lang={l} />
+                  <View style={styles.flex}>
+                    <Text style={text.rowTitle}>{l.name}</Text>
+                    <Text
+                      style={text.rowMeta}
+                      numberOfLines={1}
+                    >{`${native !== l.name ? `${inLine(native)} · ` : ''}${plural(n, 'word')}`}</Text>
+                  </View>
+                  <Ionicons name="ellipsis-horizontal" size={20} color={colors.muted} />
+                </Hover>
+              );
+            })}
+            {several ? (
+              <Text style={[type.small, styles.gap]}>Minutes, the daily target and the streak are shared by all your languages.</Text>
+            ) : null}
+          </Panel>
         </Column>
         <Column span={4}>
           <Panel span={4} index={2} title="Focus" subtitle="A timer that logs its minutes when it ends">
@@ -251,39 +285,6 @@ export function LanguagePage() {
                 </View>
               </>
             )}
-          </Panel>
-          <Panel
-            span={4}
-            index={4}
-            title={several ? 'Your languages' : 'Your language'}
-            right={<IconButton icon="add" label="Add a language" size={36} onPress={() => setAdding(true)} />}
-          >
-            {state.languages.map((l, i) => {
-              const n = wordsFor(state, l.id).length;
-              const native = infoFor(l).native;
-              return (
-                <Hover
-                  key={l.id}
-                  onPress={() => setManaging(l)}
-                  style={[styles.langRow, i > 0 && styles.rule]}
-                  radius={10}
-                  accessibilityLabel={`${l.name}, ${plural(n, 'word')}${l.id === lang.id ? ', showing now' : ''}. Options`}
-                >
-                  <LanguageTile lang={l} />
-                  <View style={styles.flex}>
-                    <Text style={text.rowTitle}>{l.name}</Text>
-                    <Text
-                      style={text.rowMeta}
-                      numberOfLines={1}
-                    >{`${native !== l.name ? `${inLine(native)} · ` : ''}${plural(n, 'word')}`}</Text>
-                  </View>
-                  <Ionicons name="ellipsis-horizontal" size={20} color={colors.muted} />
-                </Hover>
-              );
-            })}
-            {several ? (
-              <Text style={[type.small, styles.gap]}>Minutes, the daily target and the streak are shared by all your languages.</Text>
-            ) : null}
           </Panel>
         </Column>
       </Row>

@@ -8,6 +8,7 @@ import { type Theme, useStyles, useTheme } from '../theme';
 import { Button } from './Button';
 import { Field, Input } from './Field';
 import { EASE_OUT } from './Motion';
+import { useDesktop } from './desktop/context';
 import { Sheet } from './Sheet';
 
 const SHOW = FadeIn.duration(200).easing(EASE_OUT);
@@ -20,6 +21,7 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
   const { type } = useTheme();
   const styles = useStyles(makeStyles);
   const { groceries, gym, language, routines, journal, inbox, music, restore } = useStore();
+  const desktop = useDesktop().on;
   const [pasted, setPasted] = useState('');
   const [shown, setShown] = useState<string | null>(null);
   const [error, setError] = useState<string | undefined>();
@@ -65,9 +67,15 @@ export function BackupSheet({ visible, onClose }: { visible: boolean; onClose: (
 
   return (
     <Sheet visible={visible} title="Backup" onClose={onClose}>
-      <Text style={type.hint}>Everything stays on this phone. Keep a copy somewhere safe, or move it to a new phone.</Text>
+      <Text style={type.hint}>
+        {desktop
+          ? 'Everything stays on this computer. Keep a copy somewhere safe, or bring what is on your phone across.'
+          : 'Everything stays on this phone. Keep a copy somewhere safe, or move it to a new phone.'}
+      </Text>
       <Text style={[type.hint, styles.note]}>
-        Your playlist links and song names are in the backup, but not the music files themselves. On a new phone, import your songs again.
+        {desktop
+          ? 'Your playlist links and song names are in the backup, but not the music files themselves. On another device, import your songs again.'
+          : 'Your playlist links and song names are in the backup, but not the music files themselves. On a new phone, import your songs again.'}
       </Text>
 
       <Text style={styles.label}>Save a copy</Text>

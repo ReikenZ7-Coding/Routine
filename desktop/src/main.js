@@ -12,7 +12,18 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { app, BrowserWindow, Menu, ipcMain, nativeTheme, protocol, screen, session, shell } = require('electron');
 
-const { APP_HOST, APP_ID, APP_ORIGIN, APP_SCHEME, DATA_FOLDER, DEFAULT_SIZE, MIN_SIZE, PRODUCT_NAME } = require('./config');
+const {
+  APP_HOST,
+  APP_ID,
+  APP_ORIGIN,
+  APP_SCHEME,
+  DATA_FOLDER,
+  DEFAULT_SIZE,
+  DESKTOP_MIN,
+  MIN_SIZE,
+  PRODUCT_NAME,
+  SMOKE_SIZE,
+} = require('./config');
 const { createHandler } = require('./serve');
 const { externalUrl, isAppUrl, webFallback } = require('./links');
 const { DEFAULT_LOOK, LOOKS, isLook } = require('./looks');
@@ -94,11 +105,14 @@ function createWindow() {
 
   const primary = screen.getPrimaryDisplay().workArea;
   const workAreas = screen.getAllDisplays().map((d) => d.workArea);
-  const bounds = placeWindow(state.bounds, workAreas, primary, { min: MIN_SIZE, preferred: DEFAULT_SIZE });
-  const min = minimumFor(primary, MIN_SIZE);
+  // Sizes are the page's (useContentSize): the desktop layout switches on the page's width, and a framed window's
+  // page is narrower than its outer frame. The self-test always gets a desktop-sized page, whatever the screen.
+  const bounds = smokeReport ? SMOKE_SIZE : placeWindow(state.bounds, workAreas, primary, { min: MIN_SIZE, preferred: DEFAULT_SIZE });
+  const min = smokeReport ? MIN_SIZE : minimumFor(primary, MIN_SIZE);
 
   const win = new BrowserWindow({
     ...bounds,
+    useContentSize: true,
     minWidth: min.width,
     minHeight: min.height,
     title: PRODUCT_NAME,
@@ -112,10 +126,14 @@ function createWindow() {
       webviewTag: false,
       navigateOnDragDrop: false,
       spellcheck: true,
-      // The focus timer and focus sounds keep time while the window is minimised.
+      // Timers keep time while the window is minimised, so the focus timer ends on the minute (a hidden page's
+      // timers can otherwise run up to a minute late). It also stops the Page Visibility API from reporting a
+      // minimised window, so the page pauses its moving light on window blur instead (src/components/glass/light.tsx).
       backgroundThrottling: false,
     },
   });
+
+  measureFrame(win);
 
   // Shown once the page has painted, so it never flashes white; the timer is a backstop for a page that can't.
   let shown = false;
@@ -167,14 +185,31 @@ function createWindow() {
     if (mainWindow === win) mainWindow = null;
   });
 
-  win.loadURL(`${APP_ORIGIN}/`);
+  // A window wide enough for the desktop layout opens on its home, Overview, rather than loading Today and then
+  // replacing it. The page's width is the content width over the zoom factor (Chromium zooms 1.2x per level).
+  const zoom = typeof state.zoom === 'number' && !smokeReport ? state.zoom : 0;
+  const pageWidth = (state.maximized && !smokeReport ? primary.width : bounds.width) / Math.pow(1.2, zoom);
+  win.loadURL(`${APP_ORIGIN}${pageWidth >= DESKTOP_MIN ? '/overview' : '/'}`);
   return win;
+}
+
+/** The frame around the page (title bar and borders), measured while the window is in its normal state. */
+let frame = { width: 0, height: 0 };
+
+function measureFrame(win) {
+  if (typeof win.getSize !== 'function' || win.isMaximized() || win.isMinimized() || win.isFullScreen()) return;
+  const [w, h] = win.getSize();
+  const [cw, ch] = win.getContentSize();
+  frame = { width: Math.max(0, w - cw), height: Math.max(0, h - ch) };
 }
 
 function remember(win) {
   if (win.isDestroyed()) return;
   if (!win.isMinimized() && !win.isFullScreen()) {
-    state.bounds = win.getNormalBounds();
+    measureFrame(win);
+    // Saved as the page's size, the way the window is created (useContentSize).
+    const b = win.getNormalBounds();
+    state.bounds = { x: b.x, y: b.y, width: b.width - frame.width, height: b.height - frame.height };
     state.maximized = win.isMaximized();
   }
   state.zoom = win.webContents.getZoomLevel();
@@ -289,10 +324,26 @@ function showContextMenu(win, params) {
 function openOutside(raw) {
   const url = externalUrl(raw);
   if (!url) return;
+  const web = webFallback(url);
+  // With nothing installed for spotify:, Windows shows its "pick an app" dialog and openExternal still succeeds,
+  // so the web player is chosen up front.
+  if (web && !hasHandler(url)) {
+    shell.openExternal(web).catch(() => {});
+    return;
+  }
   shell.openExternal(url).catch(() => {
-    const web = webFallback(url);
     if (web) shell.openExternal(web).catch(() => {});
   });
+}
+
+/** Whether an app is registered for the link's scheme (assumed yes where the system can't say). */
+function hasHandler(url) {
+  try {
+    if (typeof app.getApplicationNameForProtocol !== 'function') return true;
+    return app.getApplicationNameForProtocol(url) !== '';
+  } catch {
+    return true;
+  }
 }
 
 function guardContents(contents) {

@@ -4,7 +4,7 @@
 // the look's catch strength, wherever the light passes behind a surface. Transform and opacity only, on the
 // UI thread.
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { AppState, useWindowDimensions } from 'react-native';
+import { AppState, Platform, useWindowDimensions } from 'react-native';
 import Animated, { type SharedValue, useAnimatedStyle, useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { type ThemeName, useTheme } from '../../theme';
 import {
@@ -20,6 +20,7 @@ import {
   worldBox,
 } from '../Art';
 import { useReduceMotion } from '../Motion';
+import { useDesktop } from '../desktop/context';
 
 /** Bloom breathing period (ms); it rides the same clock as the light. */
 export const BLOOM_PERIOD = 6000;
@@ -86,24 +87,45 @@ export function useBus() {
   }, []);
 }
 
+/** On the desktop the light moves in steps of this many ms (about 20 a second): its drifts take many seconds, so
+ *  the steps don't show, and every glass pane's light layers are redrawn a third as often as at 60 Hz. */
+const DESKTOP_STEP = 50;
+
 /**
  * The root of the light: the one clock, and a window-sized default frame for glass drawn outside any screen
  * (the tab bar, the mini player, root-level sheets). Paused while the app is in the background; under reduced
- * motion the light stands still (a still light, not a jump: it parks at a quarter of its path).
+ * motion the light stands still (a still light, not a jump: it parks at a quarter of its path). In the desktop
+ * shell it also pauses while the window is in the background or out of focus (the Windows app keeps its timers
+ * running when minimised, which also keeps the page reporting itself visible, so AppState never says so there).
  */
 export function LightRoot({ children }: { children: ReactNode }) {
   const t = useSharedValue(0);
   const reduced = useReduceMotion();
+  const desktop = useDesktop().on;
   const still = useSharedValue(reduced ? 1 : 0);
+  const step = useSharedValue(desktop ? DESKTOP_STEP : 0);
+  const owed = useSharedValue(0);
   const [awake, setAwake] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
+  const [seen, setSeen] = useState(true);
   const tick = useCallback(
     (f: { timeSincePreviousFrame: number | null }) => {
       'worklet';
       // A long gap (a dropped run of frames) advances the light by one frame's worth, never a visible leap.
       const dt = Math.min(f.timeSincePreviousFrame ?? 16, 64);
+      const every = step.get();
+      if (every > 0) {
+        const due = owed.get() + dt;
+        if (due < every) {
+          owed.set(due);
+          return;
+        }
+        owed.set(0);
+        t.set((t.get() + due) % CYCLE);
+        return;
+      }
       t.set((t.get() + dt) % CYCLE);
     },
-    [t],
+    [t, step, owed],
   );
   const callback = useFrameCallback(tick, false);
   useEffect(() => {
@@ -111,9 +133,26 @@ export function LightRoot({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, []);
   useEffect(() => {
+    step.set(desktop ? DESKTOP_STEP : 0);
+    if (!desktop || Platform.OS !== 'web' || typeof window === 'undefined' || typeof document === 'undefined') {
+      setSeen(true);
+      return;
+    }
+    const update = () => setSeen(!document.hidden && document.hasFocus());
+    const hide = () => setSeen(false);
+    window.addEventListener('focus', update);
+    window.addEventListener('blur', hide);
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      window.removeEventListener('focus', update);
+      window.removeEventListener('blur', hide);
+      document.removeEventListener('visibilitychange', update);
+    };
+  }, [desktop, step]);
+  useEffect(() => {
     still.set(reduced ? 1 : 0);
-    callback.setActive(awake && !reduced);
-  }, [awake, reduced, callback, still]);
+    callback.setActive(awake && seen && !reduced);
+  }, [awake, seen, reduced, callback, still]);
 
   const clock = useMemo(() => ({ t, still }), [t, still]);
   const { width, height } = useWindowDimensions();

@@ -130,6 +130,11 @@ const fakeElectron = {
       calls.exits.push(code);
     },
     getVersion: () => '1.0.0',
+    // Which app opens a scheme; the tests clear calls.handlers to play a machine without Spotify.
+    getApplicationNameForProtocol(url) {
+      const scheme = url.split(':')[0];
+      return calls.handlers ? calls.handlers[scheme] || '' : scheme === 'spotify' ? 'Spotify' : 'Browser';
+    },
   },
   BrowserWindow: FakeBrowserWindow,
   Menu: {
@@ -194,9 +199,9 @@ after(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-test('one window, loading the app from app://symphony/', () => {
+test('one window, opening a desktop-sized page on Overview at app://symphony/', () => {
   assert.equal(calls.windows.length, 1);
-  assert.equal(win.loaded, 'app://symphony/');
+  assert.equal(win.loaded, 'app://symphony/overview');
   assert.ok(calls.lock, 'single-instance lock requested');
   assert.equal(calls.menu, null, 'no menu bar');
   assert.equal(calls.exits.length, 0);
@@ -219,6 +224,8 @@ test('the page is isolated, sandboxed and has no Node', () => {
 });
 
 test('the window has the desktop minimum size and opens hidden until painted', () => {
+  // Content sizes: the page itself is never narrower than the desktop layout's 1024.
+  assert.equal(win.options.useContentSize, true);
   assert.equal(win.options.minWidth, 1024);
   assert.equal(win.options.minHeight, 700);
   assert.equal(win.options.show, false);
@@ -247,9 +254,25 @@ test('new windows are refused and their links go to the system', async () => {
   const wc = win.webContents;
   assert.deepEqual(wc.openHandler({ url: 'https://open.spotify.com/playlist/x' }), { action: 'deny' });
   assert.deepEqual(wc.openHandler({ url: 'file:///C:/Windows/System32/calc.exe' }), { action: 'deny' });
+  // Spotify installed, but the hand-off fails: the web player.
   assert.deepEqual(wc.openHandler({ url: 'spotify:playlist:abc' }), { action: 'deny' });
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(calls.opened, ['https://open.spotify.com/playlist/x', 'spotify:playlist:abc', 'https://open.spotify.com/playlist/abc']);
+  // Nothing registered for spotify: (Windows would show its "pick an app" dialog): straight to the web player.
+  calls.opened.length = 0;
+  calls.handlers = {};
+  wc.openHandler({ url: 'spotify:playlist:def' });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(calls.opened, ['https://open.spotify.com/playlist/def']);
+});
+
+test('the window remembers the page size it was created with, not the outer frame', () => {
+  win.getSize = () => [1316, 839];
+  win.getContentSize = () => [1300, 800];
+  win.getNormalBounds = () => ({ x: 10, y: 20, width: 1316, height: 839 });
+  win.emit('close');
+  const saved = JSON.parse(fs.readFileSync(path.join(calls.userData, 'window-state.json'), 'utf8'));
+  assert.deepEqual(saved.bounds, { x: 10, y: 20, width: 1300, height: 800 });
 });
 
 test('navigation away from the app is stopped', () => {

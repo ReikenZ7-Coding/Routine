@@ -21,7 +21,7 @@ import {
 } from '../../lib/gym';
 import { plural } from '../../lib/plural';
 import { isRecord, personalRecords, workoutHistory } from '../../lib/records';
-import { WEEKDAY_SHORT, friendlyDate } from '../../lib/schedule';
+import { WEEKDAY_SHORT, friendlyDate, friendlyDateInline } from '../../lib/schedule';
 import { newId, useStore } from '../../lib/store';
 import { type Theme, useStyles, useTheme } from '../../theme';
 import { washOf } from '../glass/colour';
@@ -301,7 +301,7 @@ export function GymPage() {
               </Text>
               <Text style={styles.progressText}>
                 {upcoming
-                  ? `Next: ${upcoming.session.name}, ${friendlyDate(upcoming.date, today).toLowerCase()}`
+                  ? `Next: ${upcoming.session.name}, ${friendlyDateInline(upcoming.date, today)}`
                   : 'No sessions scheduled this week.'}
               </Text>
               <Text style={[type.label, styles.anywayLabel]}>Do a session anyway</Text>
@@ -318,6 +318,29 @@ export function GymPage() {
               </View>
             </Panel>
           )}
+          {/* Under the hero, so the two columns end close together. */}
+          <Panel span={8} index={2} title="History" subtitle="Your last workouts">
+            {history.length === 0 ? (
+              <Empty>Your workouts show here once you tick off a set.</Empty>
+            ) : (
+              history.map((w, i) => (
+                <View key={w.date} style={[styles.histRow, i > 0 && styles.rule]}>
+                  <View style={styles.flex}>
+                    <Text style={styles.planName}>{w.sessionName}</Text>
+                    <Text style={text.rowMeta}>
+                      {friendlyDate(w.date, today)} · {plural(w.sets, 'set')} · {Math.round(w.volume).toLocaleString('en')} kg
+                    </Text>
+                  </View>
+                  {w.records > 0 ? (
+                    <View style={styles.histBest} accessible accessibilityLabel={plural(w.records, 'new best', 'new bests')}>
+                      <Ionicons name="trophy" size={14} color={kinds.gym.text} />
+                      <Text style={[styles.num, { color: kinds.gym.text }]}>{w.records}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              ))
+            )}
+          </Panel>
         </Column>
         <Column span={4}>
           <Panel span={4} index={1} title="Weekly plan" subtitle={`${plural(perWeek, 'session')} a week`}>
@@ -352,28 +375,6 @@ export function GymPage() {
                 </View>
               );
             })}
-          </Panel>
-          <Panel span={4} index={2} title="History" subtitle="Your last workouts">
-            {history.length === 0 ? (
-              <Empty>Your workouts show here once you tick off a set.</Empty>
-            ) : (
-              history.map((w, i) => (
-                <View key={w.date} style={[styles.histRow, i > 0 && styles.rule]}>
-                  <View style={styles.flex}>
-                    <Text style={styles.planName}>{w.sessionName}</Text>
-                    <Text style={text.rowMeta}>
-                      {friendlyDate(w.date, today)} · {plural(w.sets, 'set')} · {Math.round(w.volume).toLocaleString('en')} kg
-                    </Text>
-                  </View>
-                  {w.records > 0 ? (
-                    <View style={styles.histBest} accessible accessibilityLabel={plural(w.records, 'new best', 'new bests')}>
-                      <Ionicons name="trophy" size={14} color={kinds.gym.text} />
-                      <Text style={[styles.num, { color: kinds.gym.text }]}>{w.records}</Text>
-                    </View>
-                  ) : null}
-                </View>
-              ))
-            )}
           </Panel>
           <Panel span={4} index={3} title="Personal records" subtitle="Your heaviest set of each lift">
             {prs.length === 0 ? (

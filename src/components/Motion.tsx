@@ -110,6 +110,22 @@ export function keyboardFocus(e: unknown): boolean {
   }
 }
 
+/**
+ * Enter for a link on the web. React Native Web leaves a role="link" element's Enter to the browser's own click,
+ * and an <a> without an href never sends one, so every link-styled control would ignore the keyboard. Spread the
+ * result onto the Pressable; it is empty off the web and for anything that is not a link.
+ */
+export function linkKeys(link: boolean, onPress?: () => void): object {
+  if (Platform.OS !== 'web' || !link || !onPress) return {};
+  return {
+    onKeyDown: (e: { nativeEvent?: { key?: string; repeat?: boolean }; preventDefault?: () => void }) => {
+      if (e.nativeEvent?.key !== 'Enter' || e.nativeEvent.repeat) return;
+      e.preventDefault?.();
+      onPress();
+    },
+  };
+}
+
 /** Press feedback: a 3% squeeze in 120ms from press-in, so the tap feels answered before the finger lifts, and
  *  optionally a pressed colour that fades in under the content. Under reduced motion the squeeze is skipped and
  *  the fade stays. On Android a keyboard or D-pad focus draws a 2px ring in the text colour (the web uses
@@ -204,6 +220,7 @@ export function Press({
       accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
       accessibilityActions={accessibilityActions}
       onAccessibilityAction={onAccessibilityAction}
+      {...linkKeys(accessibilityRole === 'link' && !disabled, press)}
     >
       <Animated.View style={[style, animated]}>
         {desktop ? (

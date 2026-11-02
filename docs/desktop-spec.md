@@ -88,7 +88,8 @@ What we do not take, and why (the standing rules):
 | 1280 and wider          | The desktop shell, **comfortable**: the sidebar starts expanded and docked, and the content moves over for it. Collapsing it to the rail gives the content the room. Shell inset 16, page padding 32, gutters 20, panel padding 20, title 38/44.                                                                                                   |
 | content wider than 1440 | The grid stops at 1440 dp and sits centred in the space right of the sidebar, so lines and panels never stretch past what the eye can follow.                                                                                                                                                                                                      |
 
-- The switch uses `useWindowDimensions()` with a 24 dp band so a window dragged across the line does not flicker: it enters the shell at 1024 and leaves it below 1000.
+- The switch uses `useWindowDimensions()` with a 24 dp band so a window dragged across the line does not flicker: it enters the shell at 1024 and leaves it below 1000. On a phone the switch is a constant and never listens to the window's size.
+- A window that starts wide opens on Overview. Crossing the line keeps the page where it can: a desktop page the phone does not have stands in as its phone equivalent (Overview, Calendar, Music, Settings and Your week as Today; Groceries as the Library), and going wide again returns to the desktop page that was open. What is open inside a page (a half-typed form, a running focus timer, a review) does not survive the crossing yet, because the phone and the desktop are two navigators; the Windows app can only cross it by zooming.
 - The docked or collapsed choice is remembered for comfortable windows only, under a new key `routine.desktop.v1` (`{ sidebar: 'expanded' | 'collapsed' }`). No existing key or shape changes. Compact windows always start with the rail.
 - The Windows build sets the window's minimum to 1024 x 680, so the desktop app never shows the phone layout. A browser window can still go narrow and gets the phone app.
 - Height: every page scrolls in the content area; the sidebar and the top bar stay put. Below 760 dp of height the sidebar's "Needs you" block shows fewer rows (section 5).
@@ -228,9 +229,9 @@ Everything else that is a page action (Your week, Share list, Add session) is a 
 
 **[ref1]**, every page: the title (the look's title face; 38/44 comfortable, 34/40 compact; tracking from the look's title token) and, 6 dp under it, one or two lines of facts in body 16 muted, with the figures set in body medium and text ink. Secondary actions sit on the right, bottom-aligned with the subtitle (40 dp glass buttons, 8 apart). The header's top is 24 dp under the top bar's controls; the grid starts 24 dp under the subtitle.
 
-The subtitle is a sentence of real facts, never a slogan. When there is nothing to say yet, it says what the page is for ("Jot down anything. Put it on a day when you're ready.", the phone's Inbox line).
+The subtitle is a sentence of real facts, never a slogan. When there is nothing to say yet, it says what the page is for ("Jot down anything. Put it on a day when you're ready.", the phone's Inbox line). A count of nothing is said in words ("Nothing planned this week"), never as a zero figure.
 
-On Pine the canopy slab is drawn behind the header as it is on the phone (section 10); nothing moves because of it.
+The title and the subtitle keep to a 720 dp measure, so they never run under the header art at the right; the actions stay at the right edge. The shell draws the header art between the world and the page (`HeaderArt.tsx`): Pine's canopy slab behind every page header, Paper's mountains behind the Overview and Today headers (section 10). Nothing in the header moves because of it.
 
 ---
 
@@ -238,15 +239,17 @@ On Pine the canopy slab is drawn behind the header as it is on the phone (sectio
 
 **Grid.** 12 columns in the content box (1096 dp at 1440 with the sidebar docked; 936 at 1280; about 890 at 1024 with the rail). Gutters 20 (16 compact). Each page below gives spans. A panel whose span would come out narrower than 280 dp takes the whole row instead (or pairs 6 and 6). Rows align their panels' tops; a panel's height is its content's, except that the panels sharing the first row of a page match the tallest.
 
-**Panel anatomy [ref1, ref2].** Pane glass at the look's pane radius. A header row: the title in the look's section-title face, a one-line subtitle in `small` muted under it, and on the right at most one control group (a segmented range, a 36 dp "open" button with `arrow-forward` labelled "Open Gym", or an action chip). 20 dp padding, the content 16 under the header. A panel holds content or a control; a panel with nothing to say is not drawn.
+**Panel anatomy [ref1, ref2].** Pane glass at the look's pane radius. A header row: the title in the look's section-title face, a one-line subtitle in `small` muted under it, and on the right at most one control group (a segmented range, a 36 dp "open" button with `arrow-forward` labelled "Open Gym", or an action chip). The title sits at the panel's top padding whether or not a subtitle follows, and the control on the right is centred on the title's line, so panels side by side share a title baseline. 20 dp padding, the content 16 under the header. A panel holds content or a control; a panel with nothing to say is not drawn.
 
 **Hero.** At most one per page, hero tier (with the bloom on Lavender and Pine), the look's hero radius and shadow.
+
+**Primary button.** The top bar's New, and on a page only the one action a panel exists for (the first-run "Restore from a backup"): a 40 dp pill in `primaryGradient` with `onPrimary` ink. Its hover and focus light darkens a pill with light ink and lightens one with dark ink, so the label keeps its contrast (the gate checks both).
 
 **Rows [ref1 table].** 56 dp for two lines (16 body medium title, 14 muted meta), 44 for one. A 40 dp inset pebble with the kind's glyph in its text ink on the left; the tick ring (26 dp in a 40 target) or a chevron on the right; a visible 36 dp "more" button where the phone has one. Hover light on the row, focus ring on the row. Group headers are 36 dp: the label face on the left, a quiet summary on the right ("Today · 1 of 4 done").
 
 **Chips and switches.** Filter chips 36 tall with 14 padding, captioned by a label (`Micro`), the phone's `FilterRow` at desktop size. The segmented switch is the phone's `Segmented` at 36. Under a coarse pointer (`(pointer: coarse)`, a touch screen laptop) both go back to 44 and every target to 44.
 
-**Charts [ref1, ref2].** Bars 28 wide, radius 8 at the top and square on the baseline, drawn over a full-height track column (`track`, radius 8), filling over 600 ms with a 40 ms stagger, as on the phone's "Your week". Axis labels in 13 caption `label` ink. Gridlines are 1 px in `border`, dashed 4/4. A target or last-week line is 1.5 px dashed in `label` **[ref2]**. Hovering or focusing a column puts a soft column behind it (the hover light, radius 8) and a sheet-glass tooltip above it **[ref1]**: "Saturday · 3 of 4 routines". Every column is focusable with its sentence as its label. No chart carries colour that means nothing: series are kinds.
+**Charts [ref1, ref2].** Bars 28 wide, radius 8 at the top and square on the baseline, drawn over a full-height track column (`track`, radius 8), filling over 600 ms with a 40 ms stagger, as on the phone's "Your week". Axis labels in 13 caption `label` ink, in a 56 dp gutter on the left. Gridlines are 1 px in `border`, dashed 4/4, at the top, the middle and the base. The Gym series scales to at least 9 sets, so a single set is not a full bar. A target or last-week line is 1.5 px dashed in `label` **[ref2]**. Hovering or focusing a column puts a soft column behind it (the hover light, radius 8) and a sheet-glass tooltip above it **[ref1]**: "Saturday · 3 of 4 routines". Every column is focusable with its sentence as its label. No chart carries colour that means nothing: series are kinds.
 
 **Popovers and menus.** Sheet glass with all corners rounded to the look's pane radius, the float shadow, 8 dp padding, 40 dp rows; open with a 160 ms fade and a 4 dp rise, close in 120 ms. Menus follow the menu-button pattern (Enter, Space or Down opens; arrows move; Esc closes and returns focus).
 
@@ -260,12 +263,12 @@ Spans are for comfortable windows; compact rules follow the 280 dp floor in sect
 
 ### 9.1 Overview (the new home)
 
-**Header [ref1, ref3].** Title: the phone's greeting and name, "Good morning, Matthew" ("friend" before a name is set). Subtitle, built from the store: "Monday 2 November · **1 of 11** done · **Stretch** is up next at **21:00** · **2 words** to review." With nothing planned: "Monday 2 November · A clear day so far." With everything done: "Monday 2 November · Every step done. **4 days** in a row." Actions: "Your week" (opens the Your week page) and "Open today".
+**Header [ref1, ref3].** Title: the phone's greeting and name, "Good morning, Matthew" ("friend" before a name is set). Subtitle, built from the store: "Monday 2 November · **1 of 11** done · **Stretch** is up next at **21:00** · **2 words** to review." With nothing planned: "Monday 2 November · A clear day so far." On a new install: "Monday 2 November · Nothing on this computer yet." With everything done: "Monday 2 November · Every step done. **4 days** in a row." Actions: "Your week" (opens the Your week page) and "Open today".
 
 **Row 1.**
 
-- **Up next and Now playing**, hero, span 8 **[ref3's hero with its scrubber; ours inside]**. The left 60%: the meta line "Up next · 21:00 · in 53 min" (or "Happening now · 5 min left", the phone's exact wording, from `upNext`), the step's name in the look's display face at 32/38, its kind and duration in `small`, and two glass buttons: "Tick off" and "Open today". The right 40% is an inset well, **Now playing**: the 64 dp `SoundArt`, the name and its line ("Steady rain on a window"), play or pause and next, and "Open music". With nothing playing: "Nothing playing" and the three focus sounds as chips that start one. Across the whole hero at the bottom, **the day line [ours, from ref3's scrubber]**: a 05:00 to 24:00 axis (13 caption ticks every three hours), each timed step as a trail node at its time (done filled, up next lit, ahead as waypoints, skipped dashed: the trail's own node states and tokens), and a now marker in the `accent` with its time. Hover or focus a node for its name and time; pressing it scrolls Today's trail panel to that step. No timed steps: the day line is not drawn. Everything done: the phone's "Trail complete" hero takes this place.
-- **Needs you**, span 4 **[ref1]**. 56 dp rows, most urgent first: steps still open from earlier today ("Was at 07:00 · still open", with a tick ring), what is happening now or up next within an hour, to-dos for today (tick ring), words to review ("2 words to review", a "Review" glass button), today's gym session if not finished ("Push day · 1 of 9 sets", chevron), groceries to buy ("4 to buy", chevron), the inbox to sort ("1 to sort", chevron). Up to six; "Show all 8" expands in place. Empty: "Nothing needs you right now." The list comes from one new pure function, `needsYou(state, today, now)` in `src/lib`, with tests; the sidebar block and the bell read the same function.
+- **Up next and Now playing**, hero, span 8 **[ref3's hero with its scrubber; ours inside]**. The left 60%: the meta line "Up next · 21:00 · in 53 min" (or "Happening now · 5 min left", the phone's exact wording, from `upNext`), the step's name in the look's display face at 32/38, its kind and duration in `small`, and two glass buttons: "Tick off" and "Open today". The right 40% is an inset well, **Now playing**: the 64 dp `SoundArt`, the name and its line ("Steady rain on a window"), play or pause and next, and "Open music". With nothing playing: "Nothing playing" and the three focus sounds as tiles that start one. Under the buttons, "Then": the next two timed steps with their times. Across the whole hero at the bottom, **the day line [ours, from ref3's scrubber]**: a 44 dp rounded band (the look's `track`; on Pine the slab trough, so its light nodes keep their contrast) from 05:00 to 24:00, the hours already gone tinted again up to now, 13 caption ticks every three hours under it, each timed step as a trail node at its time (done filled, up next lit, ahead as waypoints, skipped dashed: the trail's own node states and tokens; steps closer than 16 dp share one node with their count), and a now marker with its time. Hover or focus a node for its names and times (the tip fades in 120 ms and out 160 ms). No timed steps: the day line is not drawn. Everything done: the phone's "Trail complete" hero takes this place.
+- **Needs you**, span 4 **[ref1]**. 56 dp rows, most urgent first: steps still open from earlier today ("Was at 07:00 · still open", with a tick ring), what is happening now or up next within an hour, to-dos for today (tick ring), words to review ("2 words to review", a "Review" glass button), today's gym session if not finished ("Push day · 1 of 9 sets", chevron), groceries to buy ("4 to buy", chevron), the inbox to sort ("1 to sort", chevron). Up to five; "Show all 8" expands in place. On a compact window the names take two lines. Empty: "Nothing needs you right now." The list comes from one new pure function, `needsYou(state, today, now)` in `src/lib`, with tests; the sidebar block and the bell read the same function.
 
 **Row 2.**
 
@@ -274,7 +277,10 @@ Spans are for comfortable windows; compact rules follow the 280 dp floor in sect
 
 **Row 3.**
 
-- **Your week**, span 8 **[ref1 cash flow chart, ref2 dashed line]**: subtitle "The last 7 days"; on the right a segmented switch, Routines / Gym / Practice. Routines: each day's share of planned routines done (`weekStats().days`), kind routines. Gym: sets logged that day, kind gym. Practice: minutes that day with the daily target as a dashed line, kind language. Today's letter sits in the primary disc, as on the phone. Under the chart, the phone's sentence: "41% of routines done, 2 gym days and 20 min of Chinese practice." Gym sets and practice minutes per day need a small addition to `src/lib/stats.ts` (`weekSeries`), with tests. Before any data: "Your week fills in as you tick things off."
+- **Your week**, span 8 **[ref1 cash flow chart, ref2 dashed line]**: subtitle "The last 7 days"; on the right a segmented switch, Routines / Gym / Practice. Routines: each day's share of planned routines done (`weekStats().days`), kind routines. Gym: sets logged that day, kind gym. Practice: minutes that day with the daily target as a dashed line, kind language. Today's letter sits in the primary disc, as on the phone. Under the chart, the phone's sentence: "41% of routines done, 2 gym days and 20 min of Chinese practice." Gym sets and practice minutes per day need a small addition to `src/lib/stats.ts` (`weekSeries`), with tests. Before any data: "Your week fills in as you tick things off." On Overview a column opens the Your week page.
+
+**First run.** The phone keeps its own copy, so a new install would otherwise open on eight empty panels. Until anything is saved on this computer, Overview shows one hero, "Bring your days across" (export a backup from Settings on the phone and restore it here, or start fresh), with "Restore from a backup" as the primary button and "Add a routine" and "Add a to-do" beside it, and a "Set up the rest" panel with Gym plan, Language practice and Groceries. The sidebar's progress card hides while the day has nothing planned.
+
 - **Groceries to buy**, span 4: today's list by aisle (CheckRows; ticking buys), with "Share" as an action chip. Empty: "Nothing to buy today."
 
 **Row 4.**
@@ -284,20 +290,20 @@ Spans are for comfortable windows; compact rules follow the 280 dp floor in sect
 
 ### 9.2 Today
 
-**Header.** Title "Today" (or the weekday and date for another day: "Tuesday 3 November"). Subtitle: "Monday 2 November · **1 of 11** done · **1 day** in a row". Actions: previous and next day (40 dp control circles, "Previous day", "Next day"), "Back to today" when another day is shown.
+**Header.** Title "Today" (or the weekday and date for another day: "Tuesday 3 November"). Subtitle: "Monday 2 November · **1 of 11** done" (the streak is said once, by the streak pill). A day still to come says "**10** planned". Actions: previous and next day (40 dp control circles, "Previous day", "Next day"), "Back to today" when another day is shown.
 
 **Body.** Span 7: the phone's Today column as it is, on the bare world (glass on glass would make every card an inset): the streak pill, "Today's trail" with its count badge, the trail, the hint pane. Cards stop at 720 dp wide. A day still to come behaves exactly as on the phone. Span 5, stacked: **Month** (the calendar strip opened to its month view, with its marks and moods; a day opens that day here), **Balance** (the three rings), **How was today?** (the DayNote). No floating button: "New" in the top bar adds to the day shown.
 
 ### 9.3 Calendar
 
-**[ref1 week calendar, our data.]** Header: "Calendar". Subtitle: "26 October to 1 November · **23** things planned · **9** done so far". Actions: a Week / Month segmented switch, then previous, "This week", next.
+**[ref1 week calendar, our data.]** Header: "Calendar". Subtitle: "26 October to 1 November · **23** things planned · **9** done so far" (grocery lines are not counted as things; an empty week says "Nothing planned this week"). Actions: a Week / Month segmented switch, then previous, "This week", next.
 
-**Week.** One pane, span 12, filling the window's height under the header; the time grid scrolls inside it under a fixed day header, and opens scrolled to two hours before now.
+**Week.** One pane, span 12, filling the window's height under the header; the time grid scrolls inside it under a fixed day header, and opens scrolled to two hours before now, or higher, to the top of a block that would otherwise be cut by the pane's edge.
 
 - Day header (64 dp): the weekday in the 13 label face and the date at 20 tabular; today's date sits in a 32 dp disc of `node` with `onNode` ink **[ref1's green circle]**.
-- An all-day lane (up to three rows, then "2 more"): anytime routines ("Drink water · 3 of 8"), the gym session ("Push day"), practice ("Chinese · 15 min"), groceries ("Groceries · 4"), dated to-dos.
+- An all-day lane (up to two rows, then "2 more", which opens that day): anytime routines ("Drink water · 3 of 8"), the gym session ("Push day"), practice ("Chinese · 15 min"), groceries ("Groceries · 4"), dated to-dos.
 - The grid: 05:00 to 24:00, 48 dp an hour (44 compact), a 56 dp gutter with 24-hour times ("07:00") in 13 caption `label` ink, hour lines 1 px in `border`. Days are equal columns.
-- Blocks: timed routines from their start for their duration (15 min when none is set), inset 3 dp in their column, inset glass tinted with the kind's soft wash, the look's inset radius, an 8 dp kind dot before the title (14 body medium) and "21:00 · 10 min" under it (13). No side stripe. Done blocks recede (faint ink, a line through the title). Overlapping blocks share the column side by side.
+- Blocks: timed routines from their start for their duration (15 min when none is set), inset 3 dp in their column, inset glass tinted with the kind's soft wash, the look's inset radius, an 8 dp kind dot before the title (14 body medium) and "21:00 · 10 min" under it (13). No side stripe. Done blocks recede (faint ink, a line through the title). Overlapping blocks cascade: each later one is indented 12 dp and sits raised above the one it overlaps (sheet glass with the kind's wash and the float shadow), so every title keeps the column's width. Blocks that start within 30 minutes of each other share the column side by side instead.
 - The now line **[ref1]**: 2 px in the `accent` across today's column, with an 8 dp dot at the gutter.
 - Clicking a block opens the routine's form; a block 40 dp or taller has its own tick ring. Clicking an empty slot opens "New routine" with that start time and that weekday filled in. Dragging to move is not in this step: moving a weekly routine needs per-day changes the data does not have yet.
 - Legend under the pane **[ref1]**: Routines, Gym, Language, Groceries, To-dos, each with its kind dot.
@@ -308,7 +314,7 @@ Spans are for comfortable windows; compact rules follow the 280 dp floor in sect
 
 ### 9.4 Inbox
 
-**[ref2 board, ref1 row dropdown.]** Header: "Inbox", the phone's line as subtitle, or "**1** to sort · **2** planned" once there is something. Three columns, span 4 each, each a pane:
+**[ref2 board, ref1 row dropdown.]** Header: "Inbox", the phone's line as subtitle, or "**1** to sort · **2** planned" once there is something. Three columns, span 4 each, each a pane, all as tall as the tallest, so the board reads as one:
 
 - **To sort**: the labelled composer at the top ("Add to inbox", the add disc at its end), then the rows.
 - **Planned**: grouped by day ("Today", "Tomorrow", "Saturday 7 November").
@@ -320,13 +326,13 @@ Each row: the 24 dp check box, the title, the meta, a 36 dp "Plan" menu button (
 
 **[ref2 item hero.]** Header: "Gym". Subtitle: "**Push day** today · **1 of 9** sets · 2 sessions a week". Action: "Add session".
 
-Span 8: **Today**, the hero: the session's name, "Today · 1 of 9 sets", the bar, the hint, then each exercise on one row (name and plan line, the weight stepper, the set bubbles; at this width they share the row), "New best" pills where they belong. Rest day: "Rest day", "Next: Pull day on Wednesday", and "Do a session anyway" (pick one). Span 4, stacked: **Weekly plan** (seven 44 dp rows, rest days in muted), **History** (the last five workouts), **Personal records** (`personalRecords`, top five). No plan: one pane with the starter plans, as on the phone.
+Span 8: **Today**, the hero, and under it **History** (the last five workouts), so the two columns end close together: the session's name, "Today · 1 of 9 sets", the bar, the hint, then each exercise on one row (name and plan line, the weight stepper, the set bubbles; at this width they share the row), "New best" pills where they belong. Rest day: "Rest day", "Next: Pull day on Wednesday", and "Do a session anyway" (pick one). Span 4, stacked: **Weekly plan** (seven 44 dp rows, rest days in muted), **Personal records** (`personalRecords`, top five). No plan: one pane with the starter plans, as on the phone.
 
 ### 9.6 Language
 
 Header: the language's title ("Chinese"), subtitle "**2** words · **5 of 15** min today · **1 day** in a row", action "Add a word". With several languages a segmented switch under the header picks one (a menu past four) **[ref1 sub-view tabs as our Segmented]**.
 
-Span 8: **Today's practice** (the minutes, the bar, +5 / +10 / +15, the daily target switch), then **Review**: the flashcard at desktop size (the word in `fonts.word`), Space or Enter turns it, 1, 2 and 3 grade Again, Good and Easy while the card has focus, and the three buttons say so. Span 4: **Focus** (the timer: 15 / 25, the clock, Start), **My words** (searchable list with a count). No language yet: the phone's chooser, at page width.
+Span 8: **Today's practice** (the minutes, the bar, +5 / +10 / +15, the daily target switch), then **Review**: the flashcard at desktop size (the word in `fonts.word`), Space or Enter turns it, 1, 2 and 3 grade Again, Good and Easy while the card has focus, and the three buttons say so, then **Your languages**. Span 4: **Focus** (the timer: 15 / 25, the clock, Start), **My words** (searchable list with a count). No language yet: the phone's chooser, at page width.
 
 ### 9.7 Library (routines)
 
@@ -342,7 +348,7 @@ Now Playing as a page. Header: "Music", subtitle "**Soft Rain** is playing · **
 
 ### 9.10 Settings (a page)
 
-Header: "Settings", subtitle "Your name, your look and your data." One column, span 8: **Your name** (the labelled field), **Look** (the four swatch cards in one row), **Phone calendar** ("Available in the Android app."), **Backup and restore**, **This computer**: "Your things are saved on this computer. The phone app keeps its own copy; use Backup and restore to move everything across." (until there is sync, this sentence must be on screen), **Keyboard shortcuts** (the list in section 13).
+Header: "Settings", subtitle "Your name, your look and your data." Span 8: **Your name** (the labelled field), **Look** (the four swatch cards in one row), **Phone calendar** ("Available in the Android app."), **Backup and restore**. Span 4, beside them: **This computer**: "Your things are saved on this computer. The phone app keeps its own copy; use Backup and restore to move everything across." (until there is sync, this sentence must be on screen), **Keyboard shortcuts** (the list in section 13, each key over what it does). A browser keeps Ctrl+N and Ctrl+1 to 9 for itself, so those two lines show only in the Windows app.
 
 ### 9.11 Your week (a page)
 
@@ -378,8 +384,8 @@ How each look reads at 1440 **[ours]**:
 
 - **Lavender.** The azure side of the world sits behind the sidebar, the rose pool behind the right-hand column; the two orbs circle the content's centre. White type throughout; the violet "New" bead with its rose glow is the one saturated object in the top bar; the Overview hero gets the bloom and the rose underglow.
 - **Stone.** The window is top left, so the brightest light lands on the sidebar and the beams cross the content down to the right; every shadow falls down and right, so the sidebar throws its shadow onto the content. Thin Light titles at 38; champagne only on "New", the drop, ticks, the trail and the progress bar.
-- **Paper.** A light page: ink type, milk glass, colour only for kinds, the streak and errors. The mountains sit behind the right half of the Overview and Today headers (header art only, wide version), drifting slower than the content as on the phone; the "New" pill and ticks are ink.
-- **Pine.** The canopy slab is drawn behind every page header, from the sidebar's right gap to the window's right edge, flush with the top, so the top bar sits on the slab: breadcrumbs in `onSlabMuted`, the search pill and buttons as slab troughs, the moon glow behind the bell and "New" (as it sits behind the phone's top-right buttons). Its rounded 28 dp foot with the mint rim ends under the subtitle; the pines stand at the bottom right, at most 180 dp tall.
+- **Paper.** A light page: ink type, milk glass, colour only for kinds, the streak and errors. The mountains (the phone's header art) sit at the top right behind the Overview and Today headers, 600 dp wide (520 compact, at most 45% of the window), their peak 24 dp under the window's top, fading out over the last 96 dp above the header's foot so no panel sits on them; they drift up at half the scroll speed and fade as the header leaves. The "New" pill and ticks are ink.
+- **Pine.** The canopy slab is drawn behind every page header, from the sidebar's right gap to the window's right edge, flush with the top, so the top bar sits on the slab: breadcrumbs in `onSlabMuted`, the search pill and buttons as slab troughs, the moon glow behind the bell and "New" (as it sits behind the phone's top-right buttons). Its rounded 28 dp foot with the mint rim ends 16 dp under the subtitle; the pines stand at the bottom right, at most 180 dp tall. As the page scrolls the slab follows the header up, then stays as a band behind the top bar. The moon glow drifts with the look's moon light.
 
 ---
 
@@ -400,7 +406,7 @@ The three ways to fill a wide window with portrait art, and why two are rejected
 - `<look>-bg-wide.jpg`, 2880 x 1800 (16:10, twice a 1440 x 900 window), composed for landscape: Lavender with azure on the left and the rose pool right of centre; Stone with the window top left and diagonal beams crossing to the lower right, the floor bounce along the bottom; Paper with the dawn glow top right, the sage bounce bottom left and the mist band across the upper third; Pine with the moon glow top right and the aurora band low across, the pines kept to the canopy slab so none stand behind panels.
 - `<look>-bg-wide-blur.jpg`, the lens, 1920 x 1200 with sigma 24: 1.33 px per dp, the same blur in dp as the phone's lens (540 px for 400 dp).
 - A `wide` block per look in `assets/art/looks.json`: its frame (1440 x 900 dp), its scrim and veil, and its light layers with boxes measured in frame **heights** (so a light keeps its size as the window widens), anchors and motion amplitudes for the landscape frame. The light clock and the periods do not change.
-- Paper's `paper-header-wide.png` (and its blurred copy for the lens) and Pine's `pine-header-wide.png` for the slab, right-anchored.
+- Header art: no separate wide pictures were needed. Paper's mountains use the phone's header art, anchored top right and masked to fade above the header's foot; Pine's slab is drawn (its gradient, rim, moon glow) with the phone's pines art at the bottom right. Glass does not show the mountains through it: the lens is the world's.
 - Other window shapes cover-crop the 16:10 master with an anchor per look, chosen so the world's signature stays in frame: Lavender centre, Stone top left (the window), Paper top right (the sun), Pine top right (the moon).
 
 `Ambience`, `GlassLens` and the light field pick the wide set whenever the shell is wide; the phone keeps its portrait set, untouched. Each wide master is about 0.6 MB and its lens about 0.15 MB.

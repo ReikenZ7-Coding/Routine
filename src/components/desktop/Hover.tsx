@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useTheme } from '../../theme';
-import { EASE_OUT, FADE, keyboardFocus, useReduceMotion } from '../Motion';
+import { EASE_OUT, FADE, keyboardFocus, linkKeys, useReduceMotion } from '../Motion';
 
 const IN = { duration: 120, easing: EASE_OUT, ...FADE };
 const OUT = { duration: 160, easing: EASE_OUT, ...FADE };
@@ -21,7 +21,8 @@ const OUT = { duration: 160, easing: EASE_OUT, ...FADE };
 export interface HoverProps {
   onPress?: () => void;
   disabled?: boolean;
-  /** Off while the control is hidden (a faded-out sidebar section), so Tab skips it. */
+  /** Off while the control is hidden (a faded-out sidebar section), so Tab skips it (tabindex -1: React Native
+   *  Web's Pressable ignores `focusable`). */
   focusable?: boolean;
   style?: StyleProp<ViewStyle>;
   outerStyle?: StyleProp<ViewStyle>;
@@ -31,6 +32,8 @@ export interface HoverProps {
   squeeze?: boolean;
   /** Draw the hover light (off when the surface draws its own, e.g. Glass). */
   light?: boolean;
+  /** The hover light's fill, when the look's glass hover would not show (on the primary "New" pill). */
+  lightFill?: string;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityRole?: AccessibilityRole;
@@ -40,7 +43,8 @@ export interface HoverProps {
   /** Extra ARIA attributes for the web (aria-current, aria-haspopup, aria-expanded...). */
   aria?: Record<string, string | boolean | undefined>;
   onHoverChange?: (on: boolean) => void;
-  onFocusChange?: (on: boolean) => void;
+  /** Focus in and out; `keyboard` says whether the focus came from the keyboard (not a click). */
+  onFocusChange?: (on: boolean, keyboard: boolean) => void;
   children: ReactNode;
 }
 
@@ -53,6 +57,7 @@ export function Hover({
   radius,
   squeeze = false,
   light = true,
+  lightFill,
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole = 'button',
@@ -80,7 +85,6 @@ export function Hover({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      focusable={focusable}
       onHoverIn={() => {
         hover.set(withTiming(1, IN));
         onHoverChange?.(true);
@@ -90,12 +94,13 @@ export function Hover({
         onHoverChange?.(false);
       }}
       onFocus={(e) => {
-        if (keyboardFocus(e)) focus.set(withTiming(1, IN));
-        onFocusChange?.(true);
+        const keyboard = keyboardFocus(e);
+        if (keyboard) focus.set(withTiming(1, IN));
+        onFocusChange?.(true, keyboard);
       }}
       onBlur={() => {
         focus.set(withTiming(0, OUT));
-        onFocusChange?.(false);
+        onFocusChange?.(false, false);
       }}
       onPressIn={() => {
         press.set(withTiming(1, IN));
@@ -112,13 +117,21 @@ export function Hover({
       accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
       role={role}
       nativeID={nativeID}
+      {...(focusable ? null : { tabIndex: -1 })}
+      {...linkKeys((role ?? accessibilityRole) === 'link' && !disabled, onPress)}
       {...(aria as object)}
     >
       <Animated.View style={[style, squeeze ? squeezeStyle : null]}>
         {light && (
           <Animated.View
             pointerEvents="none"
-            style={[styles.layer, { borderRadius: r, backgroundColor: hl.fill, borderWidth: 1, borderColor: hl.rim }, lightStyle]}
+            style={[
+              styles.layer,
+              lightFill
+                ? { borderRadius: r, backgroundColor: lightFill }
+                : { borderRadius: r, backgroundColor: hl.fill, borderWidth: 1, borderColor: hl.rim },
+              lightStyle,
+            ]}
           />
         )}
         <Animated.View

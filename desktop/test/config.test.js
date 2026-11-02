@@ -48,3 +48,11 @@ test('the preload carries the same constants it cannot import', () => {
   const channel = /LOOK_CHANNEL = '([^']+)'/.exec(main)[1];
   assert.ok(preload.includes(`LOOK_CHANNEL = '${channel}'`));
 });
+
+test('the window never goes narrower than the page width where the app draws its desktop layout', () => {
+  const context = fs.readFileSync(path.join(repo, 'src', 'components', 'desktop', 'context.ts'), 'utf8');
+  const min = Number(/export const DESKTOP_MIN = (\d+);/.exec(context)[1]);
+  assert.equal(config.DESKTOP_MIN, min);
+  assert.ok(config.MIN_SIZE.width >= min);
+  assert.ok(config.SMOKE_SIZE.width >= min);
+});

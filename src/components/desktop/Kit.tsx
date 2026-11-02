@@ -4,12 +4,39 @@
 // focus, the global focus ring on top), and each draws only from the look's tokens.
 import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from 'expo-router';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 import { type Theme, useStyles, useTheme } from '../../theme';
-import { Glass } from '../Glass';
-import { FadeSwap, Pop, SelectFade } from '../Motion';
+import { Glass, OnCanopy } from '../Glass';
+import { EASE_OUT, FADE, FadeSwap, Pop, SelectFade } from '../Motion';
 import { Hover } from './Hover';
+import { dialogOpen } from './Popover';
+
+/**
+ * A tooltip's or hover light's life: `value` fades in over 120 ms; when it turns to null, the last value stays
+ * drawn while it fades out over 160 ms, then goes. Returns what to draw (null once gone) and its opacity style.
+ * Pass a string (an id or the label itself), so a re-render with the same value changes nothing.
+ */
+export function useFade(value: string | null) {
+  const v = useSharedValue(value ? 1 : 0);
+  const [shown, setShown] = useState(value);
+  useEffect(() => {
+    if (value) {
+      setShown(value);
+      v.set(withTiming(1, { duration: 120, easing: EASE_OUT, ...FADE }));
+    } else
+      v.set(
+        withTiming(0, { duration: 160, easing: EASE_OUT, ...FADE }, (done) => {
+          'worklet';
+          if (done) scheduleOnRN(setShown, null);
+        }),
+      );
+  }, [v, value]);
+  const style = useAnimatedStyle(() => ({ opacity: v.get() }));
+  return [shown, style] as const;
+}
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -94,12 +121,17 @@ export function IconButton({
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
+  // On Pine's slab (a page header's actions) the disc is a slab trough, like the glass buttons beside it.
+  const slab = useContext(OnCanopy) ? colors.material.canopy?.inset : undefined;
+  const disc = slab
+    ? { backgroundColor: slab.fill, borderWidth: 1, borderColor: slab.border, borderTopColor: slab.borderTop }
+    : styles.insetBox;
   return (
     <Hover
       onPress={onPress}
       disabled={disabled}
       squeeze={!bare}
-      style={[styles.round, { width: size, height: size, borderRadius: size / 2 }, !bare && styles.insetBox, disabled && styles.off]}
+      style={[styles.round, { width: size, height: size, borderRadius: size / 2 }, !bare && disc, disabled && styles.off]}
       accessibilityLabel={label}
       aria={aria}
     >
@@ -254,7 +286,7 @@ export function usePageKeys(keys: Record<string, () => void>) {
   useEffect(() => {
     if (!focused || Platform.OS !== 'web' || typeof document === 'undefined') return;
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || dialogOpen()) return;
       const run = latest.current[e.key];
       if (run) {
         e.preventDefault();

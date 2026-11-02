@@ -11,7 +11,7 @@ import { Button } from '../Button';
 import { Field, Input } from '../Field';
 import { GroceryForm } from '../GroceryForm';
 import { type RoutineFields, RoutineForm } from '../RoutineForm';
-import { Sheet } from '../Sheet';
+import { Sheet, SheetFooter } from '../Sheet';
 import { WordForm } from '../WordForm';
 import type { ShellPanel } from './api';
 import { longDate } from './nav';
@@ -71,7 +71,9 @@ export function Panels({
             accessibilityLabel="New to-do"
           />
         </Field>
-        <Button label={`Add for ${onLabel}`} onPress={addTodo} style={styles.save} />
+        <SheetFooter>
+          <Button label={`Add for ${onLabel}`} onPress={addTodo} style={styles.save} />
+        </SheetFooter>
       </Sheet>
       <RoutineForm
         visible={panel === 'routine'}

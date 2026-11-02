@@ -1,10 +1,11 @@
 'use strict';
 
 // `Symphony OS.exe --smoke-test=<report.json>` proves a build works end to end, then quits: the app renders from
-// app://symphony/, a deep route loads, files and byte ranges are served, the page has no Node access, nothing
-// trips the Content-Security-Policy, the look reaches the title bar, and localStorage survives a restart (run it
-// twice: the second report's storage.before is the first one's storage.now). It writes a screenshot next to the
-// report. main.js points the data folder at a throwaway place first, so real saved data is never touched.
+// app://symphony/ in its desktop layout, a deep route loads, files and byte ranges are served, the page has no Node
+// access, nothing trips the Content-Security-Policy, the look reaches the title bar, and localStorage survives a
+// restart (run it twice: the second report's storage.before is the first one's storage.now). It writes a
+// screenshot next to the report. main.js points the data folder at a throwaway place first, so real saved data is
+// never touched, and gives the page a 1280 x 800 desktop size whatever the runner's screen.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -46,6 +47,8 @@ async function waitFor(wc, expression, ms) {
 }
 
 const RENDERED = `(() => { const r = document.getElementById('root'); return !!r && r.children.length > 0 && document.body.innerText.trim().length > 0; })()`;
+/** The desktop shell's sidebar: the app drew its desktop layout, not the phone's. */
+const SHELL = `!!document.querySelector('[role="navigation"][aria-label="Sections"]')`;
 
 function findFile(dir, test) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -104,10 +107,13 @@ async function run({ win, reportFile, webRoot, origin }) {
   try {
     await loaded(wc);
     check('homeRendered', await waitFor(wc, RENDERED, 45000));
+    check('desktopLayout', await waitFor(wc, SHELL, 15000));
     await delay(2500);
 
     const page = await wc.executeJavaScript(`(() => ({
       href: location.href,
+      origin: location.protocol + '//' + location.host,
+      path: location.pathname,
       title: document.title,
       size: [innerWidth, innerHeight],
       text: document.body.innerText.replace(/\\s+/g, ' ').trim().slice(0, 240),
@@ -116,7 +122,9 @@ async function run({ win, reportFile, webRoot, origin }) {
       bridge: typeof window.symphonyDesktop === 'object' ? window.symphonyDesktop.platform : null,
     }))()`);
     report.page = page;
-    check('servedFromAppOrigin', page.href === `${origin}/`, page.href);
+    // A desktop-sized window opens on Overview, the desktop's home; a narrower one on Today.
+    check('servedFromAppOrigin', page.origin === origin && ['/', '/overview'].includes(page.path), page.href);
+    check('desktopSize', page.size[0] >= 1024, page.size);
     check('noNodeInPage', !page.nodeInPage);
     check('desktopBridge', page.bridge === process.platform, page.bridge);
 
@@ -154,7 +162,8 @@ async function run({ win, reportFile, webRoot, origin }) {
     check('missingFileIs404', served.missing === 404, served.missing);
     if (audioPath) check('audioByteRanges', served.range.status === 206 && served.range.bytes === 100, served.range);
 
-    // The look reaches the frame: through the saved settings (no page code involved), then through the bridge.
+    // The look reaches the frame: through the saved settings (no page code involved), then through the bridge,
+    // which also cancels the preload's pending re-reads of the saved settings (they still say paper here).
     const original = await wc.executeJavaScript(`localStorage.getItem('${SETTINGS_KEY}')`);
     const startLook = nativeTheme.themeSource;
     await wc.executeJavaScript(`(() => {
@@ -166,7 +175,8 @@ async function run({ win, reportFile, webRoot, origin }) {
     await delay(900);
     const afterPaper = nativeTheme.themeSource;
     await wc.executeJavaScript(`window.symphonyDesktop.setLook('pine')`);
-    await delay(400);
+    // Past the preload's last re-read (1500 ms after the keyup), so a stale read would show here.
+    await delay(1200);
     const afterPine = nativeTheme.themeSource;
     await wc.executeJavaScript(`(() => {
       const original = ${JSON.stringify(original)};
@@ -180,7 +190,7 @@ async function run({ win, reportFile, webRoot, origin }) {
     const navigated = loaded(wc);
     wc.loadURL(`${origin}/library`).catch(() => {});
     await navigated;
-    check('deepRouteRendered', await waitFor(wc, RENDERED, 30000));
+    check('deepRouteRendered', (await waitFor(wc, RENDERED, 30000)) && (await waitFor(wc, SHELL, 15000)));
     await delay(2000);
     report.deep = await wc.executeJavaScript(
       `({ path: location.pathname, text: document.body.innerText.replace(/\\s+/g, ' ').trim().slice(0, 240) })`,

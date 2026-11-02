@@ -8,7 +8,21 @@
 //   keyboard lift) is fed to the glass as scroll, so the blurred world inside lines up at every frame.
 // - The keyboard: the sheet lifts by as much as there is room above it, and the rest shrinks the scroll.
 // - Reduced motion: the sheet fades in and out instead of sliding; the dim always fades.
-import { type ComponentRef, createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Children,
+  type ComponentRef,
+  cloneElement,
+  createContext,
+  isValidElement,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   type LayoutChangeEvent,
   Modal,
@@ -37,6 +51,7 @@ import { type Theme, useStyles, useTheme } from '../theme';
 import { Button } from './Button';
 import { useDesktop } from './desktop/context';
 import { Hover } from './desktop/Hover';
+import { Catcher, useFocusBack } from './desktop/Popover';
 import { Glass, GlassScrollContext } from './Glass';
 import { useKeyboardHeight } from './glass/keyboard';
 import { EASE_OUT, FADE, useReduceMotion } from './Motion';
@@ -170,6 +185,31 @@ const SIDE_TRAVEL = 24;
  * reduced motion) and leaves in 220 ms. Esc closes it (the Modal answers Esc with onRequestClose) and focus is held
  * inside while it is open.
  */
+/** Set by the desktop's side panel: where a form's primary action goes. */
+const FooterContext = createContext<((node: ReactNode) => void) | null>(null);
+const NO_MARGIN = { marginTop: 0 };
+
+/**
+ * A form's primary action. On the phone it stays where it is written, the last thing in the sheet. In the desktop's
+ * side panel it is drawn in the panel's footer, pinned under the fields, so it is on screen whatever the window's
+ * height (its top margin, which spaced it from the fields, goes).
+ */
+export function SheetFooter({ children }: { children: ReactNode }) {
+  const set = useContext(FooterContext);
+  useLayoutEffect(() => {
+    set?.(
+      Children.map(children, (c) => (isValidElement<{ style?: unknown }>(c) ? cloneElement(c, { style: [c.props.style, NO_MARGIN] }) : c)),
+    );
+  });
+  useEffect(() => () => set?.(null), [set]);
+  return set ? null : <>{children}</>;
+}
+
+/** The side panel's body fades into its header and footer only on a side that has more to scroll to. */
+function edgeMask(top: boolean, bottom: boolean): string {
+  return `linear-gradient(180deg, ${top ? 'transparent 0px, #000 16px' : '#000 0px'}, ${bottom ? '#000 calc(100% - 16px), transparent 100%' : '#000 100%'})`;
+}
+
 function SidePanel({
   title,
   onClose,
@@ -237,18 +277,29 @@ function SidePanel({
 
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.get() }));
   const panelStyle = useAnimatedStyle(() => ({ opacity: fade.get(), transform: [{ translateX: travel.get() }] }));
+  // Focus goes back to what opened the panel once it has left the page.
+  useFocusBack();
+
+  // The form's primary action, pinned under the scrolling fields (SheetFooter).
+  const [footer, setFooter] = useState<ReactNode>(null);
+  // The body's edge fades follow the scroll: none at rest at the top, none once the end is in view.
+  const edges = useRef({ y: 0, view: 0, content: 0, mask: '' });
+  const fadeEdges = (patch: Partial<{ y: number; view: number; content: number }>) => {
+    const e = Object.assign(edges.current, patch);
+    const mask = edgeMask(e.y > 1, e.y + e.view < e.content - 1);
+    const view = scrollRef.current as unknown as { getScrollableNode?: () => unknown } | null;
+    const node = (view?.getScrollableNode?.() ?? view) as { style?: CSSStyleDeclaration } | null;
+    if (mask === e.mask || !node?.style) return;
+    e.mask = mask;
+    node.style.setProperty('mask-image', mask);
+    node.style.setProperty('-webkit-mask-image', mask);
+  };
 
   return (
     <Modal visible transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.sideRoot}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, dimStyle]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-            style={StyleSheet.absoluteFill}
-            onPress={onClose}
-            focusable={false}
-          />
+          <Catcher style={StyleSheet.absoluteFill} onPress={onClose} />
         </Animated.View>
         <Animated.View
           role="dialog"
@@ -273,13 +324,20 @@ function SidePanel({
               <ScrollView
                 ref={scrollRef}
                 style={styles.flex}
-                contentContainerStyle={styles.sideContent}
+                contentContainerStyle={[styles.sideContent, footer ? styles.sideContentAbove : null]}
                 keyboardShouldPersistTaps="handled"
+                scrollEventThrottle={16}
+                onScroll={(e) => fadeEdges({ y: e.nativeEvent.contentOffset.y })}
+                onLayout={(e) => fadeEdges({ view: e.nativeEvent.layout.height })}
+                onContentSizeChange={(_w, h) => fadeEdges({ content: h })}
               >
                 <View ref={contentRef}>
-                  <SheetContext.Provider value={controls}>{children}</SheetContext.Provider>
+                  <FooterContext.Provider value={setFooter}>
+                    <SheetContext.Provider value={controls}>{children}</SheetContext.Provider>
+                  </FooterContext.Provider>
                 </View>
               </ScrollView>
+              {footer ? <View style={[styles.sideFoot, { borderTopColor: colors.border }]}>{footer}</View> : null}
             </Glass>
           </GlassScrollContext.Provider>
         </Animated.View>
@@ -550,4 +608,6 @@ const makeStyles = ({ colors, fonts }: Theme) =>
     sideHead: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingLeft: 24, paddingRight: 12, paddingTop: 8 },
     sideClose: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
     sideContent: { paddingHorizontal: 24, paddingBottom: 24 },
+    sideContentAbove: { paddingBottom: 16 },
+    sideFoot: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 20, borderTopWidth: 1 },
   });

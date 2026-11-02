@@ -124,6 +124,13 @@ export function friendlyDate(key: string, today: string): string {
   return `${WEEKDAY_SHORT[d.getDay()]} ${d.getDate()} ${month}`;
 }
 
+/** friendlyDate inside a sentence ("Done today", "Next: Pull day, Mon 9 Nov"): only Today and Tomorrow are lowercased;
+ *  weekday and month names keep their capitals. */
+export function friendlyDateInline(key: string, today: string): string {
+  const s = friendlyDate(key, today);
+  return s === 'Today' || s === 'Tomorrow' ? s.toLowerCase() : s;
+}
+
 /** A plain-text shopping list, grouped by aisle, ready to send to someone. */
 export function groceryListText(items: GroceryItem[], title = 'Shopping list'): string {
   const groups = new Map<string, GroceryItem[]>();

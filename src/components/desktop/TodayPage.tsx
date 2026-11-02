@@ -9,7 +9,6 @@ import { dayPlan, nextUp } from '../../lib/day';
 import { toggleItem } from '../../lib/inbox';
 import { moodOf } from '../../lib/journal';
 import { dueWords } from '../../lib/language';
-import { plural } from '../../lib/plural';
 import { tapRoutine } from '../../lib/routines';
 import { addDays, parseKey } from '../../lib/schedule';
 import { useSounds } from '../../lib/sounds';
@@ -74,7 +73,7 @@ export function TodayPage() {
     more: true,
   });
 
-  // "Monday 2 November · 1 of 11 done · 4 days in a row"
+  // "Monday 2 November · 1 of 11 done" (the streak has its own pill on the trail)
   const facts: React.ReactNode[] = [longDate(selected)];
   if (plan.total === 0) facts.push(isFuture ? 'Nothing planned yet.' : 'A clear day so far.');
   else if (isFuture)
@@ -90,12 +89,6 @@ export function TodayPage() {
           {plan.done} of {plan.total}
         </Fig>{' '}
         done
-      </Text>,
-    );
-  if (isToday && streak > 0)
-    facts.push(
-      <Text key="streak">
-        <Fig>{plural(streak, 'day')}</Fig> in a row
       </Text>,
     );
 

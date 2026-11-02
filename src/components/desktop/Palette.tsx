@@ -10,7 +10,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { type Theme, useStyles, useTheme } from '../../theme';
 import { Glass } from '../Glass';
 import { EASE_OUT, FADE, useReduceMotion } from '../Motion';
-import { useReturnFocus } from './Popover';
+import { Catcher, useFocusBack } from './Popover';
 
 const IN = { duration: 180, easing: EASE_OUT, ...FADE };
 const OUT = { duration: 140, easing: EASE_OUT, ...FADE };
@@ -71,7 +71,7 @@ export function Palette({
   const [active, setActive] = useState(0);
   const v = useSharedValue(0);
   const input = useRef<ComponentRef<typeof TextInput>>(null);
-  useReturnFocus(visible);
+  useFocusBack(mounted);
 
   useEffect(() => {
     if (visible) {
@@ -141,7 +141,7 @@ export function Palette({
     <Modal visible transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: colors.backdrop }, dim]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessible={false} focusable={false} />
+          <Catcher style={StyleSheet.absoluteFill} onPress={onClose} />
         </Animated.View>
         <Animated.View
           role="dialog"

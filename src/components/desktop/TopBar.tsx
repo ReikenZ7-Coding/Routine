@@ -14,7 +14,8 @@ import { SelectFade } from '../Motion';
 import { Swatch } from '../SettingsSheet';
 import type { AddKind } from './api';
 import { Hover } from './Hover';
-import { type Href, MOD } from './nav';
+import { type Href, IN_APP, MOD } from './nav';
+import { primaryHover } from './layout';
 
 export type Menu = 'look' | 'bell' | 'new' | null;
 
@@ -95,6 +96,7 @@ export function TopBar({
           style={styles.round}
           accessibilityLabel={`Change look, now ${look}`}
           accessibilityState={{ expanded: menu === 'look' }}
+          aria={{ 'aria-haspopup': 'menu' }}
         >
           <Ionicons name="color-palette-outline" size={20} color={colors.text} />
         </Glass>
@@ -105,6 +107,7 @@ export function TopBar({
           style={styles.round}
           accessibilityLabel={due > 0 ? `Reminders, ${due} due now` : 'Reminders, nothing due'}
           accessibilityState={{ expanded: menu === 'bell' }}
+          aria={{ 'aria-haspopup': 'menu' }}
         >
           <Ionicons name="notifications-outline" size={20} color={colors.text} />
           {due > 0 ? (
@@ -116,10 +119,11 @@ export function TopBar({
         <Hover
           onPress={() => toggle('new')}
           squeeze
-          light={false}
+          lightFill={primaryHover(colors.onPrimary)}
           style={styles.newBtn}
-          accessibilityLabel={`New: a routine, to-do, grocery item or word, ${MOD}+N`}
+          accessibilityLabel={`New: a routine, to-do, grocery item or word${IN_APP ? `, ${MOD}+N` : ''}`}
           accessibilityState={{ expanded: menu === 'new' }}
+          aria={{ 'aria-haspopup': 'menu' }}
         >
           <Ionicons name="add" size={20} color={colors.onPrimary} />
           <Text style={styles.newText}>New</Text>
@@ -228,12 +232,12 @@ export function NewMenu({ onAdd }: { onAdd: (k: AddKind) => void }) {
   const { language } = useStore();
   const studying = currentLanguage(language);
   const rows: [AddKind, string, string, string, string, string][] = [
-    ['routine', 'repeat', 'Routine', 'Something you do regularly, with a time', kinds.routines.text, 'R'],
+    ['routine', 'repeat', 'Routine', 'Repeats on a schedule', kinds.routines.text, 'R'],
     ['todo', 'checkbox', 'To-do', 'A one-off task for today', kinds.inbox.text, 'T'],
     ['grocery', 'basket', 'Grocery item', 'Goes on your shopping list', kinds.groceries.text, 'G'],
     studying
       ? ['word', 'language', `${studying.name} word`, 'A new flashcard to practise', kinds.chinese.text, 'W']
-      : ['word', 'language', 'A language', 'Pick one to learn, with flashcards', kinds.chinese.text, 'W'],
+      : ['word', 'language', 'A language', 'Pick one to learn', kinds.chinese.text, 'W'],
   ];
   return (
     <View>

@@ -4,7 +4,7 @@ import type { NewGroceryItem } from '../lib/store';
 import { Button } from './Button';
 import { Chip } from './Chip';
 import { Field, FieldError, Input } from './Field';
-import { ConfirmDelete, Sheet } from './Sheet';
+import { ConfirmDelete, Sheet, SheetFooter } from './Sheet';
 import { type GroceryItem, type Repeat, WEEKDAY_SHORT } from '../lib/schedule';
 import { type Theme, useStyles } from '../theme';
 
@@ -147,7 +147,9 @@ export function GroceryForm({ visible, item, onSave, onDelete, onClose }: Props)
         </>
       )}
 
-      <Button label={item ? 'Save' : 'Add to list'} onPress={save} style={styles.save} />
+      <SheetFooter>
+        <Button label={item ? 'Save' : 'Add to list'} onPress={save} style={styles.save} />
+      </SheetFooter>
       {item && onDelete && (
         <ConfirmDelete label="Delete item" question={`Remove “${item.name}” from your groceries?`} onConfirm={onDelete} />
       )}

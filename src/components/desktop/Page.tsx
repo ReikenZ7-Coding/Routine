@@ -2,13 +2,23 @@
 // in one scroll that the glass inside follows. Panels are pane glass with a header row; a panel narrower than
 // 280 dp takes the whole row. The first six panels rise in on arrival, 40 ms apart, once per visit.
 import { Ionicons } from '@expo/vector-icons';
-import { type ReactNode, createContext, useContext, useState } from 'react';
+import { useIsFocused } from 'expo-router';
+import { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useAnimatedReaction, useSharedValue, withTiming } from 'react-native-reanimated';
 import { type Theme, useStyles, useTheme } from '../../theme';
-import { Glass, GlassScroll } from '../Glass';
-import { Enter } from '../Motion';
+import { Glass, GlassScroll, InsideGlass, OnCanopy } from '../Glass';
+import { EASE_OUT, Enter } from '../Motion';
 import { Hover } from './Hover';
-import { SHELL, useShellMetrics } from './layout';
+import { SLAB_GAP, SLAB_UNDER, useHeaderArt } from './HeaderArt';
+import { SHELL, primaryHover, useShellMetrics } from './layout';
+
+/** The scroll content's padding above the header. */
+const TOP = 12;
+/** The title and its sentence of facts keep to this measure, so they never run under the header art at the right
+ *  (Pine's moon, Paper's peaks); scripts/check-contrast.py checks the art under this column. */
+const TITLE_MAX = 720;
+const SETTLE = { duration: 220, easing: EASE_OUT };
 
 /** The grid's measure: its width and the gutter, for spans. */
 const GridContext = createContext<{ width: number; gutter: number }>({ width: 0, gutter: 20 });
@@ -38,23 +48,68 @@ export function Page({
 }) {
   const m = useShellMetrics();
   const styles = useStyles(makeStyles);
-  const { type } = useTheme();
+  const { type, colors } = useTheme();
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);
     setWidth((was) => (Math.abs(was - w) < 1 ? was : w));
   };
+
+  // The focused page tells the shell's header art (Pine's slab, Paper's mountains) where its header ends and how
+  // far it has scrolled.
+  const art = useHeaderArt();
+  const focused = useIsFocused();
+  const scrollY = useSharedValue(0);
+  const live = useSharedValue(0);
+  const [bottom, setBottom] = useState(0);
+  useAnimatedReaction(
+    () => scrollY.get(),
+    (y) => {
+      if (live.get() && art) art.scrollY.set(y);
+    },
+    [art],
+  );
+  useEffect(() => {
+    live.set(focused ? 1 : 0);
+    if (!focused || !art || !bottom) return;
+    art.scrollY.set(scrollY.get());
+    // A page's first header sets the art at once; moving between pages eases it to the new header.
+    art.bottom.set(art.bottom.get() > 0 ? withTiming(bottom, SETTLE) : bottom);
+  }, [focused, bottom, art, live, scrollY]);
+  const slab = !!colors.material.canopy;
+
   return (
-    <GlassScroll style={styles.flex} contentContainerStyle={[styles.scroll, { paddingHorizontal: m.pad, paddingTop: 12 }]}>
+    <GlassScroll
+      style={styles.flex}
+      offsetOut={scrollY}
+      contentContainerStyle={[styles.scroll, { paddingHorizontal: m.pad, paddingTop: TOP }]}
+    >
       <View style={[styles.measure, { maxWidth: SHELL.contentMax }]} onLayout={onLayout} aria-label={label}>
-        <View style={styles.header}>
-          <View style={styles.flex}>
-            <Text role="heading" aria-level={1} style={[type.title, { fontSize: m.titleSize, lineHeight: m.titleLine }]} numberOfLines={2}>
-              {title}
-            </Text>
-            <Text style={styles.subtitle}>{subtitle}</Text>
-          </View>
-          {actions ? <View style={styles.actions}>{actions}</View> : null}
+        <View
+          style={[styles.header, slab && { marginBottom: SLAB_UNDER + SLAB_GAP }]}
+          onLayout={(e) => {
+            const { y, height } = e.nativeEvent.layout;
+            const b = Math.round(TOP + y + height);
+            setBottom((was) => (Math.abs(was - b) < 1 ? was : b));
+          }}
+        >
+          {/* On Pine the header sits on the canopy slab: its buttons become slab troughs, as on the phone. */}
+          <InsideGlass.Provider value={slab}>
+            <OnCanopy.Provider value={slab}>
+              <View style={styles.titleColumn}>
+                <Text
+                  role="heading"
+                  aria-level={1}
+                  style={[type.title, { fontSize: m.titleSize, lineHeight: m.titleLine }]}
+                  numberOfLines={2}
+                >
+                  {title}
+                </Text>
+                <Text style={styles.subtitle}>{subtitle}</Text>
+              </View>
+              {actions ? <View style={styles.actions}>{actions}</View> : null}
+            </OnCanopy.Provider>
+          </InsideGlass.Provider>
         </View>
         <GridContext.Provider value={{ width, gutter: m.gutter }}>
           <View style={{ gap: m.gutter }}>{width ? children : null}</View>
@@ -126,7 +181,8 @@ export function Panel({
                 </Text>
               ) : null}
             </View>
-            {right}
+            {/* Centred on the title's line, so titles in a row share a baseline with or without a subtitle. */}
+            {right ? <View style={styles.panelRight}>{right}</View> : null}
           </View>
         ) : null}
         {children}
@@ -154,6 +210,26 @@ export function GlassButton({
       {icon ? <Ionicons name={icon as 'add'} size={18} color={colors.text} /> : null}
       <Text style={styles.buttonText}>{label}</Text>
     </Glass>
+  );
+}
+
+/** A 40 dp primary pill, for the one action a panel exists for (the first-run "Restore from a backup"); the
+ *  look's primary fill, lit white under the pointer and keyboard focus like the top bar's New. */
+export function PrimaryButton({ label, icon, onPress }: { label: string; icon?: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeStyles);
+  return (
+    <Hover
+      onPress={onPress}
+      squeeze
+      style={styles.primary}
+      radius={20}
+      lightFill={primaryHover(colors.onPrimary)}
+      accessibilityLabel={label}
+    >
+      {icon ? <Ionicons name={icon as 'add'} size={18} color={colors.onPrimary} /> : null}
+      <Text style={styles.primaryText}>{label}</Text>
+    </Hover>
   );
 }
 
@@ -187,11 +263,25 @@ const makeStyles = ({ colors, fonts, type }: Theme) => {
     scroll: { paddingBottom: 40, alignItems: 'center' },
     measure: { width: '100%' },
     header: { flexDirection: 'row', alignItems: 'flex-end', gap: 16, marginBottom: 24 },
+    titleColumn: { flex: 1, minWidth: 0, maxWidth: TITLE_MAX },
     subtitle: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.onSlabMuted, marginTop: 6 },
-    actions: { flexDirection: 'row', gap: 8, paddingBottom: 2 },
-    panelHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16, minHeight: 36 },
+    actions: { flexDirection: 'row', gap: 8, paddingBottom: 2, marginLeft: 'auto' },
+    panelHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 16, minHeight: 36 },
+    panelRight: { height: type.sectionTitle.lineHeight, justifyContent: 'center' },
     button: { height: 40, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 },
     buttonText: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.text },
+    primary: {
+      height: 40,
+      borderRadius: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      paddingHorizontal: 18,
+      backgroundColor: colors.primary,
+      backgroundImage: `linear-gradient(180deg, ${colors.primaryGradient[0]}, ${colors.primaryGradient[1]})`,
+      boxShadow: `inset 0px 1px 0px ${colors.material.innerTop}, ${colors.actionGlow}`,
+    },
+    primaryText: { fontFamily: fonts.bodyBold, fontSize: 15, color: colors.onPrimary },
     open: {
       width: 36,
       height: 36,

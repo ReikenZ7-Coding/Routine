@@ -1,6 +1,7 @@
 // The desktop shell's measurements: one shared object for every look (the looks differ in colour, glass, type and
 // radii only). Comfortable windows (1280 and wider) and compact ones (1024 to 1279).
 import { useWindowDimensions } from 'react-native';
+import { isLight } from '../glass/colour';
 import { useDesktop } from './context';
 
 export const SHELL = {
@@ -22,6 +23,12 @@ export const SHELL = {
    *  the wide panes are clearer than the phone's cards, so the full wash would lift their text below 4.5:1. */
   wash: 0.4,
 };
+
+/** The primary pill's hover light (New, the first-run Restore): it deepens the fill under light ink and lifts it
+ *  under dark ink, so the label only gains contrast (scripts/check-contrast.py checks onPrimary through it). */
+export function primaryHover(onPrimary: string): string {
+  return isLight(onPrimary) ? 'rgba(0,0,0,0.16)' : 'rgba(255,255,255,0.16)';
+}
 
 export interface ShellMetrics {
   compact: boolean;

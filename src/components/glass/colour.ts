@@ -43,3 +43,14 @@ export function washOf(c: string, k: number): string {
   const p = parse(c);
   return p && p[3] < 1 ? `rgba(${p[0]},${p[1]},${p[2]},${(p[3] * k).toFixed(3)})` : c;
 }
+
+/** Whether a colour is light (its relative luminance over half): light ink wants a darker ground under it. */
+export function isLight(c: string): boolean {
+  const p = parse(c);
+  if (!p) return false;
+  const lin = (v: number) => {
+    const x = v / 255;
+    return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(p[0]) + 0.7152 * lin(p[1]) + 0.0722 * lin(p[2]) > 0.5;
+}

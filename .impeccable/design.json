@@ -1949,7 +1949,8 @@
       "breakpoints": {
         "desktop": "web and window width >= 1024dp",
         "compact": "1024-1279dp",
-        "comfortable": ">= 1280dp"
+        "comfortable": ">= 1280dp",
+        "crossing": "a window that starts wide opens on Overview; going narrow, a desktop-only page stands in as its phone equivalent and going wide again returns to it; open forms, a running focus timer and a review do not survive the crossing yet"
       },
       "shell": {
         "sidebar": {
@@ -1991,7 +1992,9 @@
       "pageHeader": {
         "title": "display face, 38/44 (34/40 compact)",
         "subtitle": "one sentence of facts, figures in body medium, onSlabMuted",
-        "actions": "40dp control-glass buttons, secondary; New in the top bar is the primary"
+        "actions": "40dp control-glass buttons, secondary; New in the top bar is the primary",
+        "measure": "title and subtitle keep to 720dp, clear of the header art; actions at the right edge",
+        "zeroCounts": "a count of nothing is said in words, never as a zero figure"
       },
       "interaction": {
         "targets": {
@@ -2030,19 +2033,28 @@
         "Segmented dense (36dp segments in a 40dp trough)"
       ],
       "pages": {
-        "overview": "hero, day line, Needs you, trail, agenda, week chart, groceries, gym, language",
-        "today": "the phone's trail in span 7 (cards max 720, visible edit button per routine) beside the month, Balance rings and the day's note in span 5; previous/next day",
-        "calendar": "Week: all-day lane (3 chips a day, then 'N more'), 05:00-24:00 grid (48dp hours), overlap lanes, routine blocks in the kind's soft wash (40% of its alpha on desktop glass) with a half-strength kind rim and a tick on blocks >= 40dp, done/skipped recede to inset with struck title, now line under blocks, empty half hour adds a weekly routine. Month: counts, kind dots, past moods; a day opens Today on it. Legend of five kinds.",
-        "inbox": "three panels: To sort (composer on top), Planned (grouped by day), Done this week; row Plan and more open inline",
-        "gym": "today's session as hero (exercise rows: plan line, stepper, set bubbles, New best, rest timer) beside Weekly plan, History, Personal records; rest day offers 'Do a session anyway'",
-        "language": "Today's practice and the inline review card beside Focus, My words (searchable) and languages",
+        "overview": "hero (up next, 'Then' with the next two timed steps, Now playing well with focus sound tiles), day line (44dp band of track, Pine: slab trough; steps within 16dp share a node with a count), Needs you (5 rows, two-line names when compact), trail, agenda, week chart (dashed gridlines, axis labels, Gym scale at least 9 sets; a column opens Your week), groceries, gym, language. First run (nothing saved on this computer): 'Bring your days across' hero with Restore from a backup (primary), Add a routine, Add a to-do, and 'Set up the rest' (gym plan, language practice, groceries)",
+        "today": "the phone's trail in span 7 (cards max 720, visible edit button per routine, other cards keep its width) beside the month, Balance rings and the day's note in span 5; the streak said once (its pill); a future day says 'N planned'; previous/next day",
+        "calendar": "Week: all-day lane (2 chips a day, then 'N more', which opens the day), 05:00-24:00 grid (48dp hours) opening two hours before now or higher so no block is cut, routine blocks in the kind's soft wash (40% of its alpha on desktop glass) with a half-strength kind rim and a tick on blocks >= 40dp; overlapping blocks cascade 12dp, each later one raised on sheet glass with the float shadow, and blocks starting within 30 min share the column side by side; done/skipped recede to inset with struck title, now line under blocks, empty half hour adds a weekly routine. Month: counts, kind dots, past moods; a day opens Today on it. Legend of five kinds. Grocery lines are not counted as things planned; an empty week says 'Nothing planned this week'.",
+        "inbox": "three panels as tall as the tallest: To sort (composer on top), Planned (grouped by day), Done this week; row Plan and more open inline",
+        "gym": "today's session as hero (exercise rows: plan line, stepper, set bubbles, New best, rest timer) with History under it, beside Weekly plan and Personal records; rest day offers 'Do a session anyway'",
+        "language": "Today's practice, the inline review card and the languages, beside Focus and My words (searchable)",
         "library": "routines table: search + When + Repeat chips; Today / Not today / Ideas; 64dp rows",
         "groceries": "aisle panels in two columns beside Bought today and Coming up",
         "music": "hero player (art up to 320, seek, transport, sleep timer) beside focus sound tiles and the library",
-        "settings": "name, four looks side by side, phone calendar, backup, This computer, keyboard shortcuts",
+        "settings": "span 8: name, four looks side by side, phone calendar, backup; span 4: This computer, keyboard shortcuts (key over what it does; Ctrl+N and Ctrl+1..9 only in the Windows app)",
         "yourWeek": "week chart (tall), best streaks ranked with bars, personal records, When things get done heatmap (whenDone in src/lib/stats.ts)"
       },
-      "contrastGate": "scripts/check-contrast.py gate_desktop: text tokens on pane, control, receded, inset, sheet, hover and the kinds' soft washes at 40% (SHELL.wash) over the wide world; sidebar chrome; bare-world titles and notes at 1440x900, 1280x800, 1024x768; now line, chart bars and focus ring at 3:1"
+      "contrastGate": "scripts/check-contrast.py gate_desktop: text tokens on pane, control, receded, inset, sheet, hover and the kinds' soft washes at 40% (SHELL.wash) over the wide world; sidebar chrome; bare-world titles and notes at 1440x900, 1280x800, 1024x768, on Pine's slab and under Paper's mountains in the title column; the primary pill under its hover light; day line nodes, counts and now marker on its band; raised calendar blocks; now line, chart bars and focus ring at 3:1",
+      "headerArt": {
+        "drawnBy": "the shell, between the world and the page (src/components/desktop/HeaderArt.tsx)",
+        "pine": "canopy slab behind every page header from the sidebar gap to the window edge, flush with the top; the top bar sits on it (slab troughs); moon glow behind the bell and New; 28dp mint-rimmed foot 16dp under the subtitle; pines bottom right, at most 180dp; stays as a band behind the top bar on scroll",
+        "paper": "the mountains top right behind the Overview and Today headers only: 600dp wide (520 compact, at most 45% of the window), peak 24dp under the top, faded out over 96dp above the header foot; drift up at half the scroll speed",
+        "lavender": "none",
+        "stone": "none"
+      },
+      "panelHeader": "title top-aligned at the panel padding with or without a subtitle; the right control centred on the title line",
+      "primaryButton": "40dp pill in primaryGradient with onPrimary ink (New, and the first-run Restore from a backup); hover and focus light darkens it under light ink and lightens it under dark ink"
     }
   },
   "components": [
@@ -2122,7 +2134,7 @@
       "name": "Week Calendar Block (every look; Lavender shown)",
       "kind": "card",
       "refersTo": "lavender-text",
-      "description": "A timed routine on the desktop week grid: the routines kind's soft wash at 40% of its alpha over the pane with a rim of the kind's colour at half strength, 10 radius, a kind dot and the title (Medium 14), the time and length in the caption face on blocks 40dp and taller, and the tick ring in its corner on those blocks. Done or skipped, it recedes to the plain inset with the title struck in muted ink. Overlapping blocks share the day's width side by side.",
+      "description": "A timed routine on the desktop week grid: the routines kind's soft wash at 40% of its alpha over the pane with a rim of the kind's colour at half strength, 10 radius, a kind dot and the title (Medium 14), the time and length in the caption face on blocks 40dp and taller, and the tick ring in its corner on those blocks. Done or skipped, it recedes to the plain inset with the title struck in muted ink. Overlapping blocks cascade 12dp to the right, each later one raised on sheet glass with the float shadow; only blocks that start within 30 minutes of each other share the day's width side by side.",
       "html": "<div class=\"ds-world-lav\"><div class=\"ds-cal-lav\"><button class=\"ds-blk-lav\" aria-label=\"Read 20 pages, Monday 21:30 · 30 min. Edit\"><span class=\"ds-blk-lav-row\"><span class=\"ds-blk-lav-dot\" aria-hidden=\"true\"></span>Read 20 pages</span><span class=\"ds-blk-lav-meta\">21:30 · 30 min</span></button><button class=\"ds-blk-lav ds-blk-lav-done\" aria-label=\"Stretch, Monday 21:00 · 10 min, done. Edit\"><span class=\"ds-blk-lav-row\"><span class=\"ds-blk-lav-dot\" aria-hidden=\"true\"></span><s>Stretch</s></span></button></div></div>",
       "css": ".ds-cal-lav { display: flex; flex-direction: column; gap: 8px; width: 180px; } .ds-blk-lav { text-align: left; min-height: 48px; padding: 4px 8px; border-radius: 10px; background: rgba(201,168,255,0.088); border: 1px solid rgba(201,168,255,0.5); color: #FFFFFF; font-family: 'DM Sans', system-ui, sans-serif; cursor: pointer; } .ds-blk-lav-done { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.16); border-top-color: rgba(255,255,255,0.34); color: #FBFAFF; min-height: 24px; } .ds-blk-lav-row { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; } .ds-blk-lav-dot { width: 8px; height: 8px; border-radius: 4px; background: #C9A8FF; } .ds-blk-lav-meta { display: block; font-size: 13px; color: #FBFAFF; } .ds-blk-lav:focus-visible { outline: 2px solid #FFFFFF; outline-offset: 2px; box-shadow: 0 0 0 5px rgba(20,22,48,0.85); }"
     }

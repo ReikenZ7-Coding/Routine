@@ -55,7 +55,10 @@ export function MusicPage() {
                   Importing {sounds.importing.done} of {sounds.importing.total}…
                 </Text>
               ) : null}
-              <Text style={[styles.rowMeta, styles.note]}>On this computer, imported songs last for this visit.</Text>
+              {/* The empty library says it already. */}
+              {music.tracks.length > 0 ? (
+                <Text style={[styles.rowMeta, styles.note]}>On this computer, imported songs last for this visit.</Text>
+              ) : null}
             </Panel>
           </Column>
         </Row>

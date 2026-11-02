@@ -4,10 +4,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, usePathname } from 'expo-router';
 import { type ComponentRef, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { WideContext } from '../Art';
-import { WorldFrame } from '../Glass';
+import { InsideGlass, OnCanopy, WorldFrame } from '../Glass';
 import { EASE_OUT, FADE } from '../Motion';
 import { dayPlan, dueNow, navCounts, needsYou, nextUp } from '../../lib/day';
 import { currentLanguage } from '../../lib/language';
@@ -16,12 +16,14 @@ import { SOUNDS, useSounds } from '../../lib/sounds';
 import { newId, useStore } from '../../lib/store';
 import { THEME_OPTIONS, type Theme, useStyles, useTheme } from '../../theme';
 import { type AddKind, type ShellApi, ShellContext, type ShellPanel } from './api';
+import { startedWide } from './context';
+import { HeaderArt, HeaderArtContext, type HeaderArtValue } from './HeaderArt';
 import { Hover } from './Hover';
 import { SHELL, useShellMetrics } from './layout';
-import { type Href, MOD, NAV_ITEMS, longDate, pageOf, useNow } from './nav';
+import { type Href, IN_APP, MOD, NAV_ITEMS, longDate, pageOf, useNow } from './nav';
 import { type Command, Palette } from './Palette';
 import { Panels } from './Panels';
-import { Popover } from './Popover';
+import { Catcher, Popover, dialogOpen, trackFocus } from './Popover';
 import { Sidebar } from './Sidebar';
 import { BellMenu, type Crumb, LookMenu, type Menu, NewMenu, TopBar } from './TopBar';
 import type { RoutineFields } from '../RoutineForm';
@@ -30,8 +32,31 @@ const KEY = 'routine.desktop.v1';
 const SLIDE = { duration: 260, easing: EASE_OUT };
 const DIM = { duration: 200, easing: EASE_OUT, ...FADE };
 
-/** The desktop opens on Overview the first time it loads at the root; after that Today is "/" like on the phone. */
+/** The desktop opens on Overview when the app first loads wide at the root; after that Today is "/" like on the
+ *  phone. */
 let landed = false;
+/** The desktop page open when the window last narrowed to the phone layout. */
+let left: string | null = null;
+/** Where the phone stands in for a desktop-only page (each route's Redirect): coming back wide to that place, with
+ *  nothing else opened meanwhile, returns to the desktop page. */
+const PHONE_STAND_IN: Record<string, string> = {
+  '/overview': '/',
+  '/calendar': '/',
+  '/music': '/',
+  '/settings': '/',
+  '/stats': '/',
+  '/groceries': '/library',
+};
+
+/** The sidebar's saved state, read before the first frame so a collapsed sidebar doesn't slide shut on start. */
+function savedSidebar(): string | undefined {
+  try {
+    const raw = (globalThis as { localStorage?: Storage }).localStorage?.getItem(KEY);
+    return raw ? (JSON.parse(raw) as { sidebar?: string }).sidebar : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export function DesktopShell({
   children,
@@ -42,6 +67,12 @@ export function DesktopShell({
 }) {
   const m = useShellMetrics();
   const { colors } = useTheme();
+  const { width: windowW } = useWindowDimensions();
+  // The focused page's header (where it ends, how far it has scrolled), for the looks' header art.
+  const artBottom = useSharedValue(0);
+  const artScroll = useSharedValue(0);
+  const art = useMemo<HeaderArtValue>(() => ({ bottom: artBottom, scrollY: artScroll }), [artBottom, artScroll]);
+  const slab = !!colors.material.canopy;
   const styles = useStyles(makeStyles);
   const store = useStore();
   const { routines, inbox, groceries, gym, language, settings, today, updateInbox, updateSettings, ready } = store;
@@ -51,20 +82,12 @@ export function DesktopShell({
   const page = pageOf(pathname);
 
   // Sidebar: docked and remembered on a comfortable window; a rail that opens over the content on a compact one.
-  const [docked, setDocked] = useState(true);
+  const [docked, setDocked] = useState(() => savedSidebar() !== 'collapsed');
   const [overlay, setOverlay] = useState(false);
   const expanded = m.compact ? overlay : docked;
   const width = useSharedValue(expanded ? SHELL.sidebar : SHELL.rail);
   const rail = useSharedValue(expanded ? 0 : 1);
   const dim = useSharedValue(0);
-  useEffect(() => {
-    AsyncStorage.getItem(KEY)
-      .then((raw) => {
-        const saved = raw ? (JSON.parse(raw) as { sidebar?: string }) : null;
-        if (saved?.sidebar === 'collapsed') setDocked(false);
-      })
-      .catch(() => {});
-  }, []);
   useEffect(() => {
     width.set(withTiming(expanded ? SHELL.sidebar : SHELL.rail, SLIDE));
     rail.set(withTiming(expanded ? 0 : 1, SLIDE));
@@ -83,12 +106,20 @@ export function DesktopShell({
     });
   }, [m.compact]);
 
-  // First load at the root goes to Overview, the desktop's home.
+  // The first load at the root, when the app opens wide, goes to Overview, the desktop's home. Widening again after
+  // the phone layout stood in for a desktop page goes back to that page.
+  const where = useRef(pathname);
+  where.current = pathname;
   useEffect(() => {
-    if (landed) return;
+    const first = !landed;
     landed = true;
-    if (pathname === '/') router.replace('/overview');
-  }, [pathname]);
+    if (first && startedWide() && where.current === '/') router.replace('/overview');
+    else if (left && PHONE_STAND_IN[left] === where.current) router.replace(left as '/overview');
+    left = null;
+    return () => {
+      left = where.current;
+    };
+  }, []);
 
   const [menu, setMenu] = useState<Menu>(null);
   const [palette, setPalette] = useState(false);
@@ -134,14 +165,17 @@ export function DesktopShell({
     [open, studying],
   );
 
-  // Ctrl+K, Ctrl+N, Ctrl+B, Ctrl+1..9 and Ctrl+, from anywhere; R, T, G, W while the New menu is open; Esc
-  // closes the compact sidebar's overlay.
+  // Ctrl+K, Ctrl+N, Ctrl+B, Ctrl+1..9 and Ctrl+, from any page; R, T, G, W while the New menu is open; Esc
+  // closes the compact sidebar's overlay. None of them while a dialog is open: Ctrl+1 under a form would move the
+  // page behind it.
   const keys = useRef({ add, go, toggleSidebar, open, menu, overlay, palette, panel });
   keys.current = { add, go, toggleSidebar, open, menu, overlay, palette, panel };
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    trackFocus();
     const onKey = (e: KeyboardEvent) => {
       const k = keys.current;
+      if (k.palette || k.panel || dialogOpen()) return;
       const mod = e.ctrlKey || e.metaKey;
       if (mod && !e.altKey && !e.shiftKey) {
         const key = e.key.toLowerCase();
@@ -172,7 +206,7 @@ export function DesktopShell({
           k.add(pick);
         }
       }
-      if (e.key === 'Escape' && k.overlay && !k.menu && !k.palette && !k.panel) setOverlay(false);
+      if (e.key === 'Escape' && k.overlay && !k.menu) setOverlay(false);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
@@ -199,7 +233,7 @@ export function DesktopShell({
       group: 'Go to',
       icon: i.icon,
       title: i.label,
-      hint: `${MOD} ${n + 1}`,
+      hint: IN_APP ? `${MOD} ${n + 1}` : undefined,
       words: i.key === 'overview' ? 'home' : undefined,
       run: () => go(i.href),
     }));
@@ -365,81 +399,91 @@ export function DesktopShell({
   return (
     <WideContext.Provider value>
       <ShellContext.Provider value={api}>
-        <View style={styles.root}>
-          <WorldFrame>
-            <Hover
-              onPress={skipToContent}
-              onFocusChange={setSkip}
-              role="link"
-              outerStyle={[styles.skip, { opacity: skip ? 1 : 0, pointerEvents: skip ? 'auto' : 'none' }]}
-              style={styles.skipInner}
-              radius={12}
-              accessibilityLabel="Skip to content"
-            >
-              <Text style={styles.skipText}>Skip to content</Text>
-            </Hover>
+        <HeaderArtContext.Provider value={art}>
+          <View style={styles.root}>
+            <WorldFrame>
+              <Hover
+                onPress={skipToContent}
+                onFocusChange={setSkip}
+                role="link"
+                outerStyle={[styles.skip, { opacity: skip ? 1 : 0, pointerEvents: skip ? 'auto' : 'none' }]}
+                style={styles.skipInner}
+                radius={12}
+                accessibilityLabel="Skip to content"
+              >
+                <Text style={styles.skipText}>Skip to content</Text>
+              </Hover>
 
-            {/* Tab order follows the spec: the skip link, the sidebar, the top bar, then the page; zIndex keeps the
+              {/* Tab order follows the spec: the skip link, the sidebar, the top bar, then the page; zIndex keeps the
                 painting order (page, bar, dim, sidebar) whatever the order here. */}
-            <View style={[styles.side, { top: m.inset, left: m.inset, bottom: m.inset }]}>
-              <Sidebar
-                width={width}
-                rail={rail}
-                expanded={expanded}
-                current={page?.key}
-                counts={counts}
-                needs={needs}
-                plan={plan}
-                upNextLine={next?.line}
-                name={settings.name}
-                playing={sounds.playing}
-                date={longDate(today)}
-                onToggle={toggleSidebar}
-                onGo={go}
-                onSettings={() => open('settings')}
-              />
-            </View>
-
-            <Animated.View style={[styles.bar, { top: m.barTop, right: m.pad }, contentLeft]}>
-              <View style={[styles.barInner, { paddingLeft: m.pad }]}>
-                <TopBar
-                  crumbs={crumbs}
-                  menu={menu}
-                  onMenu={setMenu}
-                  onSearch={() => setPalette(true)}
-                  due={due.length}
-                  compact={m.compact}
+              <View style={[styles.side, { top: m.inset, left: m.inset, bottom: m.inset }]}>
+                <Sidebar
+                  width={width}
+                  rail={rail}
+                  expanded={expanded}
+                  current={page?.key}
+                  counts={counts}
+                  needs={needs}
+                  plan={plan}
+                  upNextLine={next?.line}
+                  name={settings.name}
+                  playing={sounds.playing}
+                  date={longDate(today)}
+                  onToggle={toggleSidebar}
+                  onGo={go}
+                  onSettings={() => open('settings')}
                 />
               </View>
-            </Animated.View>
 
-            {m.compact ? (
-              <Animated.View
-                style={[StyleSheet.absoluteFill, styles.dim, { backgroundColor: colors.backdrop }, dimStyle]}
-                pointerEvents={overlay ? 'auto' : 'none'}
-              >
-                <Pressable style={StyleSheet.absoluteFill} onPress={() => setOverlay(false)} accessible={false} focusable={false} />
+              {/* Pine's canopy slab or Paper's mountains: over the world, under the bar and the page. */}
+              <HeaderArt art={art} m={m} left={width} page={page?.key} windowW={windowW} />
+
+              <Animated.View style={[styles.bar, { top: m.barTop, right: m.pad }, contentLeft]}>
+                <View style={[styles.barInner, { paddingLeft: m.pad }]}>
+                  {/* On Pine the bar sits on the slab: its search pill and buttons are slab troughs. */}
+                  <InsideGlass.Provider value={slab}>
+                    <OnCanopy.Provider value={slab}>
+                      <TopBar
+                        crumbs={crumbs}
+                        menu={menu}
+                        onMenu={setMenu}
+                        onSearch={() => setPalette(true)}
+                        due={due.length}
+                        compact={m.compact}
+                      />
+                    </OnCanopy.Provider>
+                  </InsideGlass.Provider>
+                </View>
               </Animated.View>
-            ) : null}
 
-            <Animated.View ref={content} nativeID="main" role="main" style={[styles.content, { top: m.pageTop }, contentLeft]}>
-              {ready ? children : null}
-            </Animated.View>
+              {m.compact ? (
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, styles.dim, { backgroundColor: colors.backdrop }, dimStyle]}
+                  pointerEvents={overlay ? 'auto' : 'none'}
+                >
+                  <Catcher style={StyleSheet.absoluteFill} onPress={() => setOverlay(false)} />
+                </Animated.View>
+              ) : null}
 
-            <Popover visible={menu === 'look'} onClose={() => setMenu(null)} label="Look" width={380} style={menuBox} role="menu">
-              <LookMenu onDone={() => setMenu(null)} />
-            </Popover>
-            <Popover visible={menu === 'bell'} onClose={() => setMenu(null)} label="Reminders" width={360} style={menuBox} role="menu">
-              <BellMenu due={due} onDone={() => setMenu(null)} />
-            </Popover>
-            <Popover visible={menu === 'new'} onClose={() => setMenu(null)} label="New" width={340} style={menuBox} role="menu">
-              <NewMenu onAdd={add} />
-            </Popover>
-          </WorldFrame>
-          <Palette visible={palette} onClose={() => setPalette(false)} commands={commands} things={things} onInbox={toInbox} />
-          <Panels panel={panel} editing={editing} draft={draft} day={day} onOpen={(p) => open(p)} onClose={() => setPanel(null)} />
-          {after}
-        </View>
+              <Animated.View ref={content} nativeID="main" role="main" style={[styles.content, { top: m.pageTop }, contentLeft]}>
+                {ready ? children : null}
+              </Animated.View>
+
+              <Popover visible={menu === 'look'} onClose={() => setMenu(null)} label="Look" width={380} style={menuBox} role="menu">
+                <LookMenu onDone={() => setMenu(null)} />
+              </Popover>
+              <Popover visible={menu === 'bell'} onClose={() => setMenu(null)} label="Reminders" width={360} style={menuBox} role="menu">
+                <BellMenu due={due} onDone={() => setMenu(null)} />
+              </Popover>
+              <Popover visible={menu === 'new'} onClose={() => setMenu(null)} label="New" width={340} style={menuBox} role="menu">
+                <NewMenu onAdd={add} />
+              </Popover>
+            </WorldFrame>
+            <Palette visible={palette} onClose={() => setPalette(false)} commands={commands} things={things} onInbox={toInbox} />
+            <Panels panel={panel} editing={editing} draft={draft} day={day} onOpen={(p) => open(p)} onClose={() => setPanel(null)} />
+            {after}
+          </View>
+        </HeaderArtContext.Provider>
       </ShellContext.Provider>
     </WideContext.Provider>
   );
