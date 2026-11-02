@@ -103,7 +103,7 @@ export function Segmented<K extends string>({
           const content = (color: string, countColor: string) => (
             <View style={[styles.segmentInner, stacked && styles.stackedInner]}>
               {o.icon ? <Ionicons name={o.icon as 'sunny'} size={stacked ? 20 : 16} color={color} /> : null}
-              <Text style={[styles.segmentText, { color }]} numberOfLines={1}>
+              <Text style={[styles.segmentText, stacked && styles.stackedText, { color }]} numberOfLines={stacked ? 2 : 1}>
                 {o.label}
               </Text>
               {o.count !== undefined && <Text style={[styles.segmentCount, { color: countColor }]}>{o.count}</Text>}
@@ -125,6 +125,7 @@ export function Segmented<K extends string>({
             >
               <FadeSwap
                 on={active}
+                style={styles.swap}
                 duration={220}
                 off={content(colors.muted, colors.muted)}
                 onContent={content(colors.onPrimary, colors.onPrimary)}
@@ -277,8 +278,12 @@ const makeStyles = ({ colors, fonts }: Theme) => {
     segmentInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 6 },
     stackedSegments: { minHeight: 56 },
     stackedSegment: { minHeight: 56, borderRadius: 18 },
-    stackedInner: { flexDirection: 'column', gap: 4 },
-    segmentText: { fontFamily: fonts.bodyMedium, fontSize: 14 },
+    // Stacked labels keep to their own segment: as wide as it, less 8 each side, and wrap to a second line on a
+    // narrow phone instead of running into the next label.
+    stackedInner: { flexDirection: 'column', gap: 4, alignSelf: 'stretch', paddingHorizontal: 8 },
+    stackedText: { textAlign: 'center', lineHeight: 18 },
+    swap: { alignSelf: 'stretch' },
+    segmentText: { fontFamily: fonts.bodyMedium, fontSize: 14, flexShrink: 1 },
     segmentCount: { fontFamily: fonts.bodyMedium, fontSize: 13, fontVariant: ['tabular-nums'] },
     filter: { gap: 6 },
     chipScroll: { marginHorizontal: -16 },

@@ -477,7 +477,7 @@ function GradeButton({
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, type, radii }: Theme) =>
   StyleSheet.create({
     flex: { flex: 1 },
     content: { padding: 16 },
@@ -556,8 +556,8 @@ const makeStyles = ({ colors, kinds, fonts, type, radii, name }: Theme) =>
       gap: 10,
     },
     cardWord: {
-      // Typeface only: Stone sets the word in its light face.
-      fontFamily: name === 'stone' ? 'DMSans_300Light' : fonts.body,
+      // The look's flashcard face (Stone sets the word in its light face).
+      fontFamily: fonts.word,
       color: colors.text,
       textAlign: 'center',
     },

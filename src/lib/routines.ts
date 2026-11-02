@@ -32,7 +32,7 @@ export interface Routine {
   duration?: number;
   /** Ionicons name. */
   icon?: string;
-  /** Shown as a one-tap shortcut at the top of Today. */
+  /** Kept so saved routines keep their shape; no longer shown. */
   pinned?: boolean;
 }
 

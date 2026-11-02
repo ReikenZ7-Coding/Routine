@@ -101,7 +101,7 @@ const HEADERS: Partial<Record<ThemeName, ImageSourcePropType>> = {
 export const CANOPY_ART: { source: ImageSourcePropType; ratio: number } | undefined = LOOKS.pine.canopy
   ? { source: require('../../assets/art/pine-header.png'), ratio: LOOKS.pine.canopy.ratio }
   : undefined;
-/** A look's header art (the misty ridges on the trail looks), for previews such as the Settings swatches. */
+/** A look's Today header art (Paper's misty crag), for previews such as the Settings swatches. */
 export function headerSource(look: ThemeName): ImageSourcePropType | undefined {
   return HEADERS[look];
 }

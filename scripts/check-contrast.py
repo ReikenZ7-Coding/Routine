@@ -256,7 +256,7 @@ class Gate:
 def gate_look(look, theme, g):
     colors, kinds = theme['colors'], theme['kinds']
     mat = colors['material']
-    worse_light = look != 'paper'  # light text worsens on lighter glass; Paper's ink worsens on darker
+    worse_light = colors['statusBar'] != 'dark'  # light text worsens on lighter glass; dark ink (Paper) on darker
     y0 = int(FH * 0.07)
     lens = load(f'{look}-bg-blur.jpg')
     lenses = [lens]
@@ -359,8 +359,8 @@ def gate_look(look, theme, g):
         sharp[:hh] = over(sharp[:hh], art[..., :3], art[..., 3])
     sharp = lit(sharp, fields, 1.0, worse_light)
     sharp = ra.gblur(sharp, GLYPH * DP)
-    # Where text sits straight on the world. The Today header art (Paper, Pine) shares only its left side with
-    # text (greeting, date, the trail heading): its ridges and pines sit behind the round buttons and the cards.
+    # Where text sits straight on the world. A look's Today header art (Paper's crag) shares only its left side
+    # with text (greeting, date, the trail heading): its ridges sit behind the round buttons and the cards.
     art_bottom = (header['ratio'] * FW / FH) if header else 0.16
     if header:
         zones = {
@@ -379,8 +379,8 @@ def gate_look(look, theme, g):
             # 'See all', counts and links at the right edge
             'right zone': (0.55, 0.96, 0.16, 0.92),
         }
-    if look == 'pine':
-        zones.pop('title zone')  # Pine's titles sit on the canopy slab, checked below
+    if mat.get('canopy'):
+        zones.pop('title zone')  # titles sit on the canopy slab, checked below
     for zname, (x0, x1, za, zb, *only) in zones.items():
         ox, oy = int(x0 * FW), int(za * FH)
         bg = sharp[oy:int(zb * FH), ox:int(x1 * FW)]
@@ -411,13 +411,9 @@ def gate_look(look, theme, g):
     g.check(look, 'node fill', 'onNode', text_on(node_fill, colors['onNode']), TEXT)
 
     # The player's shuffle and repeat when on: the glyph and a dot under it in the accent, over the lit inset disc.
-    # The player is the same full-screen page in every look: the disc sits on its own glass circle on looks with
-    # controlsInGlass, and on the bare world (the middle of the screen, where the transport row sits) elsewhere.
-    # 3:1 there, as a state indicator.
-    if mat.get('controlsInGlass'):
-        under = control[y0:]
-    else:
-        under = sharp[int(0.40 * FH):int(0.85 * FH), int(0.04 * FW):int(0.96 * FW)]
+    # The player is the same full-screen page in every look, its controls bare glyphs on the world (the middle of
+    # the screen, where the transport row sits). 3:1 there, as a state indicator.
+    under = sharp[int(0.40 * FH):int(0.85 * FH), int(0.04 * FW):int(0.96 * FW)]
     disc = over(under, ic, ia)
     g.check(look, 'player toggle on', 'accent', text_on(disc, colors['accent']), NONTEXT, (0, y0))
 

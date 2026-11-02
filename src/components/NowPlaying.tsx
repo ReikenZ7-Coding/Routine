@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useRef, useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
@@ -147,9 +148,7 @@ function RepeatSlot() {
   const s = useSounds();
   const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
-  const inGlass = !!colors.material.controlsInGlass;
   const track = isTrack(s.current);
-  const mark = <Ionicons name="infinite" size={20} color={colors.muted} />;
   return (
     <View>
       <View
@@ -170,13 +169,9 @@ function RepeatSlot() {
           importantForAccessibility={track ? 'no-hide-descendants' : 'yes'}
           accessibilityElementsHidden={track}
         >
-          {inGlass ? (
-            <Glass tier="control" radius={26} receded style={styles.control}>
-              {mark}
-            </Glass>
-          ) : (
-            <View style={styles.control}>{mark}</View>
-          )}
+          <View style={styles.control}>
+            <Ionicons name="infinite" size={20} color={colors.muted} />
+          </View>
         </View>
       </Dim>
     </View>
@@ -342,6 +337,9 @@ function Player({ onForm }: { onForm: (f: MusicForm) => void }) {
 
   return (
     <View style={styles.root}>
+      {/* The player opens in its own window on Android: it states the look's status bar style again there, so
+          Paper's dark icons stay dark over its light world. */}
+      <StatusBar style={colors.statusBar} />
       {/* The player is a world of its own, with the same moving light as the screens. */}
       <WorldFrame>
         <View style={styles.bar} onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}>
@@ -379,12 +377,8 @@ function Player({ onForm }: { onForm: (f: MusicForm) => void }) {
                 {subLine(s)}
               </Text>
             </View>
-            {s.timer ? (
-              <View style={styles.timerBadge}>
-                <Ionicons name="moon" size={12} color={colors.text} />
-                <Text style={styles.timerText}>{s.timer} min</Text>
-              </View>
-            ) : null}
+            {/* The badge fades in and out with the timer; it keeps the last minutes it showed while it fades. */}
+            <TimerBadge minutes={s.timer} />
           </View>
 
           <View style={styles.progress}>
@@ -430,19 +424,37 @@ function Player({ onForm }: { onForm: (f: MusicForm) => void }) {
   );
 }
 
-/** A round button in the player's top bar: bare, or on its own glass circle where the look sets controlsInGlass. */
+/** A round button in the player's top bar, a bare glyph in every look. */
 function Round({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) {
   const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
-  const glyph = <Ionicons name={icon as 'moon'} size={22} color={colors.text} />;
-  return colors.material.controlsInGlass ? (
-    <Glass tier="control" radius={22} style={styles.round} onPress={onPress} accessibilityLabel={label}>
-      {glyph}
-    </Glass>
-  ) : (
+  return (
     <Press onPress={onPress} style={styles.round} overlay={colors.material.pressFill} accessibilityLabel={label}>
-      {glyph}
+      <Ionicons name={icon as 'moon'} size={22} color={colors.text} />
     </Press>
+  );
+}
+
+/** The sleep timer's minutes beside the title: fades in when a timer is set and out when it ends. */
+function TimerBadge({ minutes }: { minutes: number }) {
+  const { colors } = useTheme();
+  const styles = useStyles(makeGlassStyles);
+  const [shown, setShown] = useState(minutes);
+  useEffect(() => {
+    if (minutes) setShown(minutes);
+  }, [minutes]);
+  if (!shown) return null;
+  return (
+    <Dim on={!minutes} to={0}>
+      <View
+        style={styles.timerBadge}
+        accessibilityElementsHidden={!minutes}
+        importantForAccessibility={minutes ? 'auto' : 'no-hide-descendants'}
+      >
+        <Ionicons name="moon" size={12} color={colors.text} />
+        <Text style={styles.timerText}>{shown} min</Text>
+      </View>
+    </Dim>
   );
 }
 
@@ -465,8 +477,7 @@ function timerLabel(minutes: number): string {
 }
 
 /**
- * A round transport control. Looks with controlsInGlass (Stone) set each on its own glass circle; the others keep
- * them bare and bright. A toggle (shuffle or repeat for songs) shows its on state three ways at once, so it
+ * A round transport control, a bare glyph in every look. A toggle (shuffle or repeat for songs) shows its on state three ways at once, so it
  * never rests on a faint fill alone: a lit inset disc, the glyph in the accent, and an accent dot under it (as
  * music players do). The accent is gated at 3:1 on the disc (scripts/check-contrast.py, "player toggle").
  */
@@ -487,14 +498,13 @@ function Control({
 }) {
   const { colors } = useTheme();
   const styles = useStyles(makeGlassStyles);
-  const inGlass = !!colors.material.controlsInGlass;
   const a11y = toggle
     ? { accessibilityLabel: `${label}, ${active ? 'on' : 'off'}`, accessibilityState: { checked: !!active } }
     : { accessibilityLabel: label };
   const size = small ? 18 : 22;
   const glyph = toggle ? (
     <>
-      <SelectFade on={!!active} radius={26} style={styles.controlOn} />
+      <SelectFade on={!!active} radius={24} style={styles.controlOn} />
       <FadeSwap
         on={!!active}
         off={<Ionicons name={icon as 'shuffle'} size={size} color={colors.text} />}
@@ -507,11 +517,7 @@ function Control({
   ) : (
     <Ionicons name={icon as 'shuffle'} size={size} color={colors.text} />
   );
-  return inGlass ? (
-    <Glass tier="control" radius={26} style={styles.control} onPress={onPress} {...a11y}>
-      {glyph}
-    </Glass>
-  ) : (
+  return (
     <Press onPress={onPress} style={styles.control} overlay={colors.material.pressFill} {...a11y}>
       {glyph}
     </Press>
@@ -570,7 +576,8 @@ const makeGlassStyles = ({ colors, fonts }: Theme) =>
     timerText: { fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.text },
     progress: { marginTop: 10 },
     controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 20 },
-    control: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
+    // 48 across, so the row (four controls and the 76 play disc) fits the 272dp a 320dp phone leaves.
+    control: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
     controlOn: {
       backgroundColor: colors.material.inset.fill,
       borderWidth: 1,

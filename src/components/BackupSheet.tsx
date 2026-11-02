@@ -120,7 +120,7 @@ const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     label: { ...type.label, marginTop: 20, marginBottom: 8 },
     note: { marginTop: 8 },
-    code: { fontFamily: fonts.mono, fontSize: 13, minHeight: 96, maxHeight: 180, textAlignVertical: 'top' },
+    code: { fontFamily: fonts.code, fontSize: 13, minHeight: 96, maxHeight: 180, textAlignVertical: 'top' },
     gap: { marginTop: 12 },
     ask: { gap: 12 },
     question: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22, color: colors.text },

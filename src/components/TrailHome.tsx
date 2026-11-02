@@ -15,6 +15,7 @@ import { HEADER_RATIOS, HeaderScene } from './Art';
 import { Button } from './Button';
 import { CANOPY_GAP, Canopy } from './Canopy';
 import { Glass, HeaderMist, LensHeaderContext, useGlassScroll } from './Glass';
+import { HintPane } from './Section';
 import { clearOf } from './glass/colour';
 import { Bar, Chevron, Collapse, Dim, EASE_OUT, Enter, FadeSwap, Pop, Press, Ring, SelectFade, useReduceMotion } from './Motion';
 import { plural } from '../lib/plural';
@@ -32,8 +33,11 @@ export interface TrailItem {
   ink: string;
   /** Opens another screen instead of ticking the row. */
   nav?: boolean;
+  /** A day still to come: the step can be planned (a tap edits a routine) but not ticked off yet. A plan-only
+   *  step with no `onPress` (a to-do) is shown but not pressable. */
+  planOnly?: boolean;
   progress?: { value: number; total: number };
-  onPress: () => void;
+  onPress?: () => void;
   onLongPress?: () => void;
 }
 
@@ -76,8 +80,8 @@ const PARALLAX = 0.35;
 /** The header row starts this far below the scroll content's top padding, in every look. */
 const TOP = 4;
 /** Space under the header row inside Pine's slab; with the slab's own gap under its foot, it is the space between
- *  the header and what follows it in every look. */
-const FOOT = 8;
+ *  the header and what follows it in every look (16 + 12 = 28). */
+const FOOT = 16;
 /** The slab's 1px rim along its foot, which takes its share of that space. */
 const SLAB_RIM = 1;
 
@@ -105,14 +109,17 @@ export function TrailHome(p: Props) {
   }
   const finished = p.items.map((it) => it.done || !!it.skipped);
   const allDone = p.total > 0 && p.done === p.total;
-  // The step that's lit: the routine due next, or else the first step not yet finished. Everything before it
-  // is the walked part of the path.
-  let current = p.items.findIndex((it, i) => it.key === p.nextKey && !finished[i]);
-  if (current < 0) current = finished.indexOf(false);
-  const split = current < 0 ? centers.length - 1 : current;
+  // The step that's lit: the routine due next, or else the first step not yet finished (none on a day to come).
+  const planning = p.items.some((it) => it.planOnly);
+  let current = planning ? -1 : p.items.findIndex((it, i) => it.key === p.nextKey && !finished[i]);
+  if (current < 0 && !planning) current = finished.indexOf(false);
+  // A stretch of path is walked only where it leaves a finished step for another finished step or the lit one;
+  // everything else is the way ahead, so the path never reads as walked through a step that isn't done.
+  const walked = centers.map((_, i) => i > 0 && finished[i - 1] && (finished[i] || i === current));
   const centerKey = centers.join(',');
-  const walkedPath = useMemo(() => trail(centers.slice(0, split + 1), 0), [centerKey, split]); // eslint-disable-line react-hooks/exhaustive-deps
-  const aheadPath = useMemo(() => trail(centers.slice(split), split), [centerKey, split]); // eslint-disable-line react-hooks/exhaustive-deps
+  const walkedKey = walked.join(',');
+  const walkedPath = useMemo(() => trail(centers, walked, true), [centerKey, walkedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const aheadPath = useMemo(() => trail(centers, walked, false), [centerKey, walkedKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Header art sits at the top of the scroll content, flush with the top of the frame, and moves slower than the
   // content (parallax); glass over it shows its blurred copy, moved the same way.
@@ -123,34 +130,35 @@ export function TrailHome(p: Props) {
 
   const streakText = p.streak > 0 ? `${plural(p.streak, 'day')} streak` : 'Start a streak';
 
+  // The date line runs the full width under the greeting and the buttons, on one line, so it never wraps and
+  // strands its chevron on a narrow phone.
   const top = (
-    <View style={styles.top}>
-      <View style={styles.flex}>
-        <Text style={styles.greet}>{p.greeting},</Text>
-        <Text style={styles.hello} numberOfLines={1} accessibilityRole="header">
-          {p.name}
+    <View>
+      <View style={styles.top}>
+        <View style={styles.flex}>
+          <Text style={styles.greet}>{p.greeting},</Text>
+          <Text style={styles.hello} numberOfLines={1} accessibilityRole="header">
+            {p.name}
+          </Text>
+        </View>
+        <View style={styles.topButtons}>
+          <Round icon="musical-notes-outline" playingIcon="pause" playing={p.soundsPlaying} label="Sounds and music" onPress={p.onSounds} />
+          <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
+          <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
+        </View>
+      </View>
+      <Press
+        onPress={p.onToggleCalendar}
+        style={styles.dateRow}
+        accessibilityLabel={p.calendarOpen ? 'Hide the calendar' : `${p.dateLabel}. Pick a day`}
+        accessibilityState={{ expanded: p.calendarOpen }}
+        hitSlop={6}
+      >
+        <Text style={styles.date} numberOfLines={1}>
+          {p.dateLabel}
         </Text>
-        <Press
-          onPress={p.onToggleCalendar}
-          style={styles.dateRow}
-          accessibilityLabel={p.calendarOpen ? 'Hide the calendar' : 'Pick a day'}
-          accessibilityState={{ expanded: p.calendarOpen }}
-          hitSlop={6}
-        >
-          <Text style={styles.date}>{p.dateLabel}</Text>
-          <Chevron open={p.calendarOpen} color={colors.onSlabMuted} size={16} />
-        </Press>
-      </View>
-      <View style={styles.topButtons}>
-        <Round
-          icon={p.soundsPlaying ? 'pause' : 'musical-notes-outline'}
-          label="Sounds and music"
-          onPress={p.onSounds}
-          dot={p.soundsPlaying}
-        />
-        <Round icon="stats-chart-outline" label="Your week" onPress={p.onStats} />
-        <Round icon="settings-outline" label="Settings" onPress={p.onSettings} />
-      </View>
+        <Chevron open={p.calendarOpen} color={colors.onSlabMuted} size={16} />
+      </Press>
     </View>
   );
 
@@ -259,6 +267,15 @@ export function TrailHome(p: Props) {
             ))}
           </View>
         )}
+        {p.items.some((it) => it.onLongPress || it.planOnly) ? (
+          <View style={styles.hint}>
+            <HintPane>
+              {planning
+                ? 'This day is still ahead. Tap a routine to change it, and tick things off on the day.'
+                : 'Tap a step to tick it off. Press and hold a routine to edit it.'}
+            </HintPane>
+          </View>
+        ) : null}
 
         <View style={[styles.sectionHead, styles.sectionHeadTight]}>
           <Text style={[type.sectionTitle, styles.flex]} accessibilityRole="header">
@@ -297,24 +314,44 @@ export function TrailHome(p: Props) {
               })}
             </View>
           </Collapse>
-          {!balanceOpen && (
+          <Collapse open={!balanceOpen}>
             <Text style={styles.balanceFolded}>
               {p.balance.map((b) => (b.total === 0 ? `${b.label} rest` : `${b.label} ${b.value}/${b.total}`)).join('  ·  ')}
             </Text>
-          )}
+          </Collapse>
         </Glass>
       </View>
     </LensHeaderContext.Provider>
   );
 }
 
-function Round({ icon, label, onPress, dot }: { icon: string; label: string; onPress: () => void; dot?: boolean }) {
+/** A round header button. With `playingIcon`, the glyph crossfades to it while something plays and a dot fades in. */
+function Round({
+  icon,
+  playingIcon,
+  playing = false,
+  label,
+  onPress,
+}: {
+  icon: string;
+  playingIcon?: string;
+  playing?: boolean;
+  label: string;
+  onPress: () => void;
+}) {
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
+  const glyph = (name: string) => <Ionicons name={name as 'sunny'} size={20} color={colors.text} />;
   return (
     <Glass tier="control" radius={22} onPress={onPress} style={styles.round} accessibilityLabel={label}>
-      <Ionicons name={icon as 'sunny'} size={20} color={colors.text} />
-      {dot && <View style={styles.dot} />}
+      {playingIcon ? (
+        <>
+          <FadeSwap on={playing} off={glyph(icon)} onContent={glyph(playingIcon)} />
+          <Dim on={!playing} to={0} style={styles.dot} />
+        </>
+      ) : (
+        glyph(icon)
+      )}
     </Glass>
   );
 }
@@ -337,10 +374,13 @@ function TrailRow({
   const { colors } = useTheme();
   const styles = useStyles(makeStyles);
   const [cardW, setCardW] = useState(0);
-  const press = () => {
-    if (Platform.OS !== 'web' && !item.nav) Haptics.selectionAsync().catch(() => {});
-    item.onPress();
-  };
+  const plan = !!item.planOnly;
+  const press = item.onPress
+    ? () => {
+        if (Platform.OS !== 'web' && !item.nav && !plan) Haptics.selectionAsync().catch(() => {});
+        item.onPress?.();
+      }
+    : undefined;
   const finished = item.done || !!item.skipped;
   const meta = item.skipped
     ? 'Skipped · streak kept'
@@ -352,24 +392,31 @@ function TrailRow({
   const state: NodeState = item.done ? 'done' : item.skipped ? 'skipped' : current ? 'current' : 'ahead';
   const lit = current && !finished;
   // A routine counted toward a goal (glasses of water) adds one per tap until it's done.
-  const adds = !item.nav && !!item.progress && !item.done;
-  const label =
-    adds && item.progress ? `Add one to ${item.title}, ${item.progress.value} of ${item.progress.total}` : `${item.title}, ${meta}`;
+  const adds = !item.nav && !plan && !!item.progress && !item.done;
+  // The up-next line is part of what the step says, so a counter that's up next announces it too.
+  const label = plan
+    ? item.onPress
+      ? `Edit ${item.title}, ${meta}`
+      : `${item.title}, ${meta}. You can tick this off on the day`
+    : adds && item.progress
+      ? `Add one to ${item.title}, ${item.progress.value} of ${item.progress.total}${current && currentLabel ? `, ${currentLabel}` : ''}`
+      : `${item.title}, ${meta}`;
+  const button = item.nav || adds || plan;
   const card = (
     <Glass
       lit={lit}
       onPress={press}
-      onLongPress={item.onLongPress}
+      onLongPress={plan ? undefined : item.onLongPress}
       receded={finished}
       style={[styles.flex, styles.rowCard]}
-      accessibilityRole={item.nav || adds ? 'button' : 'checkbox'}
-      accessibilityState={item.nav || adds ? undefined : { checked: item.done }}
+      accessibilityRole={!press ? 'text' : button ? 'button' : 'checkbox'}
+      accessibilityState={!press ? { disabled: true } : button ? undefined : { checked: item.done }}
       accessibilityLabel={label}
       accessibilityHint={
-        item.nav ? undefined : item.onLongPress ? `Double tap to ${adds ? 'add one' : 'tick off'}. Long press to edit.` : undefined
+        item.nav || plan ? undefined : item.onLongPress ? `Double tap to ${adds ? 'add one' : 'tick off'}. Long press to edit.` : undefined
       }
-      accessibilityActions={item.onLongPress ? [{ name: 'activate' }, { name: 'longpress', label: 'Edit' }] : undefined}
-      onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'longpress' ? item.onLongPress?.() : press())}
+      accessibilityActions={!plan && item.onLongPress ? [{ name: 'activate' }, { name: 'longpress', label: 'Edit' }] : undefined}
+      onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'longpress' ? item.onLongPress?.() : press?.())}
     >
       <Sweep run={item.done} width={cardW} />
       <Dim on={finished} to={0.6}>
@@ -390,9 +437,9 @@ function TrailRow({
           {meta}
         </Text>
       </View>
-      {item.nav ? (
+      {item.nav || (plan && item.onPress) ? (
         <Ionicons name="chevron-forward" size={18} color={colors.muted} />
-      ) : (
+      ) : plan ? null : (
         <Pop done={item.done} style={styles.check}>
           <SelectFade on={item.done} color={item.color} radius={13} bleed={2} />
           <FadeSwap
@@ -515,18 +562,25 @@ function SummitSweep({ on, width }: { on: boolean; width: number }) {
 }
 
 /** A dotted path that winds from node to node: it swings out unevenly between rows, like a footpath on a map.
- *  `from` is the index of the first centre, so a path split in two keeps one rhythm. */
-function trail(centers: number[], from: number): string {
-  if (centers.length < 2) return '';
+ *  Draws the stretches whose `walked` flag equals `which` (stretch i runs from node i-1 to node i), so the walked
+ *  and the ahead paths together make one path with one rhythm. */
+function trail(centers: number[], walked: boolean[], which: boolean): string {
   const x = RAIL / 2;
-  let d = `M ${x} ${centers[0]}`;
+  let d = '';
+  let open = false;
   for (let i = 1; i < centers.length; i++) {
+    if (walked[i] !== which) {
+      open = false;
+      continue;
+    }
     const a = centers[i - 1];
     const b = centers[i];
-    const swing = (from + i) % 2 ? 18 : -12;
-    d += ` C ${x + swing} ${a + (b - a) * 0.35}, ${x + swing} ${a + (b - a) * 0.65}, ${x} ${b}`;
+    const swing = i % 2 ? 18 : -12;
+    if (!open) d += `M ${x} ${a} `;
+    d += `C ${x + swing} ${a + (b - a) * 0.35}, ${x + swing} ${a + (b - a) * 0.65}, ${x} ${b} `;
+    open = true;
   }
-  return d;
+  return d.trim();
 }
 
 const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
@@ -538,8 +592,8 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
     top: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     greet: { fontFamily: fonts.bodyMedium, fontSize: 16, lineHeight: 20, color: colors.onSlabMuted },
     hello: { fontFamily: fonts.display, fontSize: 30, lineHeight: 36, color: colors.text, letterSpacing: -0.6, marginTop: 1 },
-    dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', minHeight: 44 },
-    date: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.onSlabMuted },
+    dateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', maxWidth: '100%', minHeight: 44 },
+    date: { fontFamily: fonts.bodyMedium, fontSize: 15, color: colors.onSlabMuted, flexShrink: 1 },
     topButtons: { flexDirection: 'row', gap: 8 },
     round: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
     dot: {
@@ -554,6 +608,7 @@ const makeStyles = ({ colors, fonts, type, radii }: Theme) => {
       backgroundColor: colors.streak,
     },
     calendar: { marginBottom: 14, padding: 8 },
+    hint: { marginLeft: RAIL - 4 },
     streak: {
       flexDirection: 'row',
       alignItems: 'center',

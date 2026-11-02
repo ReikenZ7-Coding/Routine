@@ -3,7 +3,6 @@ import { type ReactNode, useState } from 'react';
 import { Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../components/Button';
 import { ActionChip } from '../components/Chip';
-import { Fab, useFabScroll } from '../components/Fab';
 import { Skeleton } from '../components/Skeleton';
 import { useContentBottom } from '../components/NowPlaying';
 import { CheckRow } from '../components/CheckRow';
@@ -58,8 +57,9 @@ export default function GroceriesScreen({
   const { colors, kinds, type } = useTheme();
   const styles = useStyles(makeStyles);
   const [copied, setCopied] = useState(false);
-  const contentBottom = useContentBottom(true);
-  const fab = useFabScroll();
+  // The "Add an item" row is this shelf's add action, as "Create new routine" is the routines shelf's, so the
+  // Library adds the same way on both shelves and has no floating button.
+  const contentBottom = useContentBottom();
   const { ready, today, groceries: all, toggleBought, addGrocery, addGroceries, updateGrocery, removeGrocery } = useStore();
   const q = query.trim().toLowerCase();
   const groceries = q ? all.filter((g) => g.name.toLowerCase().includes(q)) : all;
@@ -97,11 +97,7 @@ export default function GroceriesScreen({
 
   return (
     <View style={styles.screen}>
-      <GlassScroll
-        contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]}
-        keyboardShouldPersistTaps="handled"
-        onScroll={fab.onScroll}
-      >
+      <GlassScroll contentContainerStyle={[styles.content, { paddingBottom: contentBottom }]} keyboardShouldPersistTaps="handled">
         {header}
         {all.length === 0 ? (
           <Glass style={styles.welcome}>
@@ -117,6 +113,15 @@ export default function GroceriesScreen({
           <NoMatch query={query} onClear={onClearQuery} />
         ) : (
           <>
+            <Glass style={[styles.addRow, styles.addSpot]} onPress={openNew} accessibilityLabel="Add a grocery item">
+              <View style={styles.addPebble}>
+                <Ionicons name="add" size={24} color={colors.text} />
+              </View>
+              <View style={styles.flex}>
+                <Text style={styles.addTitle}>Add an item</Text>
+                <Text style={styles.addMeta}>Something you buy regularly</Text>
+              </View>
+            </Glass>
             {/* The same list in every look: one glass pane per aisle under a "To buy" heading, then one hint. */}
             {toBuy.length > 0 ? (
               <Enter index={0}>
@@ -223,8 +228,6 @@ export default function GroceriesScreen({
         )}
       </GlassScroll>
 
-      {all.length > 0 && <Fab onPress={openNew} accessibilityLabel="Add a grocery item" hidden={fab.hidden} />}
-
       <GroceryForm
         visible={formOpen}
         item={editing}
@@ -247,8 +250,24 @@ export default function GroceriesScreen({
   );
 }
 
-const makeStyles = ({ colors, kinds, fonts }: Theme) =>
+const makeStyles = ({ colors, kinds, fonts, radii }: Theme) =>
   StyleSheet.create({
+    // The same row as the routines shelf's "Create new routine", in the same place.
+    addRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingRight: 6, minHeight: 72 },
+    addSpot: { marginTop: 18 },
+    addPebble: {
+      width: 44,
+      height: 44,
+      borderRadius: radii.inset,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: colors.material.inset.fill,
+      borderWidth: 1,
+      borderColor: colors.material.inset.border,
+      borderTopColor: colors.material.inset.borderTop,
+    },
+    addTitle: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 21, color: colors.text },
+    addMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
     screen: { flex: 1 },
     content: { padding: 16 },
     welcome: { padding: 24, alignItems: 'center', marginTop: 12 },

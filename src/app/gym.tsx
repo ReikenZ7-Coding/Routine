@@ -397,7 +397,8 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii }: Theme) => {
     exHeader: { flexDirection: 'row', alignItems: 'center' },
     exName: { fontFamily: fonts.bodyBold, fontSize: 17, color: colors.text },
     exPlan: { fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted, marginTop: 2 },
-    exControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, gap: 8 },
+    // The weight stepper, then the set bubbles on a full-width row of their own, so they never wrap beside it.
+    exControls: { marginTop: 12, gap: 10 },
     stepper: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -406,6 +407,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii }: Theme) => {
       borderTopColor: colors.material.inset.borderTop,
       backgroundColor: colors.material.inset.fill,
       borderRadius: radii.inset + 2,
+      alignSelf: 'flex-start',
     },
     stepBtn: { width: 44, height: 44, borderRadius: radii.inset + 1, alignItems: 'center', justifyContent: 'center' },
     weight: {
@@ -417,7 +419,7 @@ const makeStyles = ({ colors, kinds, fonts, radius, radii }: Theme) => {
       fontVariant: ['tabular-nums'],
     },
     weightWord: { fontFamily: fonts.bodyMedium },
-    sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', flexShrink: 1 },
+    sets: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     setBubble: {
       width: 44,
       height: 44,

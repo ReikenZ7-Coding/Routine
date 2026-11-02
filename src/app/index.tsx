@@ -44,8 +44,14 @@ function greeting(hour: number): string {
   return 'Good evening';
 }
 
+/** A non-breaking space: a number never leaves its unit, and a phrase like "in 15 h 43 min" never splits. */
+const NB = '\u00a0';
+
 function formatLeft(minutes: number): string {
-  return minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}${NB}min`;
+  return m === 0 ? `${h}${NB}h` : `${h}${NB}h${NB}${m}${NB}min`;
 }
 
 function minutesNow(): number {
@@ -170,7 +176,7 @@ export default function TodayScreen() {
   const total = planned.length + dayTodos.length + dayGroceries.length + (session ? 1 : 0) + (showPractice ? 1 : 0);
 
   const replace = (r: Routine) => updateRoutines((rs) => rs.map((x) => (x.id === r.id ? r : x)));
-  const tap = (r: Routine) => !isFuture && replace(tapRoutine(r, selected));
+  const tap = (r: Routine) => replace(tapRoutine(r, selected));
   const edit = (r?: Routine) => {
     setEditing(r);
     setPanel('routine');
@@ -238,7 +244,9 @@ export default function TodayScreen() {
         done: isDoneOn(r, selected),
         skipped: isSkipped(r, selected),
         progress: r.target && r.target > 1 ? { value: count, total: r.target } : undefined,
-        onPress: () => tap(r),
+        // A day still to come can be planned but not ticked off: a tap opens the routine to change it.
+        planOnly: isFuture,
+        onPress: isFuture ? () => edit(r) : () => tap(r),
         onLongPress: () => edit(r),
       };
     }),
@@ -250,7 +258,8 @@ export default function TodayScreen() {
       color: kinds.inbox.color,
       ink: kinds.inbox.text,
       done: !!t.doneOn,
-      onPress: () => !isFuture && updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
+      planOnly: isFuture,
+      onPress: isFuture ? undefined : () => updateInbox((items) => items.map((x) => (x.id === t.id ? toggleItem(x, selected) : x))),
     })),
     ...(session && gymProgress
       ? [
@@ -327,8 +336,8 @@ export default function TodayScreen() {
           nextLabel={
             next
               ? next.state === 'now'
-                ? `Happening now · ${formatLeft(next.minutes)} left`
-                : `Up next · ${clock(next.entry.start)} · in ${formatLeft(next.minutes)}`
+                ? `Happening now${NB}· ${formatLeft(next.minutes)}${NB}left`
+                : `Up next${NB}· ${clock(next.entry.start)}${NB}· in${NB}${formatLeft(next.minutes)}`
               : undefined
           }
           balance={[

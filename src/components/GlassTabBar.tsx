@@ -45,9 +45,9 @@ export function GlassTabBar({
   const placed = useRef(false);
   const lastIndex = useRef(state.index);
   const slot = width ? width / state.routes.length : 0;
-  // A narrow phone (about 320dp) leaves each tab under 60dp: the labels tighten to 12px and lose their side air,
-  // so "Language" still fits whole beside "Library".
-  const narrow = slot > 0 && slot < 60;
+  // A narrower phone (360dp and under) leaves each tab under 66dp: the labels tighten to 12px and lose their side
+  // air, so "Language" still fits whole beside "Library".
+  const narrow = slot > 0 && slot < 66;
 
   useEffect(() => {
     if (!slot) return;
@@ -118,10 +118,7 @@ export function GlassTabBar({
             const item = (on: boolean) => (
               <View style={[styles.item, narrow && styles.itemNarrow]}>
                 {options.tabBarIcon?.({ focused: on, color: on ? m.drop.ink : colors.muted, size: 24 })}
-                <Text
-                  style={[styles.label, narrow && styles.labelNarrow, on && styles.labelOn, { color: on ? m.drop.ink : colors.muted }]}
-                  numberOfLines={1}
-                >
+                <Text style={[styles.label, narrow && styles.labelNarrow, { color: on ? m.drop.ink : colors.muted }]} numberOfLines={1}>
                   {label}
                 </Text>
               </View>
@@ -163,14 +160,14 @@ const makeStyles = ({ colors, fonts }: Theme) => {
     },
     glint: { borderWidth: 1, borderColor: colors.material.pressRim },
     tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 48 },
-    // As wide as the cell, with a little air each side (the current tab's bolder label included): a label too long
-    // for a narrow phone or a large font size shortens with an ellipsis instead of running into its neighbour.
+    // As wide as the cell, with a little air each side: a label too long for a large font size shortens with an
+    // ellipsis instead of running into its neighbour.
     item: { alignSelf: 'stretch', alignItems: 'center', gap: 3, paddingHorizontal: 2 },
     itemNarrow: { paddingHorizontal: 0 },
     cell: { alignSelf: 'stretch' },
-    // 13, the caption floor; the current tab's label is set in the look's bold (Stone's bold is DM Sans 500).
+    // 13, the caption floor, in one weight whether or not the tab is current, so every look fits the same label:
+    // the drop and the ink mark the current tab.
     label: { fontFamily: fonts.bodyMedium, fontSize: 13 },
-    labelOn: { fontFamily: fonts.bodyBold },
     labelNarrow: { fontSize: 12, letterSpacing: -0.2 },
   });
 };

@@ -123,10 +123,10 @@ function Swatch({ look }: { look: ThemeName }) {
     <View style={styles.swatch}>
       <Image source={BACKDROPS[look]} style={StyleSheet.absoluteFill} resizeMode="cover" accessibilityIgnoresInvertColors />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: AMBIENCE[look].scrim }]} />
-      {look === 'paper' && header ? (
-        // Paper's world is its mountains: the swatch shows the crag and its spruce, as on the Today trail.
+      {header ? (
+        // A look with header art (Paper's crag and spruce) shows it in its swatch, as behind Today's header.
         // The frame holds the art's own proportions: an Image left to size itself takes its file's height on the web.
-        <View style={[styles.swatchRidges, { aspectRatio: 1 / (HEADER_RATIOS.paper ?? 1) }]}>
+        <View style={[styles.swatchRidges, { aspectRatio: 1 / (HEADER_RATIOS[look] ?? 1) }]}>
           <Image source={header} style={styles.swatchArt} resizeMode="cover" accessibilityIgnoresInvertColors />
         </View>
       ) : null}

@@ -405,7 +405,7 @@ def mountain_header(name, w, h, sky_top, sky_bottom, ridges, pine_color, fog_col
 
 def paper_backdrop():
     """A bright, cool daylight page: a warm dawn glow top right, a sage bounce lower left, and a far
-    ridge drowned in mist, so the hub screens also sit in the mountains."""
+    ridge drowned in mist, so every screen also sits in the mountains."""
     reseed('paper-bg')
     img = gradient([(0, hexc('#F8F7F3')), (0.45, hexc('#EEEFEA')), (1, hexc('#E4E7E1'))], tilt=0.1)
     glow(img, W * 0.82, H * 0.04, W * 0.75, hexc('#FFF3DC'), 0.55)

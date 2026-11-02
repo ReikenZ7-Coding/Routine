@@ -17,8 +17,9 @@ import { phase, pose, useFrame } from './glass/light';
 import { clearOf } from './glass/colour';
 
 const FOOT = 28;
-/** The space the slab keeps under its foot, before the content that follows it. */
-export const CANOPY_GAP = 20;
+/** The space the slab keeps under its foot, before the content that follows it. Callers keep 16 inside the slab
+ *  under their last line, so text stays clear of the foot's curve and the next thing starts 28 below the header. */
+export const CANOPY_GAP = 12;
 /** The moon glow: a circle this wide, centred this far in from the slab's right edge and down from its top. */
 const MOON = { size: 300, right: 70, top: 20 };
 

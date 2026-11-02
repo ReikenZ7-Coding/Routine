@@ -67,7 +67,8 @@ export function CalendarStrip({ selected, today, expanded, busy, marksFor, moodF
       {rows.map((week, wi) => (
         <View key={wi} style={styles.week}>
           {week.map((date, di) => {
-            if (!date) return <View key={di} style={styles.day} />;
+            // A blank before the 1st or after the last day takes a column like a day, so every week lines up.
+            if (!date) return <View key={di} style={[styles.daySlot, styles.day]} />;
             const isSel = date === selected;
             const isToday = date === today;
             const marks = marksFor(date);

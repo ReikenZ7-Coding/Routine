@@ -292,7 +292,7 @@ export function Glass({
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, bodyStyle]} />
       {CAUGHT[tier] && <LightCatch placement={placement} look={name} strength={m.light.catch} />}
       {bloom && tier === 'hero' && m.bloom ? <Bloom image={m.bloom} /> : null}
-      {showSheen && <Sheen placement={placement} restY={restY} color={m.sheen} fromBelow={name === 'pine'} still={reduced} />}
+      {showSheen && <Sheen placement={placement} restY={restY} color={m.sheen} fromBelow={!!m.sheenFromBelow} still={reduced} />}
       {tier !== 'inset' && m.hairline ? (
         <View pointerEvents="none" style={[styles.hairline, { backgroundImage: softenGradient(m.hairline) }]} />
       ) : null}

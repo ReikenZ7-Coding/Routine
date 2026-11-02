@@ -6,7 +6,7 @@ import { type Theme, useStyles, useTheme } from '../theme';
 import { Glass } from './Glass';
 import { Segmented } from './Segmented';
 import { Button } from './Button';
-import { Bar, Press } from './Motion';
+import { Bar, Collapse, Press } from './Motion';
 
 const LENGTHS = [15, 25];
 
@@ -58,11 +58,13 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
 
   return (
     <Glass style={styles.card}>
-      <View style={styles.row}>
+      {/* The length switch has its own row under the title, so the title never wraps beside it; it folds away
+          while a session runs. */}
+      <View>
         <Text style={styles.title} accessibilityRole="header">
           Focus session
         </Text>
-        {!run && (
+        <Collapse open={!run}>
           <View style={styles.lengths}>
             <Segmented
               accessibilityLabel="Session length"
@@ -71,7 +73,7 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
               onChange={(k) => setLength(Number(k))}
             />
           </View>
-        )}
+        </Collapse>
       </View>
       <View style={styles.row}>
         <Text style={styles.clock} accessibilityLabel={`${Math.floor(secs / 60)} minutes ${secs % 60} seconds ${run ? 'left' : ''}`}>
@@ -111,8 +113,8 @@ export function FocusTimer({ onLog }: { onLog: (minutes: number) => void }) {
 const makeStyles = ({ colors, fonts, type }: Theme) =>
   StyleSheet.create({
     card: { padding: 16, marginTop: 12, gap: 12 },
-    title: { ...type.sectionTitle, flexShrink: 1 },
-    lengths: { width: 164 },
+    title: type.sectionTitle,
+    lengths: { marginTop: 12 },
     row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
     // One clock in every look: a big numeral in the look's numeral face (a sans with steady tabular figures, never
     // mono), in one size and one box.

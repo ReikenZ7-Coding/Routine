@@ -225,7 +225,7 @@ function ArtRow({
   const counter = !!r.target && r.target > 1;
   const canTick = !!onChange && !skipped;
   const days = streak(r, today);
-  // The streak sits in a small pill beside the name, so the schedule line never truncates.
+  // The streak sits in a small pill at the start of the schedule line, so the name keeps the row's width.
   const pill = !skipped && days > 1;
   const meta = `${counter ? `${countOn(r, today)} of ${r.target} · ` : ''}${routineSubtitle(r, today, !pill)}`;
   return (
@@ -234,20 +234,20 @@ function ArtRow({
         <Ionicons name={iconFor(r) as 'sunny'} size={20} color={kinds.routines.text} />
       </Dim>
       <View style={styles.flex}>
-        <View style={styles.titleLine}>
-          <Text style={[styles.rowTitle, styles.shrink, (done || skipped) && styles.rowDone]} numberOfLines={1}>
-            {r.name}
-          </Text>
+        <Text style={[styles.rowTitle, (done || skipped) && styles.rowDone]} numberOfLines={2}>
+          {r.name}
+        </Text>
+        <View style={styles.metaLine}>
           {pill ? (
             <View style={styles.streakPill} accessibilityLabel={`${days} in a row`}>
               <Ionicons name="flame" size={12} color={colors.streak} />
               <Text style={styles.streakText}>{days}</Text>
             </View>
           ) : null}
+          <Text style={[styles.rowMeta, styles.metaInline]} numberOfLines={2}>
+            {meta}
+          </Text>
         </View>
-        <Text style={styles.rowMeta} numberOfLines={1}>
-          {meta}
-        </Text>
       </View>
       {canTick && (
         <Press
@@ -295,8 +295,7 @@ const makeStyles = ({ colors, fonts, radius, radii }: Theme) => {
       borderTopColor: inset.borderTop,
     },
     ideaPebble: { borderStyle: 'dashed', borderColor: colors.controlBorder },
-    titleLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    shrink: { flexShrink: 1 },
+    metaLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
     streakPill: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -311,6 +310,7 @@ const makeStyles = ({ colors, fonts, radius, radii }: Theme) => {
     streakText: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.text, fontVariant: ['tabular-nums'] },
     rowTitle: { fontFamily: fonts.bodyBold, fontSize: 16, lineHeight: 21, color: colors.text },
     rowMeta: { marginTop: 2, fontFamily: fonts.body, fontSize: 14, lineHeight: 19, color: colors.muted },
+    metaInline: { marginTop: 0, flexShrink: 1 },
     rowDone: { textDecorationLine: 'line-through', color: colors.faint, fontFamily: fonts.bodyMedium },
     tickSpot: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
     tick: {

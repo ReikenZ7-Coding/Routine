@@ -6,9 +6,9 @@ import { CANOPY_GAP, Canopy } from './Canopy';
 
 /** The title starts this far below the scroll content's top padding and the safe area, in every look. */
 const TOP = 4;
-/** Space under the header inside Pine's slab; with the slab's own gap under its foot it is the space between the
- *  header and what follows it, the same in every look. */
-const FOOT = 8;
+/** Space under the header inside Pine's slab, clear of the curve of its foot; with the slab's own gap under the
+ *  foot it is the space between the header and what follows it, the same in every look (16 + 12 = 28). */
+const FOOT = 16;
 /** The slab's 1px rim along its foot, which takes its share of that space. */
 const SLAB_RIM = 1;
 /** Space between the title block and anything passed as children (Library's segmented switch). */

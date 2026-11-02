@@ -94,9 +94,9 @@ export interface GlassMaterial {
   };
   /** Pine: filter chips are a dark fill with a mint edge (colour only; the chip and its place are shared). */
   outlineChips?: boolean;
-  /** Stone: the player's transport controls and its header buttons sit on their own glass circles. A surface
-   *  only: the glyphs, their sizes and their places are the same in every look. */
-  controlsInGlass?: boolean;
+  /** Pine: the sheen that crosses glass as it scrolls rises from the lower edge (the light is below, on the night
+   *  floor) instead of falling from the top. Light only. */
+  sheenFromBelow?: boolean;
   /** Pine: a selected row inside glass (the playing sound or song) is outlined in this lit rim. */
   selectRim?: string;
 }
@@ -120,7 +120,7 @@ export interface Palette {
   primaryGradient: [string, string];
   /** Glyphs and numbers drawn on a kind's colour fill. */
   onKind: string;
-  /** A ticked control (a row's done check, the chosen mood, a done category), top to bottom, and its ink. */
+  /** A ticked control (a row's done check, the chosen mood), top to bottom, and its ink. */
   doneFill: [string, string];
   onDone: string;
   /** The shadow under the screen's one primary action (Lavender's play disc and floating button). */
@@ -140,8 +140,6 @@ export interface Palette {
   accent: string;
   /** The streak flame. */
   streak: string;
-  /** A light square of the look's colour, for small tiles. */
-  tile: string;
   /** The filled trail node (done, and the ring and dot of the lit one) and the count badge, and their ink. */
   node: string;
   onNode: string;
@@ -153,9 +151,8 @@ export interface Palette {
   nodeAhead: string;
   nodeAheadFill: string;
   nodeCurrentFill: string;
-  /** The warm wash behind a lit streak flame, and ink for a glyph drawn on it. */
+  /** The warm wash behind a lit streak flame. */
   warmTile: string;
-  onWarmTile: string;
   /** Secondary text on Pine's canopy slab (equals muted elsewhere). */
   onSlabMuted: string;
   /** The lit (up-next or selected) rim and its glow. */
@@ -219,7 +216,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       edgeBottom: ['rgba(48,46,150,0)', 'rgba(48,46,150,0.85)'],
       accent: '#FFB3E6',
       streak: '#FFB3E6',
-      tile: 'rgba(255,255,255,0.18)',
       node: '#FFFFFF',
       onNode: '#4A35C8',
       trailWalked: 'rgba(255,255,255,0.90)',
@@ -228,7 +224,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       nodeAheadFill: 'rgba(58,66,166,0.92)',
       nodeCurrentFill: 'rgba(74,53,200,0.92)',
       warmTile: 'rgba(255,179,230,0.30)',
-      onWarmTile: '#FFFFFF',
       onSlabMuted: '#FBFAFF',
       litRim: 'rgba(255,255,255,0.85)',
       litGlow: '0px 6px 18px rgba(190,150,255,0.45)',
@@ -316,7 +311,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       edgeBottom: ['rgba(36,36,28,0)', 'rgba(36,36,28,0.55)'],
       accent: '#E6D6B3',
       streak: '#E6D6B3',
-      tile: 'rgba(255,250,235,0.1)',
       node: '#E6D6B3',
       onNode: '#2E2D24',
       trailWalked: 'rgba(230,214,179,0.85)',
@@ -325,12 +319,10 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       nodeAheadFill: 'rgba(58,57,47,0.92)',
       nodeCurrentFill: 'rgba(46,45,36,0.92)',
       warmTile: 'rgba(230,214,179,0.30)',
-      onWarmTile: '#F4E6BF',
       onSlabMuted: '#F1ECE0',
       litRim: 'rgba(230,214,179,0.90)',
       litGlow: '0px 8px 22px rgba(230,208,160,0.30)',
       material: {
-        controlsInGlass: true,
         live: { tint: 'systemUltraThinMaterialDark', intensity: 10, reduction: 0.42, webBlur: 28, webSaturate: 1.1 },
         chromeTint: 'rgba(24,24,18,0.36)',
         lensSaturation: 1.0,
@@ -412,7 +404,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       edgeBottom: ['rgba(228,231,225,0)', 'rgba(228,231,225,0.9)'],
       accent: '#1A1C19',
       streak: '#E0601F',
-      tile: '#F1F1ED',
       node: '#2F3A33',
       onNode: '#FFFFFF',
       trailWalked: 'rgba(47,58,51,0.85)',
@@ -421,7 +412,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       nodeAheadFill: 'rgba(255,255,255,0.65)',
       nodeCurrentFill: 'rgba(255,255,255,0.80)',
       warmTile: '#FFE2C8',
-      onWarmTile: '#131512',
       onSlabMuted: '#4F5550',
       litRim: '#131512',
       litGlow: '0px 10px 24px -6px rgba(26,28,25,0.32)',
@@ -508,7 +498,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       edgeBottom: ['rgba(3,17,14,0)', 'rgba(3,17,14,0.90)'],
       accent: '#7CE3BC',
       streak: '#7CE3BC',
-      tile: 'rgba(124,227,188,0.1)',
       node: '#7CE3BC',
       onNode: '#06201A',
       trailWalked: 'rgba(124,227,188,0.85)',
@@ -517,7 +506,6 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
       nodeAheadFill: '#071D19',
       nodeCurrentFill: '#071D19',
       warmTile: 'rgba(124,227,188,0.16)',
-      onWarmTile: '#7CE3BC',
       onSlabMuted: '#D8EBE3',
       litRim: 'rgba(124,227,188,0.60)',
       // moonlight spilling from under the lit card onto the floor (offset, never a flat halo)
@@ -546,6 +534,7 @@ const PALETTES: Record<ThemeName, { colors: Palette; kinds: Record<Kind, KindSty
         innerBottom: 'rgba(124,227,188,0.20)',
         innerGlow: 'inset 0px 0px 16px rgba(124,227,188,0.06)',
         sheen: 'rgba(160,255,215,0.035)',
+        sheenFromBelow: true,
         shadowFloat: PINE_FLOAT,
         shadowPane: PINE_PANE,
         shadowHero: PINE_FLOAT,
@@ -600,20 +589,24 @@ const FONTS = {
   body: 'DMSans_400Regular',
   bodyMedium: 'DMSans_500Medium',
   bodyBold: 'DMSans_700Bold',
-  mono: 'DMMono_400Regular',
-  monoMedium: 'DMMono_500Medium',
+  /** The face for numbers (weights, sets, dates, counts), always set with tabular figures. A sans in every look;
+   *  the names are kept from when one look set numbers in a monospace. */
+  mono: 'DMSans_500Medium',
+  monoMedium: 'DMSans_700Bold',
+  /** A real monospace, for text that must line up character by character (the backup code), in every look. */
+  code: 'DMMono_400Regular',
+  /** The word on a language flashcard. */
+  word: 'DMSans_400Regular',
 };
 
-// Per-look faces. Lavender drops mono entirely (numbers use DM Sans with tabular figures); Stone has no bold
-// and no mono (its "bold" is DM Sans 500); Paper is Bricolage display over DM Sans, with no mono (numbers use
-// DM Sans tabular figures, big numerals Bricolage); Pine keeps mono for numbers only.
+// Per-look faces. Every look sets numbers in DM Sans with tabular figures (no mono anywhere but the backup code).
+// Stone has no bold (its "bold" is DM Sans 500) and sets titles, numerals and the flashcard word in DM Sans
+// Light; Paper is Bricolage display over DM Sans; Lavender and Pine are DM Sans throughout.
 const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; displayMedium: string; numeral: string }> = {
   lavender: {
     display: 'DMSans_700Bold',
     displayMedium: 'DMSans_700Bold',
     numeral: 'DMSans_300Light',
-    mono: 'DMSans_500Medium',
-    monoMedium: 'DMSans_700Bold',
   },
   stone: {
     display: 'DMSans_300Light',
@@ -622,13 +615,12 @@ const LOOK_FONTS: Record<ThemeName, Partial<typeof FONTS> & { display: string; d
     bodyBold: 'DMSans_500Medium',
     mono: 'DMSans_400Regular',
     monoMedium: 'DMSans_500Medium',
+    word: 'DMSans_300Light',
   },
   paper: {
     display: 'BricolageGrotesque_700Bold',
     displayMedium: 'BricolageGrotesque_500Medium',
     numeral: 'DMSans_500Medium',
-    mono: 'DMSans_500Medium',
-    monoMedium: 'DMSans_700Bold',
   },
   pine: { display: 'DMSans_700Bold', displayMedium: 'DMSans_500Medium', numeral: 'DMSans_500Medium' },
 };
@@ -709,8 +701,6 @@ export interface Theme {
   radii: Radii;
   /** The pane radius (kept for older call sites; prefer radii). */
   radius: number;
-  /** Light type on a dark page. */
-  dark: boolean;
 }
 
 export function buildTheme(name: ThemeName): Theme {
@@ -725,7 +715,6 @@ export function buildTheme(name: ThemeName): Theme {
     type: makeType(look, colors, fonts),
     radii,
     radius: radii.pane,
-    dark: look !== 'paper',
   };
 }
 
